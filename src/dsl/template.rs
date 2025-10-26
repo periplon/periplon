@@ -3767,9 +3767,10 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::const_is_empty)]
     fn test_dsl_grammar_version() {
         // DSL_GRAMMAR_VERSION is a const, so we check it's a valid semantic version
-        assert!(DSL_GRAMMAR_VERSION.len() > 0);
+        assert!(!DSL_GRAMMAR_VERSION.is_empty());
         // Should be semantic version
         assert!(DSL_GRAMMAR_VERSION.contains('.'));
     }

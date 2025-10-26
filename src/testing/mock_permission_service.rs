@@ -16,7 +16,7 @@ use std::sync::{Arc, Mutex};
 /// # Examples
 ///
 /// ```
-/// use periplon_sdk::adapters::secondary::MockPermissionService;
+/// use periplon_sdk::testing::MockPermissionService;
 /// use periplon_sdk::domain::{PermissionDecision, ToolPermissionContext};
 /// use serde_json::json;
 ///
@@ -147,7 +147,7 @@ impl MockPermissionService {
     /// # Examples
     ///
     /// ```
-    /// # use periplon_sdk::adapters::secondary::MockPermissionService;
+    /// # use periplon_sdk::testing::MockPermissionService;
     /// # use periplon_sdk::domain::PermissionDecision;
     /// let mut service = MockPermissionService::new();
     ///

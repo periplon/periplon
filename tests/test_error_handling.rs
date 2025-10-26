@@ -7,26 +7,7 @@ use periplon_sdk::dsl::schema::{DSLWorkflow, ErrorHandlingSpec, TaskSpec};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
 use std::time::Instant;
-
-/// Counter for tracking retry attempts
-#[derive(Default, Clone)]
-struct RetryCounter {
-    inner: Arc<Mutex<u32>>,
-}
-
-impl RetryCounter {
-    fn increment(&self) -> u32 {
-        let mut count = self.inner.lock().unwrap();
-        *count += 1;
-        *count
-    }
-
-    fn get(&self) -> u32 {
-        *self.inner.lock().unwrap()
-    }
-}
 
 /// Create a test workflow directory
 fn setup_test_workspace(test_name: &str) -> String {
@@ -126,6 +107,10 @@ fi
 
     // Execute workflow
     let mut executor = DSLExecutor::new(workflow).expect("Failed to create executor");
+    executor
+        .initialize()
+        .await
+        .expect("Failed to initialize executor");
     let result = executor.execute().await;
 
     // Should succeed after retries
@@ -214,6 +199,10 @@ exit 1
     // Execute workflow (will fail, but we're testing timing)
     let start_time = Instant::now();
     let mut executor = DSLExecutor::new(workflow).expect("Failed to create executor");
+    executor
+        .initialize()
+        .await
+        .expect("Failed to initialize executor");
     let _ = executor.execute().await;
     let elapsed = start_time.elapsed();
 
@@ -424,6 +413,10 @@ exit 1
 
     let start_time = Instant::now();
     let mut executor = DSLExecutor::new(workflow).expect("Failed to create executor");
+    executor
+        .initialize()
+        .await
+        .expect("Failed to initialize executor");
     let _ = executor.execute().await;
     let elapsed = start_time.elapsed();
 
@@ -531,6 +524,10 @@ exit 1
     workflow.tasks.insert("exhaust_task".to_string(), task);
 
     let mut executor = DSLExecutor::new(workflow).expect("Failed to create executor");
+    executor
+        .initialize()
+        .await
+        .expect("Failed to initialize executor");
     let result = executor.execute().await;
 
     // Should fail after all retries
@@ -628,6 +625,10 @@ exit 0
     workflow.tasks.insert("success_task".to_string(), task);
 
     let mut executor = DSLExecutor::new(workflow).expect("Failed to create executor");
+    executor
+        .initialize()
+        .await
+        .expect("Failed to initialize executor");
     let result = executor.execute().await;
 
     assert!(result.is_ok(), "Workflow should succeed");

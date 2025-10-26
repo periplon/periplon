@@ -114,6 +114,22 @@ jobs:
         if: steps.version.outputs.should_release == 'true'
         run: cargo update -p periplon
 
+      - name: Setup Node.js
+        if: steps.version.outputs.should_release == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build web UI
+        if: steps.version.outputs.should_release == 'true'
+        run: |
+          cd web
+          npm ci
+          npm run build
+          echo "Web UI built successfully. Output directory created at web/out"
+
       - name: Run tests
         if: steps.version.outputs.should_release == 'true'
         run: cargo test --all-features

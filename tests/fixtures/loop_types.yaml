@@ -100,8 +100,8 @@ tasks:
     loop_spec:
       while:
         condition:
-          state_key: "continue_processing"
-          operator: "equals"
+          type: "state_equals"
+          key: "continue_processing"
           value: true
         max_iterations: 5
         iteration_variable: "iteration"
@@ -117,8 +117,8 @@ tasks:
     loop_spec:
       repeat_until:
         condition:
-          state_key: "processing_complete"
-          operator: "equals"
+          type: "state_equals"
+          key: "processing_complete"
           value: true
         min_iterations: 1
         max_iterations: 3
@@ -138,8 +138,8 @@ tasks:
         iterator: "index"
     loop_control:
       break_condition:
-        state_key: "should_break"
-        operator: "equals"
+        type: "state_equals"
+        key: "should_break"
         value: true
       collect_results: true
       result_key: "break_results"
@@ -157,8 +157,8 @@ tasks:
         iterator: "index"
     loop_control:
       continue_condition:
-        state_key: "should_skip"
-        operator: "equals"
+        type: "state_equals"
+        key: "should_skip"
         value: true
       collect_results: true
       result_key: "continue_results"
@@ -243,11 +243,11 @@ tasks:
     loop_control:
       break_condition:
         and:
-          - state_key: "condition1"
-            operator: "equals"
+          - type: "state_equals"
+            key: "condition1"
             value: true
-          - state_key: "condition2"
-            operator: "equals"
+          - type: "state_equals"
+            key: "condition2"
             value: true
     subtasks:
       - complex_task:

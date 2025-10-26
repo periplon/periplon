@@ -282,3 +282,44 @@ jobs:
         with:
           files: ./cobertura.xml
           fail_ci_if_error: false
+
+  # Web UI build
+  build-web:
+    name: Build Web UI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd web
+          npm ci
+
+      - name: Type check
+        run: |
+          cd web
+          npm run type-check
+
+      - name: Lint
+        run: |
+          cd web
+          npm run lint
+
+      - name: Build static export
+        run: |
+          cd web
+          npm run build
+
+      - name: Upload web build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-ui-build
+          path: web/out/
+          if-no-files-found: error

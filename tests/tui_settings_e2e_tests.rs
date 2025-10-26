@@ -22,6 +22,7 @@
 //! system to ensure consistent behavior across different configurations.
 
 #![cfg(feature = "tui")]
+#![allow(clippy::field_reassign_with_default)]
 
 use periplon_sdk::tui::app::AppConfig;
 use periplon_sdk::tui::state::{AppState, ViewMode};

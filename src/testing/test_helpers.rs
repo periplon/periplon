@@ -16,7 +16,7 @@ use std::collections::HashMap;
 /// # Examples
 ///
 /// ```
-/// use periplon_sdk::adapters::secondary::MessageBuilder;
+/// use periplon_sdk::testing::MessageBuilder;
 ///
 /// let msg = MessageBuilder::user("What is 2 + 2?");
 /// ```

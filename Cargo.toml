@@ -6,6 +6,11 @@ authors = ["Periplon Contributors"]
 description = "Rust SDK for building multi-agent AI workflows and automation"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/periplon/periplon"
+homepage = "https://github.com/periplon/periplon"
+documentation = "https://docs.rs/periplon"
+readme = "README.md"
+keywords = ["ai", "agents", "workflows", "automation", "async"]
+categories = ["api-bindings", "asynchronous", "development-tools"]
 
 [dependencies]
 # Core dependencies
@@ -178,10 +183,15 @@ required-features = ["tui"]
 name = "dsl_benchmarks"
 harness = false
 
+# docs.rs configuration - build with all features
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
 # cargo-release configuration
 [package.metadata.release]
 # Don't publish to crates.io automatically (GitHub Actions handles this)
-publish = false
+# publish = false  # Removed to allow manual publishing
 # Use v prefix for tags (e.g., v0.1.0)
 tag-prefix = "v"
 # Push changes and tags to remote

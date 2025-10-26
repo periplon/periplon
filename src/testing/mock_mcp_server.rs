@@ -15,7 +15,8 @@ use std::sync::{Arc, Mutex};
 /// # Examples
 ///
 /// ```
-/// use periplon_sdk::adapters::secondary::MockMcpServer;
+/// use periplon_sdk::testing::MockMcpServer;
+/// use periplon_sdk::ports::secondary::McpServer;
 /// use serde_json::json;
 ///
 /// let mut server = MockMcpServer::new("test-server");
@@ -77,7 +78,7 @@ impl MockMcpServer {
     /// # Examples
     ///
     /// ```
-    /// # use periplon_sdk::adapters::secondary::MockMcpServer;
+    /// # use periplon_sdk::testing::MockMcpServer;
     /// # use serde_json::json;
     /// let mut server = MockMcpServer::new("test");
     ///

@@ -41,7 +41,7 @@ mod file_manager_tests {
         assert!(!state.entries.is_empty());
 
         // Count workflow files (may be in subdirectories, so just check we found some)
-        let workflow_count = state.entries.iter().filter(|e| e.is_workflow).count();
+        let _workflow_count = state.entries.iter().filter(|e| e.is_workflow).count();
         // File manager scans current directory - workflow files might be in subdirs
         // So we check we found at least the directories
 

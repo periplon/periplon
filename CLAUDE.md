@@ -403,3 +403,4 @@ The project uses GitHub Actions to automatically:
 - **CLI version compatibility**: Ensure minimum version 2.0.0
 - **ALWAYS use Rust best practices and idioms for safety, performance, and maintainability**
 - **ALWAYS use conventional commits for all changes** to enable automated releases 
+- make sure just ci passes without errors before any commit
