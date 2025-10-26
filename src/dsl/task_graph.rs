@@ -195,9 +195,11 @@ impl TaskGraph {
             let cycle_info: Vec<String> = unsorted
                 .iter()
                 .map(|id| {
-                    let deps = self.tasks.get(id)
+                    let deps = self
+                        .tasks
+                        .get(id)
                         .map(|node| node.spec.depends_on.clone())
-                        .unwrap_or_else(Vec::new);
+                        .unwrap_or_default();
                     format!("  - {} (depends on: {:?})", id, deps)
                 })
                 .collect();

@@ -224,7 +224,9 @@ impl GeneratorState {
                     let error_msg = e.to_string();
                     let errors: Vec<String> = error_msg
                         .lines()
-                        .filter(|l| !l.trim().is_empty() && !l.contains("Workflow validation failed"))
+                        .filter(|l| {
+                            !l.trim().is_empty() && !l.contains("Workflow validation failed")
+                        })
                         .map(|l| l.to_string())
                         .collect();
 
@@ -245,7 +247,13 @@ impl GeneratorState {
     /// Check if generation can be started
     pub fn can_generate(&self) -> bool {
         !self.nl_input.trim().is_empty()
-            && matches!(self.status, GenerationStatus::Idle | GenerationStatus::Completed | GenerationStatus::Failed { .. } | GenerationStatus::Validated { .. })
+            && matches!(
+                self.status,
+                GenerationStatus::Idle
+                    | GenerationStatus::Completed
+                    | GenerationStatus::Failed { .. }
+                    | GenerationStatus::Validated { .. }
+            )
     }
 
     /// Check if workflow can be accepted
@@ -274,20 +282,15 @@ impl GeneratorState {
 }
 
 /// Render the generator view
-pub fn render(
-    frame: &mut Frame,
-    area: Rect,
-    state: &GeneratorState,
-    theme: &Theme,
-) {
+pub fn render(frame: &mut Frame, area: Rect, state: &GeneratorState, theme: &Theme) {
     // Create main layout
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),  // Header
-            Constraint::Min(0),     // Main content
-            Constraint::Length(8),  // Status panel
-            Constraint::Length(1),  // Shortcuts bar
+            Constraint::Length(3), // Header
+            Constraint::Min(0),    // Main content
+            Constraint::Length(8), // Status panel
+            Constraint::Length(1), // Shortcuts bar
         ])
         .split(area);
 
@@ -321,12 +324,7 @@ pub fn render(
 }
 
 /// Render header with mode and status
-fn render_header(
-    frame: &mut Frame,
-    area: Rect,
-    state: &GeneratorState,
-    theme: &Theme,
-) {
+fn render_header(frame: &mut Frame, area: Rect, state: &GeneratorState, theme: &Theme) {
     let mode_text = match state.mode {
         GeneratorMode::Create => "Create New Workflow",
         GeneratorMode::Modify => "Modify Workflow",
@@ -334,18 +332,10 @@ fn render_header(
 
     let status_icon = match &state.status {
         GenerationStatus::Idle => Span::styled("○", Style::default().fg(theme.muted)),
-        GenerationStatus::InProgress { .. } => {
-            Span::styled("◐", Style::default().fg(theme.accent))
-        }
-        GenerationStatus::Completed => {
-            Span::styled("✓", Style::default().fg(theme.success))
-        }
-        GenerationStatus::Failed { .. } => {
-            Span::styled("✗", Style::default().fg(theme.error))
-        }
-        GenerationStatus::Validating => {
-            Span::styled("◑", Style::default().fg(theme.warning))
-        }
+        GenerationStatus::InProgress { .. } => Span::styled("◐", Style::default().fg(theme.accent)),
+        GenerationStatus::Completed => Span::styled("✓", Style::default().fg(theme.success)),
+        GenerationStatus::Failed { .. } => Span::styled("✗", Style::default().fg(theme.error)),
+        GenerationStatus::Validating => Span::styled("◑", Style::default().fg(theme.warning)),
         GenerationStatus::Validated { is_valid, .. } => {
             if *is_valid {
                 Span::styled("✓", Style::default().fg(theme.success))
@@ -356,7 +346,12 @@ fn render_header(
     };
 
     let header_line = Line::from(vec![
-        Span::styled("AI Workflow Generator", Style::default().fg(theme.primary).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "AI Workflow Generator",
+            Style::default()
+                .fg(theme.primary)
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(" | Mode: ", Style::default().fg(theme.muted)),
         Span::styled(mode_text, Style::default().fg(theme.accent)),
         Span::styled(" | Status: ", Style::default().fg(theme.muted)),
@@ -373,12 +368,7 @@ fn render_header(
 }
 
 /// Render natural language input panel
-fn render_input_panel(
-    frame: &mut Frame,
-    area: Rect,
-    state: &GeneratorState,
-    theme: &Theme,
-) {
+fn render_input_panel(frame: &mut Frame, area: Rect, state: &GeneratorState, theme: &Theme) {
     let is_focused = state.focus == FocusPanel::Input;
 
     let border_style = if is_focused {
@@ -398,16 +388,21 @@ fn render_input_panel(
         // Show placeholder
         rendered_lines.push(Line::from(Span::styled(
             "Enter a natural language description of your workflow...",
-            Style::default().fg(theme.muted).add_modifier(Modifier::ITALIC),
+            Style::default()
+                .fg(theme.muted)
+                .add_modifier(Modifier::ITALIC),
         )));
         rendered_lines.push(Line::from(""));
         rendered_lines.push(Line::from(Span::styled(
             "Markdown formatting: **bold**, *italic*, `code`, # Heading",
-            Style::default().fg(theme.muted).add_modifier(Modifier::ITALIC),
+            Style::default()
+                .fg(theme.muted)
+                .add_modifier(Modifier::ITALIC),
         )));
     } else {
         // Calculate cursor line and column
-        let (cursor_line, cursor_col) = calculate_cursor_position(&state.nl_input, state.input_cursor);
+        let (cursor_line, cursor_col) =
+            calculate_cursor_position(&state.nl_input, state.input_cursor);
 
         // Render each line with markdown highlighting and cursor
         let lines: Vec<&str> = state.nl_input.lines().collect();
@@ -426,16 +421,17 @@ fn render_input_panel(
         }
 
         // If cursor is at the very end (past last newline), add an empty line with cursor
-        if is_focused && state.input_cursor == state.nl_input.len() && state.nl_input.ends_with('\n') {
-            rendered_lines.push(Line::from(vec![
-                Span::styled(
-                    " ",
-                    Style::default()
-                        .fg(ratatui::style::Color::Black)
-                        .bg(ratatui::style::Color::White)
-                        .add_modifier(Modifier::BOLD),
-                ),
-            ]));
+        if is_focused
+            && state.input_cursor == state.nl_input.len()
+            && state.nl_input.ends_with('\n')
+        {
+            rendered_lines.push(Line::from(vec![Span::styled(
+                " ",
+                Style::default()
+                    .fg(ratatui::style::Color::Black)
+                    .bg(ratatui::style::Color::White)
+                    .add_modifier(Modifier::BOLD),
+            )]));
         }
     }
 
@@ -454,12 +450,7 @@ fn render_input_panel(
 }
 
 /// Render workflow preview panel
-fn render_preview_panel(
-    frame: &mut Frame,
-    area: Rect,
-    state: &GeneratorState,
-    theme: &Theme,
-) {
+fn render_preview_panel(frame: &mut Frame, area: Rect, state: &GeneratorState, theme: &Theme) {
     let is_focused = state.focus == FocusPanel::Preview;
 
     let border_style = if is_focused {
@@ -481,10 +472,7 @@ fn render_preview_panel(
 
         for (line_idx, line) in lines.iter().enumerate() {
             let line_num = format!("{:4} │ ", line_idx + 1);
-            let line_num_span = Span::styled(
-                line_num,
-                Style::default().fg(theme.muted),
-            );
+            let line_num_span = Span::styled(line_num, Style::default().fg(theme.muted));
 
             // Basic YAML highlighting
             let highlighted = highlight_yaml_line(line, theme);
@@ -501,7 +489,9 @@ fn render_preview_panel(
             Line::from(""),
             Line::from(Span::styled(
                 "No workflow generated yet.",
-                Style::default().fg(theme.muted).add_modifier(Modifier::ITALIC),
+                Style::default()
+                    .fg(theme.muted)
+                    .add_modifier(Modifier::ITALIC),
             )),
             Line::from(""),
             Line::from(Span::styled(
@@ -525,12 +515,7 @@ fn render_preview_panel(
 }
 
 /// Render diff view comparing original and generated workflows
-fn render_diff_panel(
-    frame: &mut Frame,
-    area: Rect,
-    state: &GeneratorState,
-    theme: &Theme,
-) {
+fn render_diff_panel(frame: &mut Frame, area: Rect, state: &GeneratorState, theme: &Theme) {
     let is_focused = state.focus == FocusPanel::Preview;
 
     let border_style = if is_focused {
@@ -641,12 +626,7 @@ fn render_diff_side(
 }
 
 /// Render status panel showing generation progress and validation
-fn render_status_panel(
-    frame: &mut Frame,
-    area: Rect,
-    state: &GeneratorState,
-    theme: &Theme,
-) {
+fn render_status_panel(frame: &mut Frame, area: Rect, state: &GeneratorState, theme: &Theme) {
     let mut items = Vec::new();
 
     match &state.status {
@@ -657,7 +637,12 @@ fn render_status_panel(
             ))));
             items.push(ListItem::new(Line::from("")));
             items.push(ListItem::new(Line::from(vec![
-                Span::styled("💡 Tip: ", Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
+                Span::styled(
+                    "💡 Tip: ",
+                    Style::default()
+                        .fg(theme.accent)
+                        .add_modifier(Modifier::BOLD),
+                ),
                 Span::styled(
                     "Give tasks enough context so they can be executed in new",
                     Style::default().fg(theme.muted),
@@ -703,7 +688,11 @@ fn render_status_panel(
                 Span::styled("Validating workflow...", Style::default().fg(theme.warning)),
             ])));
         }
-        GenerationStatus::Validated { is_valid, errors, warnings } => {
+        GenerationStatus::Validated {
+            is_valid,
+            errors,
+            warnings,
+        } => {
             if *is_valid {
                 items.push(ListItem::new(Line::from(vec![
                     Span::styled("✓ ", Style::default().fg(theme.success)),
@@ -716,7 +705,11 @@ fn render_status_panel(
                 items.push(ListItem::new(Line::from(vec![
                     Span::styled("⚠ ", Style::default().fg(theme.warning)),
                     Span::styled(
-                        format!("Validation issues found ({} errors, {} warnings)", errors.len(), warnings.len()),
+                        format!(
+                            "Validation issues found ({} errors, {} warnings)",
+                            errors.len(),
+                            warnings.len()
+                        ),
                         Style::default().fg(theme.warning),
                     ),
                 ])));
@@ -749,12 +742,7 @@ fn render_status_panel(
 }
 
 /// Render shortcuts bar
-fn render_shortcuts_bar(
-    frame: &mut Frame,
-    area: Rect,
-    state: &GeneratorState,
-    theme: &Theme,
-) {
+fn render_shortcuts_bar(frame: &mut Frame, area: Rect, state: &GeneratorState, theme: &Theme) {
     let shortcuts = match state.focus {
         FocusPanel::Input => {
             let mut parts = Vec::new();
@@ -791,8 +779,7 @@ fn render_shortcuts_bar(
         }
     };
 
-    let status = Paragraph::new(shortcuts)
-        .style(Style::default().fg(theme.muted).bg(theme.bg));
+    let status = Paragraph::new(shortcuts).style(Style::default().fg(theme.muted).bg(theme.bg));
 
     frame.render_widget(status, area);
 }
@@ -841,11 +828,15 @@ fn highlight_markdown(line: &str, theme: &Theme) -> Vec<Span<'static>> {
             let heading: String = chars[i..].iter().collect();
             spans.push(Span::styled(
                 "#".repeat(hash_count),
-                Style::default().fg(theme.accent).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(theme.accent)
+                    .add_modifier(Modifier::BOLD),
             ));
             spans.push(Span::styled(
                 heading,
-                Style::default().fg(theme.primary).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(theme.primary)
+                    .add_modifier(Modifier::BOLD),
             ));
             break;
         }
@@ -861,7 +852,9 @@ fn highlight_markdown(line: &str, theme: &Theme) -> Vec<Span<'static>> {
                 let text: String = chars[start..i].iter().collect();
                 spans.push(Span::styled(
                     format!("**{}**", text),
-                    Style::default().fg(theme.accent).add_modifier(Modifier::BOLD),
+                    Style::default()
+                        .fg(theme.accent)
+                        .add_modifier(Modifier::BOLD),
                 ));
                 i += 2;
                 continue;
@@ -885,7 +878,9 @@ fn highlight_markdown(line: &str, theme: &Theme) -> Vec<Span<'static>> {
                 let text: String = chars[start..i].iter().collect();
                 spans.push(Span::styled(
                     format!("*{}*", text),
-                    Style::default().fg(theme.accent).add_modifier(Modifier::ITALIC),
+                    Style::default()
+                        .fg(theme.accent)
+                        .add_modifier(Modifier::ITALIC),
                 ));
                 i += 1;
                 continue;
@@ -942,7 +937,11 @@ fn highlight_markdown(line: &str, theme: &Theme) -> Vec<Span<'static>> {
 }
 
 /// Highlight markdown with cursor at specific position
-fn highlight_markdown_with_cursor(line: &str, cursor_col: usize, theme: &Theme) -> Vec<Span<'static>> {
+fn highlight_markdown_with_cursor(
+    line: &str,
+    cursor_col: usize,
+    theme: &Theme,
+) -> Vec<Span<'static>> {
     use ratatui::style::Color;
 
     let chars: Vec<char> = line.chars().collect();
@@ -993,7 +992,9 @@ fn highlight_yaml_line<'a>(line: &'a str, theme: &Theme) -> Vec<Span<'a>> {
         // Comment
         vec![Span::styled(
             line,
-            Style::default().fg(theme.muted).add_modifier(Modifier::ITALIC),
+            Style::default()
+                .fg(theme.muted)
+                .add_modifier(Modifier::ITALIC),
         )]
     } else if trimmed.starts_with("---") || trimmed.starts_with("...") {
         // Document separator
@@ -1040,7 +1041,8 @@ pub async fn start_generation(state: &mut GeneratorState) -> Result<(), String> 
         }
         GeneratorMode::Modify => {
             if let Some(ref original) = state.original_yaml {
-                modify_workflow_from_nl(&state.nl_input, original, state.agent_options.clone()).await
+                modify_workflow_from_nl(&state.nl_input, original, state.agent_options.clone())
+                    .await
             } else {
                 return Err("No original workflow for modification".to_string());
             }

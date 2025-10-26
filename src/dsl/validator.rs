@@ -647,12 +647,14 @@ fn validate_subflow_references(workflow: &DSLWorkflow, errors: &mut ValidationEr
     for (subflow_id, subflow_spec) in &workflow.subflows {
         // If subflow is inline (no source), it must have agents or tasks
         if subflow_spec.source.is_none()
-            && subflow_spec.agents.is_empty() && subflow_spec.tasks.is_empty() {
-                errors.add_error(format!(
-                    "Inline subflow '{}' must define at least one agent or task",
-                    subflow_id
-                ));
-            }
+            && subflow_spec.agents.is_empty()
+            && subflow_spec.tasks.is_empty()
+        {
+            errors.add_error(format!(
+                "Inline subflow '{}' must define at least one agent or task",
+                subflow_id
+            ));
+        }
 
         // Validate agents in inline subflows
         for (agent_id, agent_spec) in &subflow_spec.agents {
@@ -3255,25 +3257,25 @@ mod tests {
 
     #[test]
     fn test_get_execution_type() {
-        use crate::dsl::schema::{TaskSpec, ScriptSpec, ScriptLanguage, CommandSpec};
+        use crate::dsl::schema::{CommandSpec, ScriptLanguage, ScriptSpec, TaskSpec};
 
         // No execution type
         let task = TaskSpec::default();
-        assert_eq!(task.has_execution_type(), false);
+        assert!(!task.has_execution_type());
 
         // Single execution type - agent
         let task = TaskSpec {
             agent: Some("test_agent".to_string()),
             ..Default::default()
         };
-        assert_eq!(task.has_execution_type(), true);
+        assert!(task.has_execution_type());
 
         // Single execution type - subflow
         let task = TaskSpec {
             subflow: Some("test_subflow".to_string()),
             ..Default::default()
         };
-        assert_eq!(task.has_execution_type(), true);
+        assert!(task.has_execution_type());
 
         // Single execution type - script
         let task = TaskSpec {
@@ -3287,7 +3289,7 @@ mod tests {
             }),
             ..Default::default()
         };
-        assert_eq!(task.has_execution_type(), true);
+        assert!(task.has_execution_type());
 
         // Single execution type - command
         let task = TaskSpec {
@@ -3302,7 +3304,7 @@ mod tests {
             }),
             ..Default::default()
         };
-        assert_eq!(task.has_execution_type(), true);
+        assert!(task.has_execution_type());
 
         // Multiple execution types (also has execution type)
         let task = TaskSpec {
@@ -3310,12 +3312,12 @@ mod tests {
             subflow: Some("test_subflow".to_string()),
             ..Default::default()
         };
-        assert_eq!(task.has_execution_type(), true);
+        assert!(task.has_execution_type());
     }
 
     #[test]
     fn test_subtask_execution_type_same_as_parent_valid() {
-        use crate::dsl::schema::{TaskSpec, AgentSpec, PermissionsSpec};
+        use crate::dsl::schema::{AgentSpec, PermissionsSpec, TaskSpec};
 
         let mut workflow = create_test_workflow();
 
@@ -3358,12 +3360,16 @@ mod tests {
 
         // Should be valid
         let result = validate_workflow(&workflow);
-        assert!(result.is_ok(), "Expected validation to pass but got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Expected validation to pass but got: {:?}",
+            result
+        );
     }
 
     #[test]
     fn test_subtask_execution_type_inherits_from_parent() {
-        use crate::dsl::schema::{TaskSpec, AgentSpec, PermissionsSpec};
+        use crate::dsl::schema::{AgentSpec, PermissionsSpec, TaskSpec};
 
         let mut workflow = create_test_workflow();
 
@@ -3405,12 +3411,16 @@ mod tests {
 
         // Should be valid - subtask inherits agent from parent
         let result = validate_workflow(&workflow);
-        assert!(result.is_ok(), "Expected validation to pass but got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Expected validation to pass but got: {:?}",
+            result
+        );
     }
 
     #[test]
     fn test_subtask_execution_type_different_from_parent_allowed() {
-        use crate::dsl::schema::{TaskSpec, AgentSpec, PermissionsSpec, SubflowSpec};
+        use crate::dsl::schema::{AgentSpec, PermissionsSpec, SubflowSpec, TaskSpec};
 
         let mut workflow = create_test_workflow();
 
@@ -3492,12 +3502,18 @@ mod tests {
 
         // Should now pass validation - subtasks can override with different execution types
         let result = validate_workflow(&workflow);
-        assert!(result.is_ok(), "Expected validation to pass but got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Expected validation to pass but got: {:?}",
+            result
+        );
     }
 
     #[test]
     fn test_subtask_execution_type_different_nested_allowed() {
-        use crate::dsl::schema::{TaskSpec, AgentSpec, PermissionsSpec, ScriptSpec, ScriptLanguage};
+        use crate::dsl::schema::{
+            AgentSpec, PermissionsSpec, ScriptLanguage, ScriptSpec, TaskSpec,
+        };
 
         let mut workflow = create_test_workflow();
 
@@ -3558,12 +3574,16 @@ mod tests {
 
         // Should now pass validation - subtasks can override with different execution types
         let result = validate_workflow(&workflow);
-        assert!(result.is_ok(), "Expected validation to pass but got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Expected validation to pass but got: {:?}",
+            result
+        );
     }
 
     #[test]
     fn test_subtask_with_own_execution_type_does_not_inherit_agent() {
-        use crate::dsl::schema::{TaskSpec, ScriptSpec, ScriptLanguage};
+        use crate::dsl::schema::{ScriptLanguage, ScriptSpec, TaskSpec};
 
         // Create parent task with agent
         let parent_task = TaskSpec {
@@ -3590,8 +3610,14 @@ mod tests {
         subtask.inherit_from_parent(&parent_task);
 
         // Subtask should NOT inherit agent because it has its own execution type
-        assert_eq!(subtask.agent, None, "Subtask should not inherit agent when it has its own execution type");
-        assert!(subtask.script.is_some(), "Subtask should retain its script execution type");
+        assert_eq!(
+            subtask.agent, None,
+            "Subtask should not inherit agent when it has its own execution type"
+        );
+        assert!(
+            subtask.script.is_some(),
+            "Subtask should retain its script execution type"
+        );
     }
 
     #[test]
@@ -3615,12 +3641,16 @@ mod tests {
         subtask.inherit_from_parent(&parent_task);
 
         // Subtask SHOULD inherit agent because it has no execution type
-        assert_eq!(subtask.agent, Some("parent_agent".to_string()), "Subtask should inherit agent when it has no execution type");
+        assert_eq!(
+            subtask.agent,
+            Some("parent_agent".to_string()),
+            "Subtask should inherit agent when it has no execution type"
+        );
     }
 
     #[test]
     fn test_parent_no_execution_type_subtask_any_type_valid() {
-        use crate::dsl::schema::{TaskSpec, SubflowSpec, AgentSpec, PermissionsSpec};
+        use crate::dsl::schema::{AgentSpec, PermissionsSpec, SubflowSpec, TaskSpec};
 
         let mut workflow = create_test_workflow();
 
@@ -3684,6 +3714,10 @@ mod tests {
 
         // Should be valid - parent has no execution type, so subtask can use any
         let result = validate_workflow(&workflow);
-        assert!(result.is_ok(), "Expected validation to pass but got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Expected validation to pass but got: {:?}",
+            result
+        );
     }
 }

@@ -31,24 +31,24 @@ impl WorkflowListView {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(3),   // Header
-                Constraint::Min(5),      // List (min 5 lines)
-                Constraint::Length(2),   // Footer (2 lines for better visibility)
+                Constraint::Length(3), // Header
+                Constraint::Min(5),    // List (min 5 lines)
+                Constraint::Length(2), // Footer (2 lines for better visibility)
             ])
             .split(area);
 
         // Header with centered title
-        let header = Paragraph::new(Line::from(vec![
-            Span::styled(
-                "DSL Workflow Manager",
-                Style::default().fg(theme.primary).add_modifier(Modifier::BOLD)
-            ),
-        ]))
+        let header = Paragraph::new(Line::from(vec![Span::styled(
+            "DSL Workflow Manager",
+            Style::default()
+                .fg(theme.primary)
+                .add_modifier(Modifier::BOLD),
+        )]))
         .alignment(ratatui::layout::Alignment::Center)
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .border_style(Style::default().fg(theme.border))
+                .border_style(Style::default().fg(theme.border)),
         );
         frame.render_widget(header, chunks[0]);
 
@@ -63,12 +63,22 @@ impl WorkflowListView {
                 ListItem::new(Line::from("")),
                 ListItem::new(Line::from(vec![
                     Span::raw("Press "),
-                    Span::styled("n", Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        "n",
+                        Style::default()
+                            .fg(theme.accent)
+                            .add_modifier(Modifier::BOLD),
+                    ),
                     Span::raw(" to create a new workflow"),
                 ])),
                 ListItem::new(Line::from(vec![
                     Span::raw("Press "),
-                    Span::styled("q", Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        "q",
+                        Style::default()
+                            .fg(theme.accent)
+                            .add_modifier(Modifier::BOLD),
+                    ),
                     Span::raw(" to quit"),
                 ])),
             ]
@@ -100,31 +110,69 @@ impl WorkflowListView {
             Block::default()
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(theme.border))
-                .title(" Workflows ")
+                .title(" Workflows "),
         );
         frame.render_widget(list, chunks[1]);
 
         // Footer with keybindings (multi-line for better readability)
-        let footer = Paragraph::new(vec![
-            Line::from(vec![
-                Span::styled("↑↓", Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
-                Span::raw(" Select │ "),
-                Span::styled("Enter", Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
-                Span::raw(" View │ "),
-                Span::styled("e", Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
-                Span::raw(" Edit │ "),
-                Span::styled("g", Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
-                Span::raw(" Generate │ "),
-                Span::styled("n", Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
-                Span::raw(" New │ "),
-                Span::styled("s", Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
-                Span::raw(" States │ "),
-                Span::styled("?", Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
-                Span::raw(" Help │ "),
-                Span::styled("q", Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
-                Span::raw(" Quit"),
-            ]),
-        ])
+        let footer = Paragraph::new(vec![Line::from(vec![
+            Span::styled(
+                "↑↓",
+                Style::default()
+                    .fg(theme.accent)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(" Select │ "),
+            Span::styled(
+                "Enter",
+                Style::default()
+                    .fg(theme.accent)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(" View │ "),
+            Span::styled(
+                "e",
+                Style::default()
+                    .fg(theme.accent)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(" Edit │ "),
+            Span::styled(
+                "g",
+                Style::default()
+                    .fg(theme.accent)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(" Generate │ "),
+            Span::styled(
+                "n",
+                Style::default()
+                    .fg(theme.accent)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(" New │ "),
+            Span::styled(
+                "s",
+                Style::default()
+                    .fg(theme.accent)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(" States │ "),
+            Span::styled(
+                "?",
+                Style::default()
+                    .fg(theme.accent)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(" Help │ "),
+            Span::styled(
+                "q",
+                Style::default()
+                    .fg(theme.accent)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(" Quit"),
+        ])])
         .style(Style::default().fg(theme.fg).bg(theme.bg))
         .alignment(ratatui::layout::Alignment::Center);
         frame.render_widget(footer, chunks[2]);

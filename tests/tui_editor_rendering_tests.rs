@@ -161,7 +161,9 @@ fn test_header_shows_validation_status_valid() {
 fn test_header_shows_validation_status_invalid() {
     let state = EditorState::new();
     let mut feedback = ValidationFeedback::new();
-    feedback.errors.push((1, "Missing required field".to_string()));
+    feedback
+        .errors
+        .push((1, "Missing required field".to_string()));
     feedback.errors.push((5, "Invalid syntax".to_string()));
 
     let theme = Theme::default();
@@ -332,10 +334,9 @@ tasks:
 
     // Should show tasks section (if validation passes and content is long enough)
     // The form might show "Tasks" section header
-    let has_tasks = buffer_contains_text(&terminal, "Tasks");
+    let _has_tasks = buffer_contains_text(&terminal, "Tasks");
     // Or it might not be visible in limited terminal height
-    // We just verify it doesn't crash
-    assert!(has_tasks || !has_tasks); // Tautology to document behavior
+    // We just verify it doesn't crash - test passes if we reach here
 }
 
 #[test]
@@ -374,7 +375,9 @@ fn test_validation_status_bar_with_errors() {
     let state = EditorState::new();
     let mut feedback = ValidationFeedback::new();
     feedback.errors.push((1, "Missing name field".to_string()));
-    feedback.errors.push((5, "Invalid agent reference".to_string()));
+    feedback
+        .errors
+        .push((5, "Invalid agent reference".to_string()));
 
     let theme = Theme::default();
     let terminal = render_editor(&state, &feedback, &theme, 80, 24);
@@ -389,7 +392,9 @@ fn test_validation_status_bar_with_errors() {
 fn test_validation_status_bar_with_warnings() {
     let state = EditorState::new();
     let mut feedback = ValidationFeedback::new();
-    feedback.warnings.push((3, "Consider adding description".to_string()));
+    feedback
+        .warnings
+        .push((3, "Consider adding description".to_string()));
     feedback.warnings.push((10, "Unused variable".to_string()));
 
     let theme = Theme::default();
@@ -438,7 +443,7 @@ fn test_validation_modal_not_shown_when_collapsed() {
 
     // Should not show modal title when not expanded
     let has_details = buffer_contains_text(&terminal, "Validation Details");
-    assert!(!has_details || !has_details); // Test should work with old behavior too
+    assert!(!has_details); // Modal should not be shown when not expanded
 }
 
 #[test]
@@ -447,7 +452,9 @@ fn test_validation_modal_shown_when_expanded() {
     state.validation_expanded = true;
     let mut feedback = ValidationFeedback::new();
     feedback.errors.push((1, "Missing name field".to_string()));
-    feedback.errors.push((5, "Invalid agent reference".to_string()));
+    feedback
+        .errors
+        .push((5, "Invalid agent reference".to_string()));
 
     let theme = Theme::default();
     let terminal = render_editor(&state, &feedback, &theme, 80, 30);
@@ -692,7 +699,10 @@ fn test_editor_cursor_line_highlighting() {
 #[test]
 fn test_editor_scroll_offset() {
     let mut state = EditorState::new();
-    state.content = (0..50).map(|i| format!("line {}", i)).collect::<Vec<_>>().join("\n");
+    state.content = (0..50)
+        .map(|i| format!("line {}", i))
+        .collect::<Vec<_>>()
+        .join("\n");
     state.scroll = (10, 0); // Scrolled down 10 lines
 
     let feedback = ValidationFeedback::new();
@@ -706,7 +716,10 @@ fn test_editor_scroll_offset() {
 #[test]
 fn test_editor_scrollbar_with_long_content() {
     let mut state = EditorState::new();
-    state.content = (0..100).map(|i| format!("line {}", i)).collect::<Vec<_>>().join("\n");
+    state.content = (0..100)
+        .map(|i| format!("line {}", i))
+        .collect::<Vec<_>>()
+        .join("\n");
 
     let feedback = ValidationFeedback::new();
     let theme = Theme::default();

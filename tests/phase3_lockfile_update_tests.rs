@@ -520,15 +520,13 @@ impl periplon_sdk::dsl::predefined_tasks::TaskSource for MockTaskSource {
 
     async fn update(
         &mut self,
-    ) -> periplon_sdk::error::Result<periplon_sdk::dsl::predefined_tasks::UpdateResult>
-    {
+    ) -> periplon_sdk::error::Result<periplon_sdk::dsl::predefined_tasks::UpdateResult> {
         unimplemented!()
     }
 
     async fn health_check(
         &self,
-    ) -> periplon_sdk::error::Result<periplon_sdk::dsl::predefined_tasks::HealthStatus>
-    {
+    ) -> periplon_sdk::error::Result<periplon_sdk::dsl::predefined_tasks::HealthStatus> {
         Ok(periplon_sdk::dsl::predefined_tasks::HealthStatus {
             available: true,
             message: None,

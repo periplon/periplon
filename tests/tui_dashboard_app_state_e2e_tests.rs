@@ -188,11 +188,7 @@ fn test_e2e_view_navigation_back_to_workflow_list() {
     let mut state = AppState::new();
 
     // Navigate to various views and back
-    let views = vec![
-        ViewMode::Help,
-        ViewMode::Generator,
-        ViewMode::StateBrowser,
-    ];
+    let views = vec![ViewMode::Help, ViewMode::Generator, ViewMode::StateBrowser];
 
     for view in views {
         state.view_mode = view;
@@ -751,10 +747,7 @@ fn test_e2e_generator_state_maintained() {
     state.view_mode = ViewMode::WorkflowList;
     state.view_mode = ViewMode::Generator;
 
-    assert_eq!(
-        state.generator_state.nl_input,
-        "Create a workflow"
-    );
+    assert_eq!(state.generator_state.nl_input, "Create a workflow");
 }
 
 // ============================================================================

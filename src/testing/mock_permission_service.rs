@@ -54,9 +54,8 @@ enum DefaultDecision {
     Ask,
 }
 
-type PermissionHandler = Arc<
-    dyn Fn(&str, &Value, &ToolPermissionContext) -> PermissionDecision + Send + Sync,
->;
+type PermissionHandler =
+    Arc<dyn Fn(&str, &Value, &ToolPermissionContext) -> PermissionDecision + Send + Sync>;
 
 /// Record of a permission query for testing verification
 #[derive(Debug, Clone)]
@@ -97,13 +96,15 @@ impl MockPermissionService {
 
         // Set default handler for all tools
         let default_reason = reason.clone();
-        let handler: PermissionHandler = Arc::new(move |_, _, _| {
-            PermissionDecision::Deny {
-                reason: default_reason.clone(),
-            }
+        let handler: PermissionHandler = Arc::new(move |_, _, _| PermissionDecision::Deny {
+            reason: default_reason.clone(),
         });
 
-        service.handlers.lock().unwrap().insert("*".to_string(), handler);
+        service
+            .handlers
+            .lock()
+            .unwrap()
+            .insert("*".to_string(), handler);
         service
     }
 
@@ -119,21 +120,23 @@ impl MockPermissionService {
     /// Allow a specific tool unconditionally
     pub fn allow_tool(&mut self, tool_name: impl Into<String>) -> &mut Self {
         let name = tool_name.into();
-        let handler: PermissionHandler = Arc::new(|_, _, _| {
-            PermissionDecision::Allow { updated_input: None }
+        let handler: PermissionHandler = Arc::new(|_, _, _| PermissionDecision::Allow {
+            updated_input: None,
         });
         self.handlers.lock().unwrap().insert(name, handler);
         self
     }
 
     /// Deny a specific tool with a reason
-    pub fn deny_tool(&mut self, tool_name: impl Into<String>, reason: impl Into<String>) -> &mut Self {
+    pub fn deny_tool(
+        &mut self,
+        tool_name: impl Into<String>,
+        reason: impl Into<String>,
+    ) -> &mut Self {
         let name = tool_name.into();
         let reason = reason.into();
-        let handler: PermissionHandler = Arc::new(move |_, _, _| {
-            PermissionDecision::Deny {
-                reason: reason.clone(),
-            }
+        let handler: PermissionHandler = Arc::new(move |_, _, _| PermissionDecision::Deny {
+            reason: reason.clone(),
         });
         self.handlers.lock().unwrap().insert(name, handler);
         self
@@ -164,7 +167,10 @@ impl MockPermissionService {
         F: Fn(&str, &Value, &ToolPermissionContext) -> PermissionDecision + Send + Sync + 'static,
     {
         let name = tool_name.into();
-        self.handlers.lock().unwrap().insert(name, Arc::new(handler));
+        self.handlers
+            .lock()
+            .unwrap()
+            .insert(name, Arc::new(handler));
         self
     }
 
@@ -178,10 +184,8 @@ impl MockPermissionService {
         F: Fn(&Value) -> Value + Send + Sync + 'static,
     {
         let name = tool_name.into();
-        let handler: PermissionHandler = Arc::new(move |_, input, _| {
-            PermissionDecision::Allow {
-                updated_input: Some(transform(input)),
-            }
+        let handler: PermissionHandler = Arc::new(move |_, input, _| PermissionDecision::Allow {
+            updated_input: Some(transform(input)),
         });
         self.handlers.lock().unwrap().insert(name, handler);
         self
@@ -249,7 +253,9 @@ impl PermissionService for MockPermissionService {
         } else {
             // Use default decision
             match self.default_decision {
-                DefaultDecision::Allow => PermissionDecision::Allow { updated_input: None },
+                DefaultDecision::Allow => PermissionDecision::Allow {
+                    updated_input: None,
+                },
                 DefaultDecision::Deny => PermissionDecision::Deny {
                     reason: format!("Tool '{}' is not allowed by default", tool_name),
                 },
@@ -289,7 +295,10 @@ mod tests {
             suggestions: vec![],
         };
 
-        let decision = service.can_use_tool("AnyTool", &json!({}), ctx).await.unwrap();
+        let decision = service
+            .can_use_tool("AnyTool", &json!({}), ctx)
+            .await
+            .unwrap();
         assert!(matches!(decision, PermissionDecision::Allow { .. }));
     }
 
@@ -301,7 +310,10 @@ mod tests {
             suggestions: vec![],
         };
 
-        let decision = service.can_use_tool("AnyTool", &json!({}), ctx).await.unwrap();
+        let decision = service
+            .can_use_tool("AnyTool", &json!({}), ctx)
+            .await
+            .unwrap();
         assert!(matches!(decision, PermissionDecision::Deny { .. }));
     }
 
@@ -315,10 +327,16 @@ mod tests {
             suggestions: vec![],
         };
 
-        let decision = service.can_use_tool("Read", &json!({}), ctx.clone()).await.unwrap();
+        let decision = service
+            .can_use_tool("Read", &json!({}), ctx.clone())
+            .await
+            .unwrap();
         assert!(matches!(decision, PermissionDecision::Allow { .. }));
 
-        let decision = service.can_use_tool("Write", &json!({}), ctx).await.unwrap();
+        let decision = service
+            .can_use_tool("Write", &json!({}), ctx)
+            .await
+            .unwrap();
         assert!(matches!(decision, PermissionDecision::Deny { .. }));
     }
 
@@ -326,9 +344,14 @@ mod tests {
     async fn test_custom_handler() {
         let mut service = MockPermissionService::new();
         service.with_handler("Write", |_, input, _| {
-            let path = input.get("file_path").and_then(|v| v.as_str()).unwrap_or("");
+            let path = input
+                .get("file_path")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             if path.starts_with("/tmp/") {
-                PermissionDecision::Allow { updated_input: None }
+                PermissionDecision::Allow {
+                    updated_input: None,
+                }
             } else {
                 PermissionDecision::Deny {
                     reason: "Only /tmp allowed".to_string(),
@@ -365,7 +388,10 @@ mod tests {
             suggestions: vec![],
         };
 
-        service.can_use_tool("Read", &json!({}), ctx.clone()).await.unwrap();
+        service
+            .can_use_tool("Read", &json!({}), ctx.clone())
+            .await
+            .unwrap();
         service.can_use_tool("Bash", &json!({}), ctx).await.unwrap();
 
         let log = service.decision_log();

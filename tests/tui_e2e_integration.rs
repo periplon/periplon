@@ -22,10 +22,9 @@
 
 #![cfg(feature = "tui")]
 
-use periplon_sdk::dsl::schema::DSLWorkflow;
 use periplon_sdk::tui::state::{
-    AppState, ConfirmAction, EditorError, ErrorSeverity, ExecutionState,
-    ExecutionStatus, InputAction, Modal, ViewMode, ViewerSection, WorkflowEntry,
+    AppState, ConfirmAction, EditorError, ErrorSeverity, ExecutionState, ExecutionStatus,
+    InputAction, Modal, ViewMode, ViewerSection, WorkflowEntry,
 };
 use periplon_sdk::tui::theme::Theme;
 use periplon_sdk::tui::ui::generator::{GeneratorMode, GeneratorState};
@@ -81,7 +80,10 @@ fn test_e2e_workflow_selection_and_loading() {
     // Navigate down
     state.selected_workflow = 1;
     assert_eq!(state.selected_workflow, 1);
-    assert_eq!(state.workflows[state.selected_workflow].name, "workflow2.yaml");
+    assert_eq!(
+        state.workflows[state.selected_workflow].name,
+        "workflow2.yaml"
+    );
 
     // Load selected workflow (path only for testing state)
     state.current_workflow_path = Some(PathBuf::from("workflow2.yaml"));
@@ -200,7 +202,7 @@ fn test_e2e_viewer_to_editor_transition() {
 
     // Setup in viewer mode
     state.view_mode = ViewMode::Viewer;
-    
+
     state.viewer_state.section = ViewerSection::Agents;
 
     // Transition to editor (e.g., press 'e')
@@ -215,7 +217,6 @@ fn test_e2e_complete_navigation_cycle() {
     let mut state = AppState::new();
 
     state.workflows = vec![create_workflow_entry("cycle.yaml", true)];
-    
 
     // Complete cycle: List -> Viewer -> Editor -> List
     state.view_mode = ViewMode::WorkflowList;
@@ -294,7 +295,9 @@ fn test_e2e_input_workflow_creation() {
         match action {
             InputAction::CreateWorkflow => {
                 // Create new workflow entry
-                state.workflows.push(create_workflow_entry(workflow_name, true));
+                state
+                    .workflows
+                    .push(create_workflow_entry(workflow_name, true));
             }
             _ => panic!("Wrong action type"),
         }
@@ -459,7 +462,6 @@ fn test_e2e_editor_discard_changes_flow() {
 
     state.view_mode = ViewMode::Editor;
     state.editor_state.modified = true;
-    
 
     // Show confirm modal
     state.modal = Some(Modal::Confirm {
@@ -566,7 +568,7 @@ fn test_e2e_viewer_section_switching() {
     let mut state = AppState::new();
 
     state.view_mode = ViewMode::Viewer;
-    
+
     state.viewer_state.section = ViewerSection::Overview;
 
     // Navigate through sections
@@ -728,8 +730,7 @@ fn test_e2e_complete_workflow_creation_journey() {
     assert!(!state.generator_state.nl_input.is_empty());
 
     // Step 4: Generate
-    state.generator_state.generated_yaml =
-        Some("name: \"Test\"\nversion: \"1.0.0\"".to_string());
+    state.generator_state.generated_yaml = Some("name: \"Test\"\nversion: \"1.0.0\"".to_string());
     assert!(state.generator_state.generated_yaml.is_some());
 
     // Step 5: Accept and edit
@@ -741,7 +742,9 @@ fn test_e2e_complete_workflow_creation_journey() {
 
     // Step 7: Return to workflow list
     state.view_mode = ViewMode::WorkflowList;
-    state.workflows.push(create_workflow_entry("test.yaml", true));
+    state
+        .workflows
+        .push(create_workflow_entry("test.yaml", true));
 
     assert_eq!(state.view_mode, ViewMode::WorkflowList);
     assert_eq!(state.workflows.len(), 1);
@@ -753,7 +756,6 @@ fn test_e2e_workflow_edit_with_validation_failure() {
 
     // Load workflow
     state.workflows = vec![create_workflow_entry("edit_me.yaml", true)];
-    
 
     // View workflow
     state.view_mode = ViewMode::Viewer;

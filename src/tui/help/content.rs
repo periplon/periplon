@@ -85,7 +85,11 @@ impl HelpContent {
             title: "TUI Overview".to_string(),
             content: include_str!("../../../docs/tui/overview.md").to_string(),
             related: vec!["getting_started".to_string(), "navigation".to_string()],
-            keywords: vec!["intro".to_string(), "introduction".to_string(), "overview".to_string()],
+            keywords: vec![
+                "intro".to_string(),
+                "introduction".to_string(),
+                "overview".to_string(),
+            ],
             category: HelpCategory::GettingStarted,
         });
 
@@ -173,9 +177,18 @@ Each workflow entry shows:
 - Use search (`/`) to quickly find workflows in large lists
 - Press `?` for context-specific help
 - Workflows are auto-discovered from your workflows directory
-"#.to_string(),
-            related: vec!["creating_workflows".to_string(), "keyboard_shortcuts_list".to_string()],
-            keywords: vec!["browse".to_string(), "list".to_string(), "manage".to_string(), "search".to_string()],
+"#
+            .to_string(),
+            related: vec![
+                "creating_workflows".to_string(),
+                "keyboard_shortcuts_list".to_string(),
+            ],
+            keywords: vec![
+                "browse".to_string(),
+                "list".to_string(),
+                "manage".to_string(),
+                "search".to_string(),
+            ],
             category: HelpCategory::WorkflowManagement,
         });
 
@@ -313,9 +326,19 @@ Press `Ctrl+Space` for context-aware suggestions:
 - Use validation (`Ctrl+V`) before executing
 - Form mode helps prevent syntax errors
 - Undo history preserved across saves
-"#.to_string(),
-            related: vec!["yaml_syntax".to_string(), "validation".to_string(), "keyboard_shortcuts_editor".to_string()],
-            keywords: vec!["edit".to_string(), "modify".to_string(), "change".to_string(), "yaml".to_string()],
+"#
+            .to_string(),
+            related: vec![
+                "yaml_syntax".to_string(),
+                "validation".to_string(),
+                "keyboard_shortcuts_editor".to_string(),
+            ],
+            keywords: vec![
+                "edit".to_string(),
+                "modify".to_string(),
+                "change".to_string(),
+                "yaml".to_string(),
+            ],
             category: HelpCategory::Editing,
         });
 
@@ -378,9 +401,19 @@ Press `/` to filter logs by:
 - Filter logs to focus on specific tasks
 - Check task graph for dependency issues
 - Review failed task logs for debugging
-"#.to_string(),
-            related: vec!["task_status".to_string(), "keyboard_shortcuts_monitor".to_string()],
-            keywords: vec!["execute".to_string(), "run".to_string(), "monitor".to_string(), "logs".to_string(), "status".to_string()],
+"#
+            .to_string(),
+            related: vec![
+                "task_status".to_string(),
+                "keyboard_shortcuts_monitor".to_string(),
+            ],
+            keywords: vec![
+                "execute".to_string(),
+                "run".to_string(),
+                "monitor".to_string(),
+                "logs".to_string(),
+                "status".to_string(),
+            ],
             category: HelpCategory::Execution,
         });
 
@@ -430,9 +463,18 @@ See also:
 - [Workflow List Shortcuts](#keyboard_shortcuts_list)
 - [Editor Shortcuts](#keyboard_shortcuts_editor)
 - [Monitor Shortcuts](#keyboard_shortcuts_monitor)
-"#.to_string(),
-            related: vec!["keyboard_shortcuts_list".to_string(), "keyboard_shortcuts_editor".to_string()],
-            keywords: vec!["shortcuts".to_string(), "keys".to_string(), "hotkeys".to_string(), "bindings".to_string()],
+"#
+            .to_string(),
+            related: vec![
+                "keyboard_shortcuts_list".to_string(),
+                "keyboard_shortcuts_editor".to_string(),
+            ],
+            keywords: vec![
+                "shortcuts".to_string(),
+                "keys".to_string(),
+                "hotkeys".to_string(),
+                "bindings".to_string(),
+            ],
             category: HelpCategory::KeyboardShortcuts,
         });
 
@@ -473,9 +515,17 @@ Shortcuts specific to the workflow list view.
 | `sv` | Sort by version |
 
 All global shortcuts also apply. Press `?` for context-specific help.
-"#.to_string(),
-            related: vec!["navigating_workflows".to_string(), "keyboard_shortcuts_global".to_string()],
-            keywords: vec!["list".to_string(), "shortcuts".to_string(), "workflow list".to_string()],
+"#
+            .to_string(),
+            related: vec![
+                "navigating_workflows".to_string(),
+                "keyboard_shortcuts_global".to_string(),
+            ],
+            keywords: vec![
+                "list".to_string(),
+                "shortcuts".to_string(),
+                "workflow list".to_string(),
+            ],
             category: HelpCategory::KeyboardShortcuts,
         });
 
@@ -527,9 +577,18 @@ Shortcuts for the workflow editor.
 | `Ctrl+H` | Find and replace |
 
 All global shortcuts also apply.
-"#.to_string(),
-            related: vec!["editing_workflows".to_string(), "keyboard_shortcuts_global".to_string()],
-            keywords: vec!["editor".to_string(), "shortcuts".to_string(), "edit".to_string(), "keys".to_string()],
+"#
+            .to_string(),
+            related: vec![
+                "editing_workflows".to_string(),
+                "keyboard_shortcuts_global".to_string(),
+            ],
+            keywords: vec![
+                "editor".to_string(),
+                "shortcuts".to_string(),
+                "edit".to_string(),
+                "keys".to_string(),
+            ],
             category: HelpCategory::KeyboardShortcuts,
         });
 
@@ -633,9 +692,15 @@ Scopes:
 - **object**: Key-value maps
 
 See official DSL documentation for complete specification.
-"#.to_string(),
+"#
+            .to_string(),
             related: vec!["editing_workflows".to_string(), "validation".to_string()],
-            keywords: vec!["yaml".to_string(), "syntax".to_string(), "format".to_string(), "schema".to_string()],
+            keywords: vec![
+                "yaml".to_string(),
+                "syntax".to_string(),
+                "format".to_string(),
+                "schema".to_string(),
+            ],
             category: HelpCategory::Advanced,
         });
 
@@ -663,11 +728,7 @@ See official DSL documentation for complete specification.
     pub fn get_category_topics(&self, category: HelpCategory) -> Vec<&HelpTopic> {
         self.categories
             .get(&category)
-            .map(|ids| {
-                ids.iter()
-                    .filter_map(|id| self.topics.get(id))
-                    .collect()
-            })
+            .map(|ids| ids.iter().filter_map(|id| self.topics.get(id)).collect())
             .unwrap_or_default()
     }
 
@@ -678,7 +739,8 @@ See official DSL documentation for complete specification.
 
     /// Get all categories with their topics
     pub fn all_categories(&self) -> Vec<(HelpCategory, Vec<&HelpTopic>)> {
-        let mut categories: Vec<_> = self.categories
+        let mut categories: Vec<_> = self
+            .categories
             .keys()
             .map(|&cat| (cat, self.get_category_topics(cat)))
             .collect();

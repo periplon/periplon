@@ -53,9 +53,15 @@ pub fn calculate_relevance(
 }
 
 /// Check if output_task is a direct dependency of current_task
-fn is_direct_dependency(current_task_id: &str, output_task_id: &str, task_graph: &TaskGraph) -> bool {
+fn is_direct_dependency(
+    current_task_id: &str,
+    output_task_id: &str,
+    task_graph: &TaskGraph,
+) -> bool {
     if let Some(current_task) = task_graph.get_task(current_task_id) {
-        current_task.dependencies.contains(&output_task_id.to_string())
+        current_task
+            .dependencies
+            .contains(&output_task_id.to_string())
     } else {
         false
     }
@@ -241,9 +247,8 @@ fn build_automatic_context(
         .collect();
 
     // Sort by relevance (descending)
-    scored_outputs.sort_by(|(_, _, a), (_, _, b)| {
-        b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal)
-    });
+    scored_outputs
+        .sort_by(|(_, _, a), (_, _, b)| b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal));
 
     context.push_str("=== RELEVANT CONTEXT ===\n\n");
 
@@ -270,7 +275,10 @@ fn build_automatic_context(
         }
 
         // Include full output
-        context.push_str(&format!("Task: {} (relevance: {:.2})\n", task_id, relevance));
+        context.push_str(&format!(
+            "Task: {} (relevance: {:.2})\n",
+            task_id, relevance
+        ));
 
         if output.truncated {
             context.push_str("[Output was truncated]\n");
@@ -354,15 +362,9 @@ mod tests {
         task3.description = "Task 3".to_string();
         task3.agent = Some("agent2".to_string());
 
-        workflow
-            .tasks
-            .insert("task1".to_string(), task1);
-        workflow
-            .tasks
-            .insert("task2".to_string(), task2);
-        workflow
-            .tasks
-            .insert("task3".to_string(), task3);
+        workflow.tasks.insert("task1".to_string(), task1);
+        workflow.tasks.insert("task2".to_string(), task2);
+        workflow.tasks.insert("task3".to_string(), task3);
 
         workflow
     }
@@ -404,13 +406,7 @@ mod tests {
 
         state.store_task_output(output1);
 
-        let context = build_manual_context(
-            &vec!["task1".to_string()],
-            &vec![],
-            &state,
-            10000,
-            10,
-        );
+        let context = build_manual_context(&["task1".to_string()], &[], &state, 10000, 10);
 
         assert!(context.contains("RELEVANT CONTEXT"));
         assert!(context.contains("task1"));

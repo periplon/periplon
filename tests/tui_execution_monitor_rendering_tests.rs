@@ -21,8 +21,8 @@
 use periplon_sdk::dsl::schema::DSLWorkflow;
 use periplon_sdk::tui::theme::Theme;
 use periplon_sdk::tui::views::execution_monitor::{
-    ExecutionMonitorState, ExecutionStatus, LogEntry, LogLevel,
-    MonitorPanel, TaskExecutionState, TaskStatus, TokenUsage,
+    ExecutionMonitorState, ExecutionStatus, LogEntry, LogLevel, MonitorPanel, TaskExecutionState,
+    TaskStatus, TokenUsage,
 };
 use ratatui::backend::{Backend, TestBackend};
 use ratatui::Terminal;
@@ -49,12 +49,7 @@ fn render_monitor(
     let mut terminal = create_terminal(width, height);
     terminal
         .draw(|f| {
-            periplon_sdk::tui::views::execution_monitor::render(
-                f,
-                f.area(),
-                state,
-                theme,
-            );
+            periplon_sdk::tui::views::execution_monitor::render(f, f.area(), state, theme);
         })
         .unwrap();
     terminal
@@ -97,11 +92,7 @@ fn create_test_workflow() -> DSLWorkflow {
 }
 
 /// Create task execution state
-fn create_task_state(
-    task_id: &str,
-    status: TaskStatus,
-    progress: u8,
-) -> TaskExecutionState {
+fn create_task_state(task_id: &str, status: TaskStatus, progress: u8) -> TaskExecutionState {
     TaskExecutionState {
         task_id: task_id.to_string(),
         description: format!("Task {}", task_id),
@@ -312,10 +303,23 @@ fn test_task_list_multiple_tasks() {
     let workflow = create_test_workflow();
     let mut state = ExecutionMonitorState::new(workflow);
 
-    state.tasks.insert("task1".to_string(), create_task_state("task1", TaskStatus::Completed, 100));
-    state.tasks.insert("task2".to_string(), create_task_state("task2", TaskStatus::Running, 50));
-    state.tasks.insert("task3".to_string(), create_task_state("task3", TaskStatus::Pending, 0));
-    state.task_order = vec!["task1".to_string(), "task2".to_string(), "task3".to_string()];
+    state.tasks.insert(
+        "task1".to_string(),
+        create_task_state("task1", TaskStatus::Completed, 100),
+    );
+    state.tasks.insert(
+        "task2".to_string(),
+        create_task_state("task2", TaskStatus::Running, 50),
+    );
+    state.tasks.insert(
+        "task3".to_string(),
+        create_task_state("task3", TaskStatus::Pending, 0),
+    );
+    state.task_order = vec![
+        "task1".to_string(),
+        "task2".to_string(),
+        "task3".to_string(),
+    ];
 
     let theme = Theme::default();
     let terminal = render_monitor(&state, &theme, 120, 40);
@@ -344,7 +348,9 @@ fn test_log_info_entry() {
     let workflow = create_test_workflow();
     let mut state = ExecutionMonitorState::new(workflow);
 
-    state.logs.push(create_log_entry(LogLevel::Info, "Task started"));
+    state
+        .logs
+        .push(create_log_entry(LogLevel::Info, "Task started"));
 
     let theme = Theme::default();
     let terminal = render_monitor(&state, &theme, 120, 40);
@@ -357,7 +363,9 @@ fn test_log_error_entry() {
     let workflow = create_test_workflow();
     let mut state = ExecutionMonitorState::new(workflow);
 
-    state.logs.push(create_log_entry(LogLevel::Error, "Connection failed"));
+    state
+        .logs
+        .push(create_log_entry(LogLevel::Error, "Connection failed"));
 
     let theme = Theme::default();
     let terminal = render_monitor(&state, &theme, 120, 40);
@@ -370,7 +378,9 @@ fn test_log_warning_entry() {
     let workflow = create_test_workflow();
     let mut state = ExecutionMonitorState::new(workflow);
 
-    state.logs.push(create_log_entry(LogLevel::Warning, "Deprecated syntax"));
+    state
+        .logs
+        .push(create_log_entry(LogLevel::Warning, "Deprecated syntax"));
 
     let theme = Theme::default();
     let terminal = render_monitor(&state, &theme, 120, 40);
@@ -383,7 +393,9 @@ fn test_log_debug_entry() {
     let workflow = create_test_workflow();
     let mut state = ExecutionMonitorState::new(workflow);
 
-    state.logs.push(create_log_entry(LogLevel::Debug, "Debug info"));
+    state
+        .logs
+        .push(create_log_entry(LogLevel::Debug, "Debug info"));
 
     let theme = Theme::default();
     let terminal = render_monitor(&state, &theme, 120, 40);
@@ -396,9 +408,15 @@ fn test_log_multiple_entries() {
     let workflow = create_test_workflow();
     let mut state = ExecutionMonitorState::new(workflow);
 
-    state.logs.push(create_log_entry(LogLevel::Info, "Starting"));
-    state.logs.push(create_log_entry(LogLevel::Info, "Processing"));
-    state.logs.push(create_log_entry(LogLevel::Info, "Complete"));
+    state
+        .logs
+        .push(create_log_entry(LogLevel::Info, "Starting"));
+    state
+        .logs
+        .push(create_log_entry(LogLevel::Info, "Processing"));
+    state
+        .logs
+        .push(create_log_entry(LogLevel::Info, "Complete"));
 
     let theme = Theme::default();
     let terminal = render_monitor(&state, &theme, 120, 40);
@@ -681,7 +699,10 @@ fn test_many_tasks() {
 
     for i in 0..50 {
         let task_id = format!("task{}", i);
-        state.tasks.insert(task_id.clone(), create_task_state(&task_id, TaskStatus::Pending, 0));
+        state.tasks.insert(
+            task_id.clone(),
+            create_task_state(&task_id, TaskStatus::Pending, 0),
+        );
         state.task_order.push(task_id);
     }
 
@@ -697,7 +718,10 @@ fn test_many_logs() {
     let mut state = ExecutionMonitorState::new(workflow);
 
     for i in 0..100 {
-        state.logs.push(create_log_entry(LogLevel::Info, &format!("Log entry {}", i)));
+        state.logs.push(create_log_entry(
+            LogLevel::Info,
+            &format!("Log entry {}", i),
+        ));
     }
 
     let theme = Theme::default();
@@ -720,7 +744,17 @@ fn test_long_error_message() {
     let _terminal = render_monitor(&state, &theme, 120, 40);
 
     // Should handle long error messages without panic
-    assert_eq!(state.tasks.get("task1").unwrap().error.as_ref().unwrap().len(), 500);
+    assert_eq!(
+        state
+            .tasks
+            .get("task1")
+            .unwrap()
+            .error
+            .as_ref()
+            .unwrap()
+            .len(),
+        500
+    );
 }
 
 #[test]

@@ -302,7 +302,7 @@ fn test_lockfile_concurrent_readers_during_update() {
         let handle = thread::spawn(move || {
             thread::sleep(Duration::from_millis(i * 20));
             if let Ok(loaded) = LockFile::load(&*path) {
-                assert!(loaded.tasks.len() >= 1);
+                assert!(!loaded.tasks.is_empty());
                 let mut c = count.lock().unwrap();
                 *c += 1;
             }

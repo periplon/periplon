@@ -8,15 +8,8 @@ use ratatui::Frame;
 
 // Re-export types from the views module
 pub use crate::tui::views::execution_monitor::{
-    ExecutionMonitorState,
-    ExecutionStatus,
-    TaskExecutionState,
-    TaskStatus,
-    LogEntry,
-    LogLevel,
-    ExecutionStatistics,
-    MonitorPanel,
-    TokenUsage,
+    ExecutionMonitorState, ExecutionStatistics, ExecutionStatus, LogEntry, LogLevel, MonitorPanel,
+    TaskExecutionState, TaskStatus, TokenUsage,
 };
 
 /// Execution monitor view component

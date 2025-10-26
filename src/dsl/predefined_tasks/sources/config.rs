@@ -112,7 +112,6 @@ pub enum UpdatePolicy {
     Always, // Update on every access (development mode)
 }
 
-
 fn default_true() -> bool {
     true
 }

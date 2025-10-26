@@ -114,7 +114,9 @@ impl FileManagerState {
         let current_dir = self.current_dir.clone();
         self.load_directory_recursive(&current_dir, 0)?;
         self.apply_sort();
-        self.selected_index = self.selected_index.min(self.entries.len().saturating_sub(1));
+        self.selected_index = self
+            .selected_index
+            .min(self.entries.len().saturating_sub(1));
         self.update_list_state();
         Ok(())
     }
@@ -145,20 +147,16 @@ impl FileManagerState {
             .collect();
 
         // Sort entries: directories first, then files
-        entries.sort_by(|a, b| {
-            match (a.1.is_dir(), b.1.is_dir()) {
-                (true, false) => std::cmp::Ordering::Less,
-                (false, true) => std::cmp::Ordering::Greater,
-                _ => a.0.cmp(&b.0),
-            }
+        entries.sort_by(|a, b| match (a.1.is_dir(), b.1.is_dir()) {
+            (true, false) => std::cmp::Ordering::Less,
+            (false, true) => std::cmp::Ordering::Greater,
+            _ => a.0.cmp(&b.0),
         });
 
         for (path, metadata) in entries {
             let is_dir = metadata.is_dir();
             let is_workflow = !is_dir && is_workflow_file(&path);
-            let modified = metadata
-                .modified()
-                .unwrap_or_else(|_| SystemTime::now());
+            let modified = metadata.modified().unwrap_or_else(|_| SystemTime::now());
             let size = if is_dir { 0 } else { metadata.len() };
 
             let entry = FileEntry {
@@ -206,21 +204,17 @@ impl FileManagerState {
     fn apply_sort(&mut self) {
         match self.sort_mode {
             FileSortMode::NameAsc => {
-                self.entries.sort_by(|a, b| {
-                    match (a.is_dir, b.is_dir) {
-                        (true, false) => std::cmp::Ordering::Less,
-                        (false, true) => std::cmp::Ordering::Greater,
-                        _ => a.name.cmp(&b.name),
-                    }
+                self.entries.sort_by(|a, b| match (a.is_dir, b.is_dir) {
+                    (true, false) => std::cmp::Ordering::Less,
+                    (false, true) => std::cmp::Ordering::Greater,
+                    _ => a.name.cmp(&b.name),
                 });
             }
             FileSortMode::NameDesc => {
-                self.entries.sort_by(|a, b| {
-                    match (a.is_dir, b.is_dir) {
-                        (true, false) => std::cmp::Ordering::Less,
-                        (false, true) => std::cmp::Ordering::Greater,
-                        _ => b.name.cmp(&a.name),
-                    }
+                self.entries.sort_by(|a, b| match (a.is_dir, b.is_dir) {
+                    (true, false) => std::cmp::Ordering::Less,
+                    (false, true) => std::cmp::Ordering::Greater,
+                    _ => b.name.cmp(&a.name),
                 });
             }
             FileSortMode::ModifiedAsc => {
@@ -348,7 +342,8 @@ impl FileManagerState {
                     }
                     Err(e) => {
                         self.loaded_workflow = Some(workflow);
-                        self.validation_errors.push(format!("Validation error: {}", e));
+                        self.validation_errors
+                            .push(format!("Validation error: {}", e));
                     }
                 }
             }
@@ -427,9 +422,8 @@ impl FileManagerState {
                     Error::InvalidInput(format!("Failed to delete directory: {}", e))
                 })?;
             } else {
-                fs::remove_file(&entry.path).map_err(|e| {
-                    Error::InvalidInput(format!("Failed to delete file: {}", e))
-                })?;
+                fs::remove_file(&entry.path)
+                    .map_err(|e| Error::InvalidInput(format!("Failed to delete file: {}", e)))?;
             }
             self.load_directory()?;
         }
@@ -469,9 +463,8 @@ impl FileManagerState {
             FileActionMode::Copy => {
                 if let Some(entry) = self.selected_entry() {
                     let new_path = entry.path.parent().unwrap().join(&self.input_buffer);
-                    fs::copy(&entry.path, &new_path).map_err(|e| {
-                        Error::InvalidInput(format!("Failed to copy file: {}", e))
-                    })?;
+                    fs::copy(&entry.path, &new_path)
+                        .map_err(|e| Error::InvalidInput(format!("Failed to copy file: {}", e)))?;
                     self.load_directory()?;
                 }
             }
@@ -674,12 +667,7 @@ pub fn render_file_manager(
 }
 
 /// Render file tree view
-fn render_file_tree(
-    frame: &mut Frame,
-    area: Rect,
-    state: &mut FileManagerState,
-    theme: &Theme,
-) {
+fn render_file_tree(frame: &mut Frame, area: Rect, state: &mut FileManagerState, theme: &Theme) {
     // Layout: Header | Filter | Tree | Actions | Status
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -695,7 +683,11 @@ fn render_file_tree(
     // Header
     let header_text = format!("Workflow File Manager - {}", state.current_dir.display());
     let header = Paragraph::new(header_text)
-        .style(Style::default().fg(theme.primary).add_modifier(Modifier::BOLD))
+        .style(
+            Style::default()
+                .fg(theme.primary)
+                .add_modifier(Modifier::BOLD),
+        )
         .alignment(Alignment::Center)
         .block(Block::default().borders(Borders::ALL));
     frame.render_widget(header, chunks[0]);
@@ -746,15 +738,9 @@ fn render_file_tree(
                         }),
                 ),
                 Span::raw("  "),
-                Span::styled(
-                    entry.format_size(),
-                    Style::default().fg(theme.muted),
-                ),
+                Span::styled(entry.format_size(), Style::default().fg(theme.muted)),
                 Span::raw("  "),
-                Span::styled(
-                    entry.format_modified(),
-                    Style::default().fg(theme.muted),
-                ),
+                Span::styled(entry.format_modified(), Style::default().fg(theme.muted)),
             ]);
 
             ListItem::new(line)
@@ -817,12 +803,7 @@ fn render_file_tree(
 }
 
 /// Render file preview
-fn render_file_preview(
-    frame: &mut Frame,
-    area: Rect,
-    state: &mut FileManagerState,
-    theme: &Theme,
-) {
+fn render_file_preview(frame: &mut Frame, area: Rect, state: &mut FileManagerState, theme: &Theme) {
     if let Some(content) = &state.preview_content {
         // Determine if we need a validation section
         let has_validation = state.loaded_workflow.is_some() || !state.validation_errors.is_empty();
@@ -856,7 +837,11 @@ fn render_file_preview(
             "Preview".to_string()
         };
         let header = Paragraph::new(header_text)
-            .style(Style::default().fg(theme.primary).add_modifier(Modifier::BOLD))
+            .style(
+                Style::default()
+                    .fg(theme.primary)
+                    .add_modifier(Modifier::BOLD),
+            )
             .alignment(Alignment::Center)
             .block(Block::default().borders(Borders::ALL));
         frame.render_widget(header, chunks[0]);
@@ -881,7 +866,11 @@ fn render_file_preview(
             };
 
             let validation = Paragraph::new(validation_text)
-                .style(Style::default().fg(validation_color).add_modifier(Modifier::BOLD))
+                .style(
+                    Style::default()
+                        .fg(validation_color)
+                        .add_modifier(Modifier::BOLD),
+                )
                 .alignment(Alignment::Center)
                 .block(Block::default().borders(Borders::ALL).title(" Validation "));
             frame.render_widget(validation, chunks[1]);
@@ -1000,13 +989,12 @@ fn highlight_yaml<'a>(content: &'a str, theme: &Theme) -> Text<'a> {
                 Span::raw(indent),
                 Span::styled(
                     key.to_string(),
-                    Style::default().fg(theme.primary).add_modifier(Modifier::BOLD),
+                    Style::default()
+                        .fg(theme.primary)
+                        .add_modifier(Modifier::BOLD),
                 ),
                 Span::styled(":", Style::default().fg(theme.fg)),
-                Span::styled(
-                    value[1..].to_string(),
-                    Style::default().fg(theme.fg),
-                ),
+                Span::styled(value[1..].to_string(), Style::default().fg(theme.fg)),
             ]));
         }
         // List items
@@ -1015,10 +1003,7 @@ fn highlight_yaml<'a>(content: &'a str, theme: &Theme) -> Text<'a> {
             lines.push(Line::from(vec![
                 Span::raw(indent),
                 Span::styled("-", Style::default().fg(Color::Yellow)),
-                Span::styled(
-                    stripped.to_string(),
-                    Style::default().fg(theme.fg),
-                ),
+                Span::styled(stripped.to_string(), Style::default().fg(theme.fg)),
             ]));
         }
         // Regular lines
@@ -1113,14 +1098,10 @@ mod tests {
             .unwrap();
         fs::create_dir(temp_dir.path().join("subdir")).unwrap();
 
-        let mut state = FileManagerState::new(temp_dir.path().to_path_buf()).unwrap();
+        let state = FileManagerState::new(temp_dir.path().to_path_buf()).unwrap();
         assert!(state.entries.len() >= 2);
 
-        let workflow_files: Vec<_> = state
-            .entries
-            .iter()
-            .filter(|e| e.is_workflow)
-            .collect();
+        let workflow_files: Vec<_> = state.entries.iter().filter(|e| e.is_workflow).collect();
         assert_eq!(workflow_files.len(), 2);
     }
 

@@ -114,16 +114,19 @@ impl StateBrowserState {
     fn apply_sort(&mut self) {
         match self.sort_mode {
             StateSortMode::NameAsc => {
-                self.states.sort_by(|a, b| a.workflow_name.cmp(&b.workflow_name));
+                self.states
+                    .sort_by(|a, b| a.workflow_name.cmp(&b.workflow_name));
             }
             StateSortMode::NameDesc => {
-                self.states.sort_by(|a, b| b.workflow_name.cmp(&a.workflow_name));
+                self.states
+                    .sort_by(|a, b| b.workflow_name.cmp(&a.workflow_name));
             }
             StateSortMode::ModifiedAsc => {
                 self.states.sort_by_key(|s| s.checkpoint_at);
             }
             StateSortMode::ModifiedDesc => {
-                self.states.sort_by(|a, b| b.checkpoint_at.cmp(&a.checkpoint_at));
+                self.states
+                    .sort_by(|a, b| b.checkpoint_at.cmp(&a.checkpoint_at));
             }
             StateSortMode::ProgressAsc => {
                 self.states.sort_by(|a, b| {
@@ -421,12 +424,7 @@ pub fn render_state_browser(
 }
 
 /// Render state list view
-fn render_state_list(
-    frame: &mut Frame,
-    area: Rect,
-    state: &mut StateBrowserState,
-    theme: &Theme,
-) {
+fn render_state_list(frame: &mut Frame, area: Rect, state: &mut StateBrowserState, theme: &Theme) {
     // Layout: Header | Search | List | Status
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -440,7 +438,11 @@ fn render_state_list(
 
     // Header
     let header = Paragraph::new("Workflow State Browser")
-        .style(Style::default().fg(theme.primary).add_modifier(Modifier::BOLD))
+        .style(
+            Style::default()
+                .fg(theme.primary)
+                .add_modifier(Modifier::BOLD),
+        )
         .alignment(Alignment::Center)
         .block(Block::default().borders(Borders::ALL));
     frame.render_widget(header, chunks[0]);
@@ -479,12 +481,11 @@ fn render_state_list(
                 Span::raw(" "),
                 Span::styled(
                     entry.workflow_name.clone(),
-                    Style::default().fg(theme.primary).add_modifier(Modifier::BOLD),
+                    Style::default()
+                        .fg(theme.primary)
+                        .add_modifier(Modifier::BOLD),
                 ),
-                Span::raw(format!(
-                    " v{} ",
-                    entry.workflow_version
-                )),
+                Span::raw(format!(" v{} ", entry.workflow_version)),
                 progress_bar,
                 Span::raw(format!(
                     " ({}/{} tasks) ",
@@ -536,9 +537,9 @@ fn render_state_details(
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(3),  // Header
-                Constraint::Min(10),    // Details
-                Constraint::Length(2),  // Controls
+                Constraint::Length(3), // Header
+                Constraint::Min(10),   // Details
+                Constraint::Length(2), // Controls
             ])
             .split(area);
 
@@ -547,7 +548,11 @@ fn render_state_details(
             "Workflow State: {} v{}",
             workflow_state.workflow_name, workflow_state.workflow_version
         ))
-        .style(Style::default().fg(theme.primary).add_modifier(Modifier::BOLD))
+        .style(
+            Style::default()
+                .fg(theme.primary)
+                .add_modifier(Modifier::BOLD),
+        )
         .alignment(Alignment::Center)
         .block(Block::default().borders(Borders::ALL));
         frame.render_widget(header, chunks[0]);
@@ -585,12 +590,11 @@ fn render_state_details(
 
         // Controls
         let can_resume = workflow_state.can_resume();
-        let resume_text = if can_resume {
-            "r: Resume | "
-        } else {
-            ""
-        };
-        let help_text = format!("{}d: Delete | Esc/q: Back | ↑/↓: Scroll | PgUp/PgDn: Page", resume_text);
+        let resume_text = if can_resume { "r: Resume | " } else { "" };
+        let help_text = format!(
+            "{}d: Delete | Esc/q: Back | ↑/↓: Scroll | PgUp/PgDn: Page",
+            resume_text
+        );
         let controls = Paragraph::new(help_text)
             .style(Style::default().fg(theme.muted))
             .alignment(Alignment::Center);

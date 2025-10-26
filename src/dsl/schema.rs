@@ -641,15 +641,11 @@ pub struct StageSpec {
 /// Execution mode
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum ExecutionMode {
+    #[default]
     Sequential,
     Parallel,
-}
-
-impl Default for ExecutionMode {
-    fn default() -> Self {
-        ExecutionMode::Sequential
-    }
 }
 
 /// Hooks specification
@@ -1718,11 +1714,11 @@ pub struct LimitsConfig {
 impl Default for LimitsConfig {
     fn default() -> Self {
         Self {
-            max_stdout_bytes: 1_048_576,    // 1MB
-            max_stderr_bytes: 262_144,      // 256KB
-            max_combined_bytes: 1_572_864,  // 1.5MB
+            max_stdout_bytes: 1_048_576,   // 1MB
+            max_stderr_bytes: 262_144,     // 256KB
+            max_combined_bytes: 1_572_864, // 1.5MB
             truncation_strategy: TruncationStrategy::Tail,
-            max_context_bytes: 102_400,     // 100KB
+            max_context_bytes: 102_400, // 100KB
             max_context_tasks: 10,
             external_storage_threshold: Some(5_242_880), // 5MB
             external_storage_dir: ".workflow_state/task_outputs".to_string(),
@@ -1783,17 +1779,11 @@ pub enum TruncationStrategy {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum CleanupStrategy {
     /// Keep most recent N tasks
-    MostRecent {
-        keep_count: usize,
-    },
+    MostRecent { keep_count: usize },
     /// Keep highest relevance scores
-    HighestRelevance {
-        keep_count: usize,
-    },
+    HighestRelevance { keep_count: usize },
     /// LRU (Least Recently Used)
-    Lru {
-        keep_count: usize,
-    },
+    Lru { keep_count: usize },
     /// Keep only direct dependencies
     DirectDependencies,
 }
@@ -1913,7 +1903,7 @@ mod tests {
         child.inherit_from_parent(&parent);
 
         // Child should inherit inject_context=true from parent
-        assert_eq!(child.inject_context, true);
+        assert!(child.inject_context);
     }
 
     #[test]
@@ -1963,7 +1953,7 @@ mod tests {
         let error_handling = child.on_error.as_ref().unwrap();
         assert_eq!(error_handling.retry, 3);
         assert_eq!(error_handling.retry_delay_secs, 5);
-        assert_eq!(error_handling.exponential_backoff, true);
+        assert!(error_handling.exponential_backoff);
     }
 
     #[test]
@@ -1986,7 +1976,7 @@ mod tests {
 
         // Verify all inheritable attributes are inherited
         assert_eq!(child.agent, Some("shared_agent".to_string()));
-        assert_eq!(child.inject_context, true);
+        assert!(child.inject_context);
         assert_eq!(child.priority, 5);
         assert!(child.on_error.is_some());
         assert_eq!(child.on_error.as_ref().unwrap().retry, 2);
@@ -2013,7 +2003,7 @@ mod tests {
         // Child should inherit loop control from parent
         assert!(child.loop_control.is_some());
         let control = child.loop_control.as_ref().unwrap();
-        assert_eq!(control.collect_results, true);
+        assert!(control.collect_results);
         assert_eq!(control.result_key, Some("results".to_string()));
         assert_eq!(control.timeout_secs, Some(300));
     }

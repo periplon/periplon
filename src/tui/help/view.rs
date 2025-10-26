@@ -15,7 +15,10 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, Wrap},
+    widgets::{
+        Block, Borders, List, ListItem, ListState, Paragraph, Scrollbar, ScrollbarOrientation,
+        ScrollbarState, Wrap,
+    },
     Frame,
 };
 
@@ -364,8 +367,8 @@ impl HelpView {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Min(0),     // Main content
-                Constraint::Length(1),  // Status bar
+                Constraint::Min(0),    // Main content
+                Constraint::Length(1), // Status bar
             ])
             .split(area);
 
@@ -381,15 +384,21 @@ impl HelpView {
     }
 
     /// Render status bar with keybindings
-    fn render_status_bar(&self, frame: &mut Frame, area: Rect, state: &HelpViewState, theme: &Theme) {
+    fn render_status_bar(
+        &self,
+        frame: &mut Frame,
+        area: Rect,
+        state: &HelpViewState,
+        theme: &Theme,
+    ) {
         let status_text = match state.mode {
             HelpViewMode::Browse => "↑↓/j/k: Select Topic | ←→/h/l: Change Category | Enter: View Topic | Esc/q/?: Exit Help",
             HelpViewMode::Topic => "↑↓/j/k: Scroll | PgUp/PgDn: Page | Tab/n: Next Topic | Shift+Tab/p: Prev | Esc/q: Back to Browse",
             HelpViewMode::Search => "↑↓: Select Result | Enter: View Topic | Esc/q: Back to Browse",
         };
 
-        let status = Paragraph::new(status_text)
-            .style(Style::default().fg(theme.muted).bg(theme.bg));
+        let status =
+            Paragraph::new(status_text).style(Style::default().fg(theme.muted).bg(theme.bg));
 
         frame.render_widget(status, area);
     }
@@ -409,7 +418,13 @@ impl HelpView {
     }
 
     /// Render category list
-    fn render_categories(&self, frame: &mut Frame, area: Rect, state: &HelpViewState, theme: &Theme) {
+    fn render_categories(
+        &self,
+        frame: &mut Frame,
+        area: Rect,
+        state: &HelpViewState,
+        theme: &Theme,
+    ) {
         let categories = state.search_engine.content().all_categories();
         let items: Vec<ListItem> = categories
             .iter()
@@ -448,7 +463,13 @@ impl HelpView {
     }
 
     /// Render topic list for selected category
-    fn render_topic_list(&self, frame: &mut Frame, area: Rect, state: &HelpViewState, theme: &Theme) {
+    fn render_topic_list(
+        &self,
+        frame: &mut Frame,
+        area: Rect,
+        state: &HelpViewState,
+        theme: &Theme,
+    ) {
         let categories = state.search_engine.content().all_categories();
         let (category, topics) = &categories[state.selected_category];
 
@@ -556,8 +577,7 @@ impl HelpView {
             ));
         }
 
-        Paragraph::new(Line::from(spans))
-            .style(Style::default().fg(theme.fg))
+        Paragraph::new(Line::from(spans)).style(Style::default().fg(theme.fg))
     }
 
     /// Render search mode

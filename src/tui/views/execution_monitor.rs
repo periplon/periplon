@@ -43,9 +43,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
     text::{Line, Span, Text},
-    widgets::{
-        Block, Borders, Gauge, List, ListItem, Paragraph, Wrap,
-    },
+    widgets::{Block, Borders, Gauge, List, ListItem, Paragraph, Wrap},
     Frame,
 };
 use std::collections::HashMap;
@@ -351,9 +349,15 @@ impl ExecutionMonitorState {
             total_tasks: task_count,
             completed_tasks: state.get_completed_tasks().len(),
             failed_tasks: state.get_failed_tasks().len(),
-            running_tasks: tasks.values().filter(|t| t.status == TaskStatus::Running).count(),
+            running_tasks: tasks
+                .values()
+                .filter(|t| t.status == TaskStatus::Running)
+                .count(),
             pending_tasks: state.get_pending_tasks().len(),
-            skipped_tasks: tasks.values().filter(|t| t.status == TaskStatus::Skipped).count(),
+            skipped_tasks: tasks
+                .values()
+                .filter(|t| t.status == TaskStatus::Skipped)
+                .count(),
             total_cost: 0.0,
             total_input_tokens: 0,
             total_output_tokens: 0,
@@ -419,12 +423,22 @@ impl ExecutionMonitorState {
         self.stats.completed_tasks = state.get_completed_tasks().len();
         self.stats.failed_tasks = state.get_failed_tasks().len();
         self.stats.pending_tasks = state.get_pending_tasks().len();
-        self.stats.running_tasks = self.tasks.values().filter(|t| t.status == TaskStatus::Running).count();
+        self.stats.running_tasks = self
+            .tasks
+            .values()
+            .filter(|t| t.status == TaskStatus::Running)
+            .count();
         self.recalculate_avg_duration();
     }
 
     /// Add a log entry
-    pub fn add_log(&mut self, level: LogLevel, message: String, task_id: Option<String>, agent_id: Option<String>) {
+    pub fn add_log(
+        &mut self,
+        level: LogLevel,
+        message: String,
+        task_id: Option<String>,
+        agent_id: Option<String>,
+    ) {
         self.logs.push(LogEntry {
             timestamp: SystemTime::now(),
             level,
@@ -469,11 +483,21 @@ impl ExecutionMonitorState {
     fn update_statistics(&mut self, prev_status: TaskStatus, new_status: TaskStatus) {
         // Decrement previous status count
         match prev_status {
-            TaskStatus::Pending => self.stats.pending_tasks = self.stats.pending_tasks.saturating_sub(1),
-            TaskStatus::Running => self.stats.running_tasks = self.stats.running_tasks.saturating_sub(1),
-            TaskStatus::Completed => self.stats.completed_tasks = self.stats.completed_tasks.saturating_sub(1),
-            TaskStatus::Failed => self.stats.failed_tasks = self.stats.failed_tasks.saturating_sub(1),
-            TaskStatus::Skipped => self.stats.skipped_tasks = self.stats.skipped_tasks.saturating_sub(1),
+            TaskStatus::Pending => {
+                self.stats.pending_tasks = self.stats.pending_tasks.saturating_sub(1)
+            }
+            TaskStatus::Running => {
+                self.stats.running_tasks = self.stats.running_tasks.saturating_sub(1)
+            }
+            TaskStatus::Completed => {
+                self.stats.completed_tasks = self.stats.completed_tasks.saturating_sub(1)
+            }
+            TaskStatus::Failed => {
+                self.stats.failed_tasks = self.stats.failed_tasks.saturating_sub(1)
+            }
+            TaskStatus::Skipped => {
+                self.stats.skipped_tasks = self.stats.skipped_tasks.saturating_sub(1)
+            }
         }
 
         // Increment new status count
@@ -529,7 +553,8 @@ impl ExecutionMonitorState {
             return 100;
         }
 
-        let completed = self.stats.completed_tasks + self.stats.failed_tasks + self.stats.skipped_tasks;
+        let completed =
+            self.stats.completed_tasks + self.stats.failed_tasks + self.stats.skipped_tasks;
         ((completed as f64 / self.stats.total_tasks as f64) * 100.0) as u16
     }
 
@@ -646,10 +671,10 @@ pub fn render(frame: &mut Frame, area: Rect, state: &ExecutionMonitorState, them
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(5),  // Header with progress
-            Constraint::Min(0),     // Main content area
-            Constraint::Length(4),  // Statistics panel
-            Constraint::Length(1),  // Shortcuts bar
+            Constraint::Length(5), // Header with progress
+            Constraint::Min(0),    // Main content area
+            Constraint::Length(4), // Statistics panel
+            Constraint::Length(1), // Shortcuts bar
         ])
         .split(area);
 
@@ -720,7 +745,9 @@ fn render_header(frame: &mut Frame, area: Rect, state: &ExecutionMonitorState, t
     let title_line = Line::from(vec![
         Span::styled(
             "Execution Monitor",
-            Style::default().fg(theme.primary).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(theme.primary)
+                .add_modifier(Modifier::BOLD),
         ),
         Span::styled(" | Workflow: ", Style::default().fg(theme.muted)),
         Span::styled(&state.workflow.name, Style::default().fg(theme.accent)),
@@ -793,7 +820,8 @@ fn render_task_list(frame: &mut Frame, area: Rect, state: &ExecutionMonitorState
                     TaskStatus::Skipped => ("⊘", theme.warning),
                 };
 
-                let duration_str = if let (Some(start), end_time) = (task.start_time, task.end_time) {
+                let duration_str = if let (Some(start), end_time) = (task.start_time, task.end_time)
+                {
                     if let Some(end) = end_time {
                         if let Ok(duration) = end.duration_since(start) {
                             format!(" ({})", format_duration(duration))
@@ -838,11 +866,7 @@ fn render_task_list(frame: &mut Frame, area: Rect, state: &ExecutionMonitorState
                 .border_style(border_style)
                 .title(" Task Status "),
         )
-        .highlight_style(
-            Style::default()
-                .bg(theme.bg)
-                .add_modifier(Modifier::BOLD),
-        );
+        .highlight_style(Style::default().bg(theme.bg).add_modifier(Modifier::BOLD));
 
     frame.render_widget(list, area);
 }
@@ -910,7 +934,12 @@ fn render_log_output(frame: &mut Frame, area: Rect, state: &ExecutionMonitorStat
 }
 
 /// Render task details panel
-fn render_task_details(frame: &mut Frame, area: Rect, state: &ExecutionMonitorState, theme: &Theme) {
+fn render_task_details(
+    frame: &mut Frame,
+    area: Rect,
+    state: &ExecutionMonitorState,
+    theme: &Theme,
+) {
     let is_focused = state.focus == MonitorPanel::TaskDetails;
 
     let border_style = if is_focused {
@@ -923,19 +952,34 @@ fn render_task_details(frame: &mut Frame, area: Rect, state: &ExecutionMonitorSt
         if let Some(task) = state.tasks.get(task_id) {
             let mut lines = vec![
                 Line::from(vec![
-                    Span::styled("Task ID: ", Style::default().fg(theme.muted).add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        "Task ID: ",
+                        Style::default()
+                            .fg(theme.muted)
+                            .add_modifier(Modifier::BOLD),
+                    ),
                     Span::styled(&task.task_id, Style::default().fg(theme.fg)),
                 ]),
                 Line::from(""),
                 Line::from(vec![
-                    Span::styled("Description: ", Style::default().fg(theme.muted).add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        "Description: ",
+                        Style::default()
+                            .fg(theme.muted)
+                            .add_modifier(Modifier::BOLD),
+                    ),
                     Span::styled(&task.description, Style::default().fg(theme.fg)),
                 ]),
                 Line::from(""),
                 {
                     let status_text = format!("{:?}", task.status);
                     Line::from(vec![
-                        Span::styled("Status: ", Style::default().fg(theme.muted).add_modifier(Modifier::BOLD)),
+                        Span::styled(
+                            "Status: ",
+                            Style::default()
+                                .fg(theme.muted)
+                                .add_modifier(Modifier::BOLD),
+                        ),
                         Span::styled(status_text, Style::default().fg(theme.accent)),
                     ])
                 },
@@ -944,7 +988,12 @@ fn render_task_details(frame: &mut Frame, area: Rect, state: &ExecutionMonitorSt
             if let Some(ref agent) = task.agent {
                 lines.push(Line::from(""));
                 lines.push(Line::from(vec![
-                    Span::styled("Agent: ", Style::default().fg(theme.muted).add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        "Agent: ",
+                        Style::default()
+                            .fg(theme.muted)
+                            .add_modifier(Modifier::BOLD),
+                    ),
                     Span::styled(agent, Style::default().fg(theme.fg)),
                 ]));
             }
@@ -952,14 +1001,24 @@ fn render_task_details(frame: &mut Frame, area: Rect, state: &ExecutionMonitorSt
             if let Some(start) = task.start_time {
                 lines.push(Line::from(""));
                 lines.push(Line::from(vec![
-                    Span::styled("Started: ", Style::default().fg(theme.muted).add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        "Started: ",
+                        Style::default()
+                            .fg(theme.muted)
+                            .add_modifier(Modifier::BOLD),
+                    ),
                     Span::styled(format_timestamp(start), Style::default().fg(theme.fg)),
                 ]));
 
                 if let Some(end) = task.end_time {
                     if let Ok(duration) = end.duration_since(start) {
                         lines.push(Line::from(vec![
-                            Span::styled("Duration: ", Style::default().fg(theme.muted).add_modifier(Modifier::BOLD)),
+                            Span::styled(
+                                "Duration: ",
+                                Style::default()
+                                    .fg(theme.muted)
+                                    .add_modifier(Modifier::BOLD),
+                            ),
                             Span::styled(format_duration(duration), Style::default().fg(theme.fg)),
                         ]));
                     }
@@ -968,26 +1027,40 @@ fn render_task_details(frame: &mut Frame, area: Rect, state: &ExecutionMonitorSt
 
             if let Some(ref error) = task.error {
                 lines.push(Line::from(""));
-                lines.push(Line::from(vec![
-                    Span::styled("Error: ", Style::default().fg(theme.error).add_modifier(Modifier::BOLD)),
-                ]));
-                lines.push(Line::from(Span::styled(error, Style::default().fg(theme.error))));
+                lines.push(Line::from(vec![Span::styled(
+                    "Error: ",
+                    Style::default()
+                        .fg(theme.error)
+                        .add_modifier(Modifier::BOLD),
+                )]));
+                lines.push(Line::from(Span::styled(
+                    error,
+                    Style::default().fg(theme.error),
+                )));
             }
 
             if let Some(cost) = task.cost {
                 lines.push(Line::from(""));
                 let cost_text = format!("${:.4}", cost);
                 lines.push(Line::from(vec![
-                    Span::styled("Cost: ", Style::default().fg(theme.muted).add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        "Cost: ",
+                        Style::default()
+                            .fg(theme.muted)
+                            .add_modifier(Modifier::BOLD),
+                    ),
                     Span::styled(cost_text, Style::default().fg(theme.fg)),
                 ]));
             }
 
             if let Some(tokens) = task.tokens {
                 lines.push(Line::from(""));
-                lines.push(Line::from(vec![
-                    Span::styled("Tokens: ", Style::default().fg(theme.muted).add_modifier(Modifier::BOLD)),
-                ]));
+                lines.push(Line::from(vec![Span::styled(
+                    "Tokens: ",
+                    Style::default()
+                        .fg(theme.muted)
+                        .add_modifier(Modifier::BOLD),
+                )]));
                 let input_text = format!("{}", tokens.input_tokens);
                 lines.push(Line::from(vec![
                     Span::raw("  Input: "),
@@ -1004,7 +1077,10 @@ fn render_task_details(frame: &mut Frame, area: Rect, state: &ExecutionMonitorSt
         } else {
             Text::from(vec![
                 Line::from(""),
-                Line::from(Span::styled("Task not found", Style::default().fg(theme.error))),
+                Line::from(Span::styled(
+                    "Task not found",
+                    Style::default().fg(theme.error),
+                )),
             ])
         }
     } else {
@@ -1012,7 +1088,9 @@ fn render_task_details(frame: &mut Frame, area: Rect, state: &ExecutionMonitorSt
             Line::from(""),
             Line::from(Span::styled(
                 "No task selected",
-                Style::default().fg(theme.muted).add_modifier(Modifier::ITALIC),
+                Style::default()
+                    .fg(theme.muted)
+                    .add_modifier(Modifier::ITALIC),
             )),
             Line::from(""),
             Line::from(Span::styled(
@@ -1103,13 +1181,16 @@ fn render_statistics(frame: &mut Frame, area: Rect, state: &ExecutionMonitorStat
 /// Render shortcuts bar
 fn render_shortcuts(frame: &mut Frame, area: Rect, state: &ExecutionMonitorState, theme: &Theme) {
     let shortcuts = match state.status {
-        ExecutionStatus::Running => "Ctrl+P: Pause | Ctrl+C: Cancel | Tab: Switch Panel | Esc: Back",
-        ExecutionStatus::Paused => "Ctrl+P: Resume | Ctrl+C: Cancel | Tab: Switch Panel | Esc: Back",
+        ExecutionStatus::Running => {
+            "Ctrl+P: Pause | Ctrl+C: Cancel | Tab: Switch Panel | Esc: Back"
+        }
+        ExecutionStatus::Paused => {
+            "Ctrl+P: Resume | Ctrl+C: Cancel | Tab: Switch Panel | Esc: Back"
+        }
         _ => "Tab: Switch Panel | Esc: Back",
     };
 
-    let paragraph = Paragraph::new(shortcuts)
-        .style(Style::default().fg(theme.muted).bg(theme.bg));
+    let paragraph = Paragraph::new(shortcuts).style(Style::default().fg(theme.muted).bg(theme.bg));
 
     frame.render_widget(paragraph, area);
 }
@@ -1252,8 +1333,14 @@ mod tests {
 
         assert_eq!(monitor_state.status, ExecutionStatus::Running);
         assert_eq!(monitor_state.stats.completed_tasks, 1);
-        assert_eq!(monitor_state.tasks.get("task1").unwrap().status, TaskStatus::Completed);
-        assert_eq!(monitor_state.tasks.get("task2").unwrap().status, TaskStatus::Running);
+        assert_eq!(
+            monitor_state.tasks.get("task1").unwrap().status,
+            TaskStatus::Completed
+        );
+        assert_eq!(
+            monitor_state.tasks.get("task2").unwrap().status,
+            TaskStatus::Running
+        );
     }
 
     #[test]
@@ -1287,7 +1374,10 @@ mod tests {
         // Sync monitor with workflow state
         monitor_state.sync_with_workflow_state(&state);
 
-        assert_eq!(monitor_state.tasks.get("task1").unwrap().status, TaskStatus::Completed);
+        assert_eq!(
+            monitor_state.tasks.get("task1").unwrap().status,
+            TaskStatus::Completed
+        );
         assert_eq!(monitor_state.stats.completed_tasks, 1);
     }
 }

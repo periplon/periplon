@@ -159,15 +159,15 @@ mod worker_tests {
         let queue = Arc::new(MockQueue::new());
 
         // Create job with max retries
-        let job = Job::new(Uuid::new_v4(), Uuid::new_v4(), json!({}))
-            .with_max_retries(3);
+        let job = Job::new(Uuid::new_v4(), Uuid::new_v4(), json!({})).with_max_retries(3);
         let job_id = job.id;
 
         queue.enqueue(job).await.unwrap();
 
         // Simulate failure and requeue
         for attempt in 1..=3 {
-            let dequeued = queue.dequeue(&format!("worker-{}", attempt))
+            let dequeued = queue
+                .dequeue(&format!("worker-{}", attempt))
                 .await
                 .unwrap()
                 .unwrap();
@@ -175,7 +175,8 @@ mod worker_tests {
             assert_eq!(dequeued.attempts, attempt as u32);
 
             // Requeue for retry
-            queue.requeue(dequeued.id, Some(Duration::from_secs(1)))
+            queue
+                .requeue(dequeued.id, Some(Duration::from_secs(1)))
                 .await
                 .unwrap();
 
@@ -187,7 +188,10 @@ mod worker_tests {
         let dequeued = queue.dequeue("worker-4").await.unwrap().unwrap();
         assert_eq!(dequeued.attempts, 4);
 
-        queue.fail(dequeued.id, "Max retries exceeded").await.unwrap();
+        queue
+            .fail(dequeued.id, "Max retries exceeded")
+            .await
+            .unwrap();
 
         assert_eq!(queue.failed_count(), 1);
         assert_eq!(queue.fail_count(), 1);
@@ -257,12 +261,9 @@ mod worker_tests {
         let queue = Arc::new(MockQueue::new());
 
         // Enqueue jobs with different priorities
-        let low_priority = Job::new(Uuid::new_v4(), Uuid::new_v4(), json!({}))
-            .with_priority(1);
-        let medium_priority = Job::new(Uuid::new_v4(), Uuid::new_v4(), json!({}))
-            .with_priority(5);
-        let high_priority = Job::new(Uuid::new_v4(), Uuid::new_v4(), json!({}))
-            .with_priority(10);
+        let low_priority = Job::new(Uuid::new_v4(), Uuid::new_v4(), json!({})).with_priority(1);
+        let medium_priority = Job::new(Uuid::new_v4(), Uuid::new_v4(), json!({})).with_priority(5);
+        let high_priority = Job::new(Uuid::new_v4(), Uuid::new_v4(), json!({})).with_priority(10);
 
         queue.enqueue(low_priority).await.unwrap();
         queue.enqueue(high_priority.clone()).await.unwrap();
@@ -297,7 +298,10 @@ mod worker_tests {
         updated.status = ExecutionStatus::Running;
         updated.started_at = Some(Utc::now());
 
-        storage.update_execution(execution_id, &updated).await.unwrap();
+        storage
+            .update_execution(execution_id, &updated)
+            .await
+            .unwrap();
 
         let retrieved = storage.get_execution(execution_id).await.unwrap().unwrap();
         assert_eq!(retrieved.status, ExecutionStatus::Running);
@@ -308,7 +312,10 @@ mod worker_tests {
         updated.completed_at = Some(Utc::now());
         updated.result = Some(json!({"status": "success"}));
 
-        storage.update_execution(execution_id, &updated).await.unwrap();
+        storage
+            .update_execution(execution_id, &updated)
+            .await
+            .unwrap();
 
         let retrieved = storage.get_execution(execution_id).await.unwrap().unwrap();
         assert_eq!(retrieved.status, ExecutionStatus::Completed);
@@ -415,11 +422,7 @@ mod worker_tests {
             metadata.name = format!("workflow-{}", i);
             workflow.name = metadata.name.clone();
 
-            if i < 3 {
-                metadata.is_active = true;
-            } else {
-                metadata.is_active = false;
-            }
+            metadata.is_active = i < 3;
 
             storage.store_workflow(&workflow, &metadata).await.unwrap();
         }
@@ -496,8 +499,7 @@ mod worker_tests {
 
         // Create job scheduled for future
         let future_time = Utc::now() + Duration::seconds(60);
-        let job = Job::new(Uuid::new_v4(), Uuid::new_v4(), json!({}))
-            .with_schedule(future_time);
+        let job = Job::new(Uuid::new_v4(), Uuid::new_v4(), json!({})).with_schedule(future_time);
 
         queue.enqueue(job.clone()).await.unwrap();
 

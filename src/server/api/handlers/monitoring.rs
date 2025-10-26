@@ -157,7 +157,8 @@ pub async fn metrics() -> impl IntoResponse {
          # HELP system_cpu_usage_percent CPU usage percentage\n\
          # TYPE system_cpu_usage_percent gauge\n\
          system_cpu_usage_percent 0\n\
-         ".to_string();
+         "
+    .to_string();
 
     (
         StatusCode::OK,

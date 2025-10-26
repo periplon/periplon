@@ -8,10 +8,7 @@ use ratatui::Frame;
 
 // Re-export types from the views module
 pub use crate::tui::views::generator::{
-    GeneratorState,
-    GeneratorMode,
-    FocusPanel,
-    GenerationStatus,
+    FocusPanel, GenerationStatus, GeneratorMode, GeneratorState,
 };
 
 /// AI workflow generator view component

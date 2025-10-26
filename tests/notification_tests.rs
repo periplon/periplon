@@ -639,7 +639,7 @@ fn test_discord_channel_deserialization() {
         } => {
             assert_eq!(webhook_url, "https://discord.com/api/webhooks/123/abc");
             assert_eq!(username, Some("DeployBot".to_string()));
-            assert_eq!(tts, false);
+            assert!(!tts);
             assert!(embed.is_some());
 
             let embed = embed.unwrap();
@@ -681,7 +681,7 @@ fn test_ntfy_channel_deserialization() {
             assert_eq!(priority, Some(4));
             assert_eq!(tags.len(), 2);
             assert!(tags.contains(&"warning".to_string()));
-            assert_eq!(markdown, true);
+            assert!(markdown);
         }
         _ => panic!("Expected Ntfy channel"),
     }

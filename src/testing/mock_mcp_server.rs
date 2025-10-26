@@ -129,7 +129,9 @@ impl MockMcpServer {
         input_schema: Value,
         response: Value,
     ) -> &mut Self {
-        self.with_tool(name, description, input_schema, move |_| Ok(response.clone()))
+        self.with_tool(name, description, input_schema, move |_| {
+            Ok(response.clone())
+        })
     }
 
     /// Add a tool that always returns an error
@@ -184,7 +186,10 @@ impl McpServer for MockMcpServer {
 
     async fn list_tools(&self) -> Result<Vec<ToolDefinition>> {
         let tools = self.tools.lock().unwrap();
-        Ok(tools.values().map(|config| config.definition.clone()).collect())
+        Ok(tools
+            .values()
+            .map(|config| config.definition.clone())
+            .collect())
     }
 
     async fn call_tool(&self, name: &str, args: Value) -> Result<ToolResult> {
@@ -197,9 +202,9 @@ impl McpServer for MockMcpServer {
 
         // Execute the handler
         let tools = self.tools.lock().unwrap();
-        let config = tools.get(name).ok_or_else(|| {
-            Error::InvalidInput(format!("Tool '{}' not found", name))
-        })?;
+        let config = tools
+            .get(name)
+            .ok_or_else(|| Error::InvalidInput(format!("Tool '{}' not found", name)))?;
 
         match (config.handler)(args) {
             Ok(content) => Ok(ToolResult {
@@ -240,30 +245,23 @@ mod tests {
     #[tokio::test]
     async fn test_custom_handler() {
         let mut server = MockMcpServer::new("test");
-        server.with_tool(
-            "add",
-            "Adds numbers",
-            json!({"type": "object"}),
-            |args| {
-                let a = args.get("a").and_then(|v| v.as_i64()).unwrap_or(0);
-                let b = args.get("b").and_then(|v| v.as_i64()).unwrap_or(0);
-                Ok(json!({"sum": a + b}))
-            },
-        );
+        server.with_tool("add", "Adds numbers", json!({"type": "object"}), |args| {
+            let a = args.get("a").and_then(|v| v.as_i64()).unwrap_or(0);
+            let b = args.get("b").and_then(|v| v.as_i64()).unwrap_or(0);
+            Ok(json!({"sum": a + b}))
+        });
 
-        let result = server.call_tool("add", json!({"a": 5, "b": 3})).await.unwrap();
+        let result = server
+            .call_tool("add", json!({"a": 5, "b": 3}))
+            .await
+            .unwrap();
         assert_eq!(result.content, json!({"sum": 8}));
     }
 
     #[tokio::test]
     async fn test_error_tool() {
         let mut server = MockMcpServer::new("test");
-        server.with_error_tool(
-            "fail",
-            "Always fails",
-            json!({}),
-            "This tool always fails",
-        );
+        server.with_error_tool("fail", "Always fails", json!({}), "This tool always fails");
 
         let result = server.call_tool("fail", json!({})).await.unwrap();
         assert!(result.is_error);
@@ -274,8 +272,14 @@ mod tests {
         let mut server = MockMcpServer::new("test");
         server.with_static_tool("tool1", "Tool 1", json!({}), json!({}));
 
-        server.call_tool("tool1", json!({"arg": "value1"})).await.unwrap();
-        server.call_tool("tool1", json!({"arg": "value2"})).await.unwrap();
+        server
+            .call_tool("tool1", json!({"arg": "value1"}))
+            .await
+            .unwrap();
+        server
+            .call_tool("tool1", json!({"arg": "value2"}))
+            .await
+            .unwrap();
 
         let log = server.call_log();
         assert_eq!(log.len(), 2);

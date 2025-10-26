@@ -14,7 +14,6 @@
 /// - generate_summary should depend on all subtasks of run_tests
 /// - No cyclic dependency error should occur
 /// - Workflow should execute successfully
-
 use periplon_sdk::dsl::executor::DSLExecutor;
 use periplon_sdk::dsl::parser::parse_workflow;
 

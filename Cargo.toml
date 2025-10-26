@@ -102,67 +102,67 @@ path = "src/lib.rs"
 
 [[example]]
 name = "simple_query"
-path = "examples/simple_query.rs"
+path = "examples/sdk/simple_query.rs"
 
 [[example]]
 name = "interactive_client"
-path = "examples/interactive_client.rs"
+path = "examples/sdk/interactive_client.rs"
 
 [[example]]
 name = "interactive_client_debug"
-path = "examples/interactive_client_debug.rs"
+path = "examples/sdk/interactive_client_debug.rs"
 
 [[example]]
 name = "test_stream_mode"
-path = "examples/test_stream_mode.rs"
+path = "examples/sdk/test_stream_mode.rs"
 
 [[example]]
 name = "dsl_executor_example"
-path = "examples/dsl_executor_example.rs"
+path = "examples/sdk/dsl_executor_example.rs"
 
 [[example]]
 name = "data_fetcher_demo"
-path = "examples/data_fetcher_demo.rs"
+path = "examples/sdk/data_fetcher_demo.rs"
 
 [[example]]
 name = "foreach_demo"
-path = "examples/foreach_demo.rs"
+path = "examples/sdk/foreach_demo.rs"
 
 [[example]]
 name = "repeat_demo"
-path = "examples/repeat_demo.rs"
+path = "examples/sdk/repeat_demo.rs"
 
 [[example]]
 name = "while_demo"
-path = "examples/while_demo.rs"
+path = "examples/sdk/while_demo.rs"
 
 [[example]]
 name = "polling_demo"
-path = "examples/polling_demo.rs"
+path = "examples/sdk/polling_demo.rs"
 
 [[example]]
 name = "parallel_foreach_demo"
-path = "examples/parallel_foreach_demo.rs"
+path = "examples/sdk/parallel_foreach_demo.rs"
 
 [[example]]
 name = "parallel_repeat_demo"
-path = "examples/parallel_repeat_demo.rs"
+path = "examples/sdk/parallel_repeat_demo.rs"
 
 [[example]]
 name = "advanced_loop_features_demo"
-path = "examples/advanced_loop_features_demo.rs"
+path = "examples/sdk/advanced_loop_features_demo.rs"
 
 [[example]]
 name = "checkpoint_resume_demo"
-path = "examples/checkpoint_resume_demo.rs"
+path = "examples/sdk/checkpoint_resume_demo.rs"
 
 [[example]]
 name = "http_collection_demo"
-path = "examples/http_collection_demo.rs"
+path = "examples/sdk/http_collection_demo.rs"
 
 [[example]]
 name = "lockfile_demo"
-path = "examples/lockfile_demo.rs"
+path = "examples/sdk/lockfile_demo.rs"
 
 [[bin]]
 name = "periplon-executor"

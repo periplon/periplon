@@ -90,7 +90,6 @@ pub enum VersionUpdatePolicy {
     All,
 }
 
-
 impl fmt::Display for VersionUpdatePolicy {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

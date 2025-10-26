@@ -73,59 +73,57 @@ fn handle_generator_key_simulation(
             state.toggle_diff();
             GeneratorAction::ToggleDiff
         }
-        _ if state.focus == FocusPanel::Input => {
-            match key_event.code {
-                KeyCode::Char(c) if !key_event.modifiers.contains(KeyModifiers::CONTROL) => {
-                    state.insert_char(c);
-                    GeneratorAction::None
-                }
-                KeyCode::Char('b') if key_event.modifiers.contains(KeyModifiers::CONTROL) => {
-                    for c in "****".chars() {
-                        state.insert_char(c);
-                    }
-                    state.cursor_left();
-                    state.cursor_left();
-                    GeneratorAction::None
-                }
-                KeyCode::Char('i') if key_event.modifiers.contains(KeyModifiers::CONTROL) => {
-                    for c in "**".chars() {
-                        state.insert_char(c);
-                    }
-                    state.cursor_left();
-                    GeneratorAction::None
-                }
-                KeyCode::Char('k') if key_event.modifiers.contains(KeyModifiers::CONTROL) => {
-                    for c in "``".chars() {
-                        state.insert_char(c);
-                    }
-                    state.cursor_left();
-                    GeneratorAction::None
-                }
-                KeyCode::Char('h') if key_event.modifiers.contains(KeyModifiers::CONTROL) => {
-                    for c in "# ".chars() {
-                        state.insert_char(c);
-                    }
-                    GeneratorAction::None
-                }
-                KeyCode::Backspace => {
-                    state.delete_char();
-                    GeneratorAction::None
-                }
-                KeyCode::Left => {
-                    state.cursor_left();
-                    GeneratorAction::None
-                }
-                KeyCode::Right => {
-                    state.cursor_right();
-                    GeneratorAction::None
-                }
-                KeyCode::Enter => {
-                    state.insert_char('\n');
-                    GeneratorAction::None
-                }
-                _ => GeneratorAction::None,
+        _ if state.focus == FocusPanel::Input => match key_event.code {
+            KeyCode::Char(c) if !key_event.modifiers.contains(KeyModifiers::CONTROL) => {
+                state.insert_char(c);
+                GeneratorAction::None
             }
-        }
+            KeyCode::Char('b') if key_event.modifiers.contains(KeyModifiers::CONTROL) => {
+                for c in "****".chars() {
+                    state.insert_char(c);
+                }
+                state.cursor_left();
+                state.cursor_left();
+                GeneratorAction::None
+            }
+            KeyCode::Char('i') if key_event.modifiers.contains(KeyModifiers::CONTROL) => {
+                for c in "**".chars() {
+                    state.insert_char(c);
+                }
+                state.cursor_left();
+                GeneratorAction::None
+            }
+            KeyCode::Char('k') if key_event.modifiers.contains(KeyModifiers::CONTROL) => {
+                for c in "``".chars() {
+                    state.insert_char(c);
+                }
+                state.cursor_left();
+                GeneratorAction::None
+            }
+            KeyCode::Char('h') if key_event.modifiers.contains(KeyModifiers::CONTROL) => {
+                for c in "# ".chars() {
+                    state.insert_char(c);
+                }
+                GeneratorAction::None
+            }
+            KeyCode::Backspace => {
+                state.delete_char();
+                GeneratorAction::None
+            }
+            KeyCode::Left => {
+                state.cursor_left();
+                GeneratorAction::None
+            }
+            KeyCode::Right => {
+                state.cursor_right();
+                GeneratorAction::None
+            }
+            KeyCode::Enter => {
+                state.insert_char('\n');
+                GeneratorAction::None
+            }
+            _ => GeneratorAction::None,
+        },
         _ => GeneratorAction::None,
     }
 }
@@ -630,7 +628,10 @@ fn test_mode_specific_behavior() {
     // Modify mode
     let state_modify = GeneratorState::new_modify("original: yaml".to_string());
     assert_eq!(state_modify.mode, GeneratorMode::Modify);
-    assert_eq!(state_modify.original_yaml, Some("original: yaml".to_string()));
+    assert_eq!(
+        state_modify.original_yaml,
+        Some("original: yaml".to_string())
+    );
 }
 
 // ============================================================================

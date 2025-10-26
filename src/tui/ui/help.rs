@@ -7,13 +7,7 @@ use crate::tui::theme::Theme;
 use ratatui::Frame;
 
 // Re-export types from the help module
-pub use crate::tui::help::{
-    HelpViewState,
-    HelpContext,
-    HelpContent,
-    HelpSection,
-    HelpTopic,
-};
+pub use crate::tui::help::{HelpContent, HelpContext, HelpSection, HelpTopic, HelpViewState};
 
 /// Help view component
 pub struct HelpView;

@@ -54,9 +54,7 @@ fn extract_token(headers: &HeaderMap) -> Option<String> {
     headers
         .get("Authorization")
         .and_then(|value| value.to_str().ok())
-        .and_then(|value| {
-            value.strip_prefix("Bearer ").map(|s| s.to_string())
-        })
+        .and_then(|value| value.strip_prefix("Bearer ").map(|s| s.to_string()))
 }
 
 /// Authentication middleware

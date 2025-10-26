@@ -216,7 +216,11 @@ async fn test_create_child_execution() {
 
     storage.store_execution(&child_execution).await.unwrap();
 
-    let retrieved = storage.get_execution(child_execution.id).await.unwrap().unwrap();
+    let retrieved = storage
+        .get_execution(child_execution.id)
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(retrieved.parent_execution_id, Some(parent_id));
 }
 
@@ -240,7 +244,10 @@ async fn test_execution_lifecycle_queued_to_running() {
     // Transition to running
     execution.status = ExecutionStatus::Running;
     execution.started_at = Some(Utc::now());
-    storage.update_execution(execution_id, &execution).await.unwrap();
+    storage
+        .update_execution(execution_id, &execution)
+        .await
+        .unwrap();
 
     // Verify status change
     let retrieved = storage.get_execution(execution_id).await.unwrap().unwrap();
@@ -265,7 +272,10 @@ async fn test_execution_lifecycle_running_to_completed() {
     execution.completed_at = Some(Utc::now());
     execution.result = Some(json!({"status": "success", "output": "data"}));
 
-    storage.update_execution(execution_id, &execution).await.unwrap();
+    storage
+        .update_execution(execution_id, &execution)
+        .await
+        .unwrap();
 
     let retrieved = storage.get_execution(execution_id).await.unwrap().unwrap();
     assert_eq!(retrieved.status, ExecutionStatus::Completed);
@@ -290,7 +300,10 @@ async fn test_execution_lifecycle_running_to_failed() {
     execution.completed_at = Some(Utc::now());
     execution.error = Some("Task execution failed".to_string());
 
-    storage.update_execution(execution_id, &execution).await.unwrap();
+    storage
+        .update_execution(execution_id, &execution)
+        .await
+        .unwrap();
 
     let retrieved = storage.get_execution(execution_id).await.unwrap().unwrap();
     assert_eq!(retrieved.status, ExecutionStatus::Failed);
@@ -315,7 +328,10 @@ async fn test_execution_cancellation() {
     execution.status = ExecutionStatus::Cancelled;
     execution.completed_at = Some(Utc::now());
 
-    storage.update_execution(execution_id, &execution).await.unwrap();
+    storage
+        .update_execution(execution_id, &execution)
+        .await
+        .unwrap();
 
     let retrieved = storage.get_execution(execution_id).await.unwrap().unwrap();
     assert_eq!(retrieved.status, ExecutionStatus::Cancelled);
@@ -338,7 +354,10 @@ async fn test_execution_retry_increment() {
     execution.retry_count += 1;
     execution.status = ExecutionStatus::Queued; // Re-queue for retry
 
-    storage.update_execution(execution_id, &execution).await.unwrap();
+    storage
+        .update_execution(execution_id, &execution)
+        .await
+        .unwrap();
 
     let retrieved = storage.get_execution(execution_id).await.unwrap().unwrap();
     assert_eq!(retrieved.retry_count, 1);
@@ -381,8 +400,14 @@ async fn test_filter_executions_by_workflow() {
     let workflow_id1 = metadata1.id;
     let workflow_id2 = metadata2.id;
 
-    storage.store_workflow(&workflow1, &metadata1).await.unwrap();
-    storage.store_workflow(&workflow2, &metadata2).await.unwrap();
+    storage
+        .store_workflow(&workflow1, &metadata1)
+        .await
+        .unwrap();
+    storage
+        .store_workflow(&workflow2, &metadata2)
+        .await
+        .unwrap();
 
     // Create executions for both workflows
     for _ in 0..3 {
@@ -427,7 +452,9 @@ async fn test_filter_executions_by_status() {
     };
     let executions = storage.list_executions(&filter).await.unwrap();
     assert_eq!(executions.len(), 3);
-    assert!(executions.iter().all(|e| e.status == ExecutionStatus::Completed));
+    assert!(executions
+        .iter()
+        .all(|e| e.status == ExecutionStatus::Completed));
 }
 
 #[tokio::test]
@@ -515,7 +542,10 @@ async fn test_store_and_retrieve_execution_logs() {
     }
 
     // Retrieve logs
-    let logs = storage.get_execution_logs(execution_id, None).await.unwrap();
+    let logs = storage
+        .get_execution_logs(execution_id, None)
+        .await
+        .unwrap();
     assert_eq!(logs.len(), 5);
 }
 
@@ -545,7 +575,10 @@ async fn test_execution_logs_with_different_levels() {
         storage.store_execution_log(&log).await.unwrap();
     }
 
-    let logs = storage.get_execution_logs(execution_id, None).await.unwrap();
+    let logs = storage
+        .get_execution_logs(execution_id, None)
+        .await
+        .unwrap();
     assert_eq!(logs.len(), 4);
     assert!(logs.iter().any(|l| l.level == "DEBUG"));
     assert!(logs.iter().any(|l| l.level == "ERROR"));
@@ -578,7 +611,10 @@ async fn test_execution_logs_with_metadata() {
     };
     storage.store_execution_log(&log).await.unwrap();
 
-    let logs = storage.get_execution_logs(execution_id, None).await.unwrap();
+    let logs = storage
+        .get_execution_logs(execution_id, None)
+        .await
+        .unwrap();
     assert_eq!(logs.len(), 1);
     assert!(logs[0].metadata.is_some());
     assert_eq!(logs[0].metadata.as_ref().unwrap()["task_id"], "task_1");
@@ -641,16 +677,30 @@ async fn test_execution_state_consistency() {
     let storage_clone2 = Arc::clone(&Arc::new(storage.clone()));
 
     let handle1 = tokio::spawn(async move {
-        let mut exec = storage_clone1.get_execution(execution_id).await.unwrap().unwrap();
+        let mut exec = storage_clone1
+            .get_execution(execution_id)
+            .await
+            .unwrap()
+            .unwrap();
         exec.status = ExecutionStatus::Running;
-        storage_clone1.update_execution(execution_id, &exec).await.unwrap();
+        storage_clone1
+            .update_execution(execution_id, &exec)
+            .await
+            .unwrap();
     });
 
     let handle2 = tokio::spawn(async move {
         tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-        let mut exec = storage_clone2.get_execution(execution_id).await.unwrap().unwrap();
+        let mut exec = storage_clone2
+            .get_execution(execution_id)
+            .await
+            .unwrap()
+            .unwrap();
         exec.status = ExecutionStatus::Completed;
-        storage_clone2.update_execution(execution_id, &exec).await.unwrap();
+        storage_clone2
+            .update_execution(execution_id, &exec)
+            .await
+            .unwrap();
     });
 
     handle1.await.unwrap();
@@ -723,6 +773,9 @@ async fn test_delete_execution_with_logs() {
     assert!(storage.get_execution(execution_id).await.unwrap().is_none());
 
     // Verify logs deleted
-    let logs = storage.get_execution_logs(execution_id, None).await.unwrap();
+    let logs = storage
+        .get_execution_logs(execution_id, None)
+        .await
+        .unwrap();
     assert_eq!(logs.len(), 0);
 }

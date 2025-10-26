@@ -5,9 +5,9 @@
 
 #![cfg(feature = "tui")]
 
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use periplon_sdk::dsl::DSLWorkflow;
 use periplon_sdk::tui::state::{AppState, ViewMode, WorkflowViewMode};
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use std::collections::HashMap;
 
 // ============================================================================
@@ -26,10 +26,7 @@ fn ctrl_key(code: KeyCode) -> KeyEvent {
 
 /// Simulate viewer keyboard handling
 /// Returns the new view mode and viewer state
-async fn handle_viewer_key_simulation(
-    state: &mut AppState,
-    key_event: KeyEvent,
-) -> ViewMode {
+async fn handle_viewer_key_simulation(state: &mut AppState, key_event: KeyEvent) -> ViewMode {
     // Simulate the logic from handle_viewer_key in app.rs
     let viewer_state = &mut state.viewer_state;
 

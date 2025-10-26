@@ -35,7 +35,7 @@ pub mod ui;
 pub mod views;
 
 pub use app::{App, AppConfig};
-pub use state::{AppState, ViewMode, Modal};
+pub use state::{AppState, Modal, ViewMode};
 
 /// Type alias for backward compatibility and clearer usage
 pub type TuiApp = App;

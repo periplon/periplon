@@ -30,8 +30,8 @@ use periplon_sdk::dsl::parse_workflow;
 use periplon_sdk::dsl::state::WorkflowState;
 use periplon_sdk::dsl::task_graph::TaskStatus as DslTaskStatus;
 use periplon_sdk::tui::views::execution_monitor::{
-    ExecutionMonitorState, ExecutionStatistics, ExecutionStatus, LogLevel,
-    MonitorPanel, TaskExecutionState, TaskStatus, TokenUsage,
+    ExecutionMonitorState, ExecutionStatistics, ExecutionStatus, LogLevel, MonitorPanel,
+    TaskExecutionState, TaskStatus, TokenUsage,
 };
 use std::time::{Duration, SystemTime};
 
@@ -104,7 +104,9 @@ fn create_task_state(task_id: &str, status: TaskStatus) -> TaskExecutionState {
 ///
 /// ExecutionMonitorState::new() intentionally leaves tasks HashMap empty.
 /// This helper properly initializes tasks using from_workflow_state() for testing.
-fn create_initialized_execution_state(workflow: periplon_sdk::dsl::schema::DSLWorkflow) -> ExecutionMonitorState {
+fn create_initialized_execution_state(
+    workflow: periplon_sdk::dsl::schema::DSLWorkflow,
+) -> ExecutionMonitorState {
     let mut state = WorkflowState::new(workflow.name.clone(), workflow.version.clone());
 
     // Initialize all tasks as pending
@@ -258,12 +260,7 @@ fn test_e2e_add_log_entry() {
     let workflow = create_test_workflow();
     let mut state = ExecutionMonitorState::new(workflow);
 
-    state.add_log(
-        LogLevel::Info,
-        "Execution started".to_string(),
-        None,
-        None,
-    );
+    state.add_log(LogLevel::Info, "Execution started".to_string(), None, None);
 
     assert_eq!(state.logs.len(), 1);
     assert_eq!(state.logs[0].message, "Execution started");
@@ -321,12 +318,7 @@ fn test_e2e_log_levels() {
 
     state.add_log(LogLevel::Debug, "Debug message".to_string(), None, None);
     state.add_log(LogLevel::Info, "Info message".to_string(), None, None);
-    state.add_log(
-        LogLevel::Warning,
-        "Warning message".to_string(),
-        None,
-        None,
-    );
+    state.add_log(LogLevel::Warning, "Warning message".to_string(), None, None);
     state.add_log(LogLevel::Error, "Error message".to_string(), None, None);
 
     assert_eq!(state.logs.len(), 4);
@@ -343,12 +335,7 @@ fn test_e2e_log_chronological_order() {
     let mut state = ExecutionMonitorState::new(workflow);
 
     for i in 1..=5 {
-        state.add_log(
-            LogLevel::Info,
-            format!("Log entry {}", i),
-            None,
-            None,
-        );
+        state.add_log(LogLevel::Info, format!("Log entry {}", i), None, None);
     }
 
     assert_eq!(state.logs[0].message, "Log entry 1");
@@ -362,12 +349,7 @@ fn test_e2e_large_log_volume() {
     let mut state = ExecutionMonitorState::new(workflow);
 
     for i in 1..=1000 {
-        state.add_log(
-            LogLevel::Info,
-            format!("Log entry {}", i),
-            None,
-            None,
-        );
+        state.add_log(LogLevel::Info, format!("Log entry {}", i), None, None);
     }
 
     assert_eq!(state.logs.len(), 1000);
@@ -413,7 +395,8 @@ fn test_e2e_statistics_progress_calculation() {
     state.stats.completed_tasks = 2;
 
     // Progress calculation: completed / total * 100
-    let progress = (state.stats.completed_tasks as f64 / state.stats.total_tasks as f64 * 100.0) as u8;
+    let progress =
+        (state.stats.completed_tasks as f64 / state.stats.total_tasks as f64 * 100.0) as u8;
     assert_eq!(progress, 50); // 2/4 = 50%
 }
 
@@ -845,8 +828,14 @@ fn test_e2e_multi_task_execution_flow() {
         task2.start_time = Some(SystemTime::now());
     }
 
-    assert_eq!(state.tasks.get("task1").unwrap().status, TaskStatus::Completed);
-    assert_eq!(state.tasks.get("task2").unwrap().status, TaskStatus::Running);
+    assert_eq!(
+        state.tasks.get("task1").unwrap().status,
+        TaskStatus::Completed
+    );
+    assert_eq!(
+        state.tasks.get("task2").unwrap().status,
+        TaskStatus::Running
+    );
 }
 
 #[test]
@@ -902,7 +891,10 @@ fn test_e2e_execution_pause_resume_cycle() {
     assert_eq!(state.status, ExecutionStatus::Running);
 
     // Task should still be running
-    assert_eq!(state.tasks.get("task1").unwrap().status, TaskStatus::Running);
+    assert_eq!(
+        state.tasks.get("task1").unwrap().status,
+        TaskStatus::Running
+    );
 }
 
 // ============================================================================
@@ -979,7 +971,10 @@ fn test_e2e_execution_with_many_tasks() {
     // Add 98 more tasks (we already have 2 from the workflow)
     for i in 3..=100 {
         let task_id = format!("task{}", i);
-        state.tasks.insert(task_id.clone(), create_task_state(&task_id, TaskStatus::Pending));
+        state.tasks.insert(
+            task_id.clone(),
+            create_task_state(&task_id, TaskStatus::Pending),
+        );
         state.task_order.push(task_id);
     }
 

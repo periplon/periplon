@@ -26,11 +26,7 @@ mod queue_backend_tests {
     }
 
     /// Helper to create a scheduled job
-    fn create_scheduled_job(
-        workflow_id: Uuid,
-        execution_id: Uuid,
-        delay_seconds: i64,
-    ) -> Job {
+    fn create_scheduled_job(workflow_id: Uuid, execution_id: Uuid, delay_seconds: i64) -> Job {
         let scheduled_at = Utc::now() + Duration::seconds(delay_seconds);
         Job::new(
             workflow_id,
@@ -175,7 +171,10 @@ mod queue_backend_tests {
         // Filesystem implementation allows any worker to heartbeat
         // This is a limitation of the filesystem backend
         let result = queue.heartbeat(job_id, "worker-2").await;
-        assert!(result.is_ok(), "Filesystem backend allows any worker heartbeat");
+        assert!(
+            result.is_ok(),
+            "Filesystem backend allows any worker heartbeat"
+        );
     }
 
     #[tokio::test]
@@ -258,7 +257,11 @@ mod queue_backend_tests {
         // Priority ordering is better implemented in database backends
         let mut dequeued = vec![];
         for i in 1..=3 {
-            let job = queue.dequeue(&format!("worker-{}", i)).await.unwrap().unwrap();
+            let job = queue
+                .dequeue(&format!("worker-{}", i))
+                .await
+                .unwrap()
+                .unwrap();
             dequeued.push(job);
         }
 
@@ -407,13 +410,8 @@ mod queue_backend_tests {
         // All jobs should be dequeued exactly once
         assert_eq!(results.len(), 5, "All 5 jobs should be dequeued");
 
-        let dequeued_ids: std::collections::HashSet<_> =
-            results.iter().map(|j| j.id).collect();
-        assert_eq!(
-            dequeued_ids.len(),
-            5,
-            "All dequeued jobs should be unique"
-        );
+        let dequeued_ids: std::collections::HashSet<_> = results.iter().map(|j| j.id).collect();
+        assert_eq!(dequeued_ids.len(), 5, "All dequeued jobs should be unique");
     }
 
     #[tokio::test]
@@ -434,10 +432,7 @@ mod queue_backend_tests {
 
         // Worker 2 tries to dequeue - should get nothing (job is locked)
         let dequeued2 = queue.dequeue("worker-2").await.unwrap();
-        assert!(
-            dequeued2.is_none(),
-            "Job should be locked by worker-1"
-        );
+        assert!(dequeued2.is_none(), "Job should be locked by worker-1");
 
         // Both workers can heartbeat (filesystem limitation)
         assert!(queue.heartbeat(job_id, "worker-1").await.is_ok());

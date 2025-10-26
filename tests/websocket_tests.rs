@@ -271,7 +271,10 @@ async fn test_stream_execution_state_changes() {
     // Transition to Running
     execution.status = ExecutionStatus::Running;
     execution.started_at = Some(Utc::now());
-    storage.update_execution(execution_id, &execution).await.unwrap();
+    storage
+        .update_execution(execution_id, &execution)
+        .await
+        .unwrap();
 
     let retrieved = storage.get_execution(execution_id).await.unwrap().unwrap();
     assert_eq!(retrieved.status, ExecutionStatus::Running);
@@ -280,7 +283,10 @@ async fn test_stream_execution_state_changes() {
     execution.status = ExecutionStatus::Completed;
     execution.completed_at = Some(Utc::now());
     execution.result = Some(json!({"status": "success"}));
-    storage.update_execution(execution_id, &execution).await.unwrap();
+    storage
+        .update_execution(execution_id, &execution)
+        .await
+        .unwrap();
 
     let retrieved = storage.get_execution(execution_id).await.unwrap().unwrap();
     assert_eq!(retrieved.status, ExecutionStatus::Completed);
@@ -300,7 +306,7 @@ async fn test_stream_execution_logs() {
     storage.store_execution(&execution).await.unwrap();
 
     // Simulate log streaming
-    let log_messages = vec![
+    let log_messages = [
         "Initializing workflow",
         "Starting task 1",
         "Task 1 completed",
@@ -327,7 +333,10 @@ async fn test_stream_execution_logs() {
     }
 
     // Retrieve all logs
-    let logs = storage.get_execution_logs(execution_id, None).await.unwrap();
+    let logs = storage
+        .get_execution_logs(execution_id, None)
+        .await
+        .unwrap();
     assert_eq!(logs.len(), 6);
     assert_eq!(logs[0].message, "Initializing workflow");
     assert_eq!(logs[5].message, "Workflow completed");
@@ -359,7 +368,10 @@ async fn test_stream_incremental_logs() {
         storage.store_execution_log(&log).await.unwrap();
     }
 
-    let initial_logs = storage.get_execution_logs(execution_id, None).await.unwrap();
+    let initial_logs = storage
+        .get_execution_logs(execution_id, None)
+        .await
+        .unwrap();
     let initial_count = initial_logs.len();
     assert_eq!(initial_count, 3);
 
@@ -377,7 +389,10 @@ async fn test_stream_incremental_logs() {
         storage.store_execution_log(&log).await.unwrap();
     }
 
-    let all_logs = storage.get_execution_logs(execution_id, None).await.unwrap();
+    let all_logs = storage
+        .get_execution_logs(execution_id, None)
+        .await
+        .unwrap();
     assert_eq!(all_logs.len(), 5);
 
     // Verify we can get only new logs by tracking count
@@ -459,7 +474,10 @@ async fn test_execution_with_task_updates() {
         storage.store_execution_log(&complete_log).await.unwrap();
     }
 
-    let logs = storage.get_execution_logs(execution_id, None).await.unwrap();
+    let logs = storage
+        .get_execution_logs(execution_id, None)
+        .await
+        .unwrap();
     assert_eq!(logs.len(), 6); // 3 tasks * 2 logs each
 
     // Verify task metadata
@@ -494,7 +512,11 @@ async fn test_websocket_connection_for_nonexistent_execution() {
     let non_existent_id = Uuid::new_v4();
 
     // Verify execution doesn't exist (would return 404)
-    let exists = storage.get_execution(non_existent_id).await.unwrap().is_some();
+    let exists = storage
+        .get_execution(non_existent_id)
+        .await
+        .unwrap()
+        .is_some();
     assert!(!exists);
 }
 
@@ -577,7 +599,10 @@ async fn test_websocket_message_ordering() {
     }
 
     // Retrieve and verify order
-    let logs = storage.get_execution_logs(execution_id, None).await.unwrap();
+    let logs = storage
+        .get_execution_logs(execution_id, None)
+        .await
+        .unwrap();
     assert_eq!(logs.len(), 5);
     for (i, log) in logs.iter().enumerate() {
         assert_eq!(log.message, messages[i]);
@@ -640,7 +665,10 @@ async fn test_websocket_with_no_logs() {
     storage.store_execution(&execution).await.unwrap();
 
     // No logs stored yet
-    let logs = storage.get_execution_logs(execution_id, None).await.unwrap();
+    let logs = storage
+        .get_execution_logs(execution_id, None)
+        .await
+        .unwrap();
     assert_eq!(logs.len(), 0);
 }
 

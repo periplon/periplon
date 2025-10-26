@@ -24,8 +24,7 @@ pub enum ConfigError {
 pub type Result<T> = std::result::Result<T, ConfigError>;
 
 #[cfg(feature = "server")]
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct Config {
     #[serde(default)]
     pub server: ServerConfig,

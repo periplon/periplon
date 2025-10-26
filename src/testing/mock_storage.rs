@@ -7,9 +7,9 @@
 use crate::dsl::schema::DSLWorkflow;
 #[cfg(feature = "server")]
 use crate::server::storage::{
-    Checkpoint, CheckpointStorage, Execution, ExecutionFilter, ExecutionLog,
-    ExecutionStatus, ExecutionStorage, Result, Schedule, ScheduleFilter, ScheduleRun,
-    ScheduleStorage, StorageError, WorkflowFilter, WorkflowMetadata, WorkflowStorage,
+    Checkpoint, CheckpointStorage, Execution, ExecutionFilter, ExecutionLog, ExecutionStatus,
+    ExecutionStorage, Result, Schedule, ScheduleFilter, ScheduleRun, ScheduleStorage, StorageError,
+    WorkflowFilter, WorkflowMetadata, WorkflowStorage,
 };
 #[cfg(feature = "server")]
 use async_trait::async_trait;
@@ -79,7 +79,13 @@ impl MockStorage {
 
     /// Get all executions
     pub fn get_all_executions(&self) -> Vec<Execution> {
-        self.state.lock().unwrap().executions.values().cloned().collect()
+        self.state
+            .lock()
+            .unwrap()
+            .executions
+            .values()
+            .cloned()
+            .collect()
     }
 
     /// Get executions by status
@@ -134,7 +140,9 @@ impl WorkflowStorage for MockStorage {
             return Err(StorageError::IoError("Store failure".to_string()));
         }
 
-        state.workflows.insert(metadata.id, (workflow.clone(), metadata.clone()));
+        state
+            .workflows
+            .insert(metadata.id, (workflow.clone(), metadata.clone()));
         Ok(metadata.id)
     }
 
@@ -160,8 +168,8 @@ impl WorkflowStorage for MockStorage {
             return Err(StorageError::IoError("Update failure".to_string()));
         }
 
-        if state.workflows.contains_key(&id) {
-            state.workflows.insert(id, (workflow.clone(), metadata.clone()));
+        if let std::collections::hash_map::Entry::Occupied(mut e) = state.workflows.entry(id) {
+            e.insert((workflow.clone(), metadata.clone()));
             Ok(())
         } else {
             Err(StorageError::NotFound(format!("Workflow {} not found", id)))
@@ -254,14 +262,19 @@ impl ExecutionStorage for MockStorage {
         let mut state = self.state.lock().unwrap();
 
         if state.should_fail_store {
-            return Err(StorageError::IoError("Update execution failure".to_string()));
+            return Err(StorageError::IoError(
+                "Update execution failure".to_string(),
+            ));
         }
 
-        if state.executions.contains_key(&id) {
-            state.executions.insert(id, execution.clone());
+        if let std::collections::hash_map::Entry::Occupied(mut e) = state.executions.entry(id) {
+            e.insert(execution.clone());
             Ok(())
         } else {
-            Err(StorageError::NotFound(format!("Execution {} not found", id)))
+            Err(StorageError::NotFound(format!(
+                "Execution {} not found",
+                id
+            )))
         }
     }
 
@@ -292,14 +305,22 @@ impl ExecutionStorage for MockStorage {
 
     async fn store_execution_log(&self, log: &ExecutionLog) -> Result<()> {
         let mut state = self.state.lock().unwrap();
-        let logs = state.execution_logs.entry(log.execution_id).or_insert_with(Vec::new);
+        let logs = state.execution_logs.entry(log.execution_id).or_default();
         logs.push(log.clone());
         Ok(())
     }
 
-    async fn get_execution_logs(&self, execution_id: Uuid, _limit: Option<usize>) -> Result<Vec<ExecutionLog>> {
+    async fn get_execution_logs(
+        &self,
+        execution_id: Uuid,
+        _limit: Option<usize>,
+    ) -> Result<Vec<ExecutionLog>> {
         let state = self.state.lock().unwrap();
-        Ok(state.execution_logs.get(&execution_id).cloned().unwrap_or_default())
+        Ok(state
+            .execution_logs
+            .get(&execution_id)
+            .cloned()
+            .unwrap_or_default())
     }
 
     async fn delete_execution(&self, id: Uuid) -> Result<()> {
@@ -309,7 +330,10 @@ impl ExecutionStorage for MockStorage {
             state.execution_logs.remove(&id);
             Ok(())
         } else {
-            Err(StorageError::NotFound(format!("Execution {} not found", id)))
+            Err(StorageError::NotFound(format!(
+                "Execution {} not found",
+                id
+            )))
         }
     }
 }
@@ -328,11 +352,7 @@ impl CheckpointStorage for MockStorage {
         Ok(checkpoint.id)
     }
 
-    async fn get_checkpoint(
-        &self,
-        execution_id: Uuid,
-        name: &str,
-    ) -> Result<Option<Checkpoint>> {
+    async fn get_checkpoint(&self, execution_id: Uuid, name: &str) -> Result<Option<Checkpoint>> {
         let state = self.state.lock().unwrap();
 
         if state.should_fail_get {
@@ -395,8 +415,8 @@ impl ScheduleStorage for MockStorage {
             return Err(StorageError::IoError("Update schedule failure".to_string()));
         }
 
-        if state.schedules.contains_key(&id) {
-            state.schedules.insert(id, schedule.clone());
+        if let std::collections::hash_map::Entry::Occupied(mut e) = state.schedules.entry(id) {
+            e.insert(schedule.clone());
             Ok(())
         } else {
             Err(StorageError::NotFound(format!("Schedule {} not found", id)))
@@ -439,18 +459,16 @@ impl ScheduleStorage for MockStorage {
         Ok(schedules)
     }
 
-    async fn get_due_schedules(&self, before: chrono::DateTime<chrono::Utc>) -> Result<Vec<Schedule>> {
+    async fn get_due_schedules(
+        &self,
+        before: chrono::DateTime<chrono::Utc>,
+    ) -> Result<Vec<Schedule>> {
         let state = self.state.lock().unwrap();
 
         let schedules: Vec<_> = state
             .schedules
             .values()
-            .filter(|s| {
-                s.is_active
-                    && s.next_run_at
-                        .map(|next| next <= before)
-                        .unwrap_or(false)
-            })
+            .filter(|s| s.is_active && s.next_run_at.map(|next| next <= before).unwrap_or(false))
             .cloned()
             .collect();
 
@@ -461,15 +479,21 @@ impl ScheduleStorage for MockStorage {
         let mut state = self.state.lock().unwrap();
 
         if state.should_fail_store {
-            return Err(StorageError::IoError("Store schedule run failure".to_string()));
+            return Err(StorageError::IoError(
+                "Store schedule run failure".to_string(),
+            ));
         }
 
-        let runs = state.schedule_runs.entry(run.schedule_id).or_insert_with(Vec::new);
+        let runs = state.schedule_runs.entry(run.schedule_id).or_default();
         runs.push(run.clone());
         Ok(run.id)
     }
 
-    async fn get_schedule_runs(&self, schedule_id: Uuid, limit: Option<usize>) -> Result<Vec<ScheduleRun>> {
+    async fn get_schedule_runs(
+        &self,
+        schedule_id: Uuid,
+        limit: Option<usize>,
+    ) -> Result<Vec<ScheduleRun>> {
         let state = self.state.lock().unwrap();
 
         let mut runs = state
@@ -586,7 +610,10 @@ mod tests {
         storage.store_execution(&execution).await.unwrap();
 
         execution.status = ExecutionStatus::Running;
-        storage.update_execution(execution_id, &execution).await.unwrap();
+        storage
+            .update_execution(execution_id, &execution)
+            .await
+            .unwrap();
 
         let retrieved = storage.get_execution(execution_id).await.unwrap().unwrap();
         assert_eq!(retrieved.status, ExecutionStatus::Running);

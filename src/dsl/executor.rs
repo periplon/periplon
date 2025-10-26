@@ -892,6 +892,7 @@ impl DSLExecutor {
 /// Static function for executing a task (used in parallel execution)
 ///
 /// This function can be called from tokio::spawn and includes retry logic
+#[allow(clippy::too_many_arguments)]
 async fn execute_task_static(
     task_id: String,
     agents: Arc<Mutex<HashMap<String, PeriplonSDKClient>>>,
@@ -931,13 +932,7 @@ async fn execute_task_static(
             workflow_name: &workflow_name,
             json_output,
         };
-        return execute_task_with_loop(
-            &task_id,
-            &spec,
-            loop_spec,
-            &ctx,
-        )
-        .await;
+        return execute_task_with_loop(&task_id, &spec, loop_spec, &ctx).await;
     }
 
     // Check condition if present
@@ -1606,7 +1601,8 @@ async fn execute_task_attempt(
         // Log messages using formatter
         if attempt > 0 {
             let prefix_str = format!("Retry {}", attempt);
-            let formatted = crate::dsl::message_formatter::format_message(&msg, json_output, Some(&prefix_str));
+            let formatted =
+                crate::dsl::message_formatter::format_message(&msg, json_output, Some(&prefix_str));
             println!("{}", formatted);
         } else {
             let formatted = crate::dsl::message_formatter::format_message(&msg, json_output, None);
@@ -1645,7 +1641,8 @@ async fn execute_task_with_agent(
         // Log messages using formatter
         if attempt > 0 {
             let prefix_str = "Fallback".to_string();
-            let formatted = crate::dsl::message_formatter::format_message(&msg, json_output, Some(&prefix_str));
+            let formatted =
+                crate::dsl::message_formatter::format_message(&msg, json_output, Some(&prefix_str));
             println!("{}", formatted);
         } else {
             let formatted = crate::dsl::message_formatter::format_message(&msg, json_output, None);
@@ -2174,7 +2171,8 @@ fn enhance_feedback_with_permission_hints(
             feedback.push_str(
                 "Auto-elevation is enabled - 'bypassPermissions' mode will be granted on retry.\n",
             );
-            feedback.push_str("All tool operations will be automatically approved for this retry.\n");
+            feedback
+                .push_str("All tool operations will be automatically approved for this retry.\n");
         } else {
             feedback.push_str("Consider:\n");
             feedback.push_str("1. Ensuring required files exist before checking\n");
@@ -2550,14 +2548,7 @@ async fn execute_task_with_loop(
                 .await?;
             } else {
                 // Sequential execution
-                execute_foreach_sequential(
-                    task_id,
-                    spec,
-                    &items,
-                    iterator,
-                    ctx,
-                )
-                .await?;
+                execute_foreach_sequential(task_id, spec, &items, iterator, ctx).await?;
             }
 
             println!("ForEach loop completed for task '{}'", task_id);
@@ -2598,14 +2589,7 @@ async fn execute_task_with_loop(
                 .await?;
             } else {
                 // Sequential execution
-                execute_repeat_sequential(
-                    task_id,
-                    spec,
-                    *count,
-                    iterator.as_deref(),
-                    ctx,
-                )
-                .await?;
+                execute_repeat_sequential(task_id, spec, *count, iterator.as_deref(), ctx).await?;
             }
 
             println!("Repeat loop completed for task '{}'", task_id);
@@ -2711,7 +2695,10 @@ async fn execute_subtasks_in_loop_iteration(
         for (subtask_name, subtask_spec) in subtask_map {
             let full_subtask_id = format!("{}.{}", parent_task_id, subtask_name);
 
-            println!("    Executing subtask: {} - {}", full_subtask_id, subtask_spec.description);
+            println!(
+                "    Executing subtask: {} - {}",
+                full_subtask_id, subtask_spec.description
+            );
 
             // Check if subtask has dependencies and if they're met
             if !subtask_spec.depends_on.is_empty() {
@@ -2737,7 +2724,10 @@ async fn execute_subtasks_in_loop_iteration(
                 };
 
                 if !deps_met {
-                    println!("      Skipping subtask {} - dependencies not met", subtask_name);
+                    println!(
+                        "      Skipping subtask {} - dependencies not met",
+                        subtask_name
+                    );
                     continue;
                 }
             }
@@ -2751,7 +2741,10 @@ async fn execute_subtasks_in_loop_iteration(
                 };
 
                 if !condition_met {
-                    println!("      Skipping subtask {} - condition not met", subtask_name);
+                    println!(
+                        "      Skipping subtask {} - condition not met",
+                        subtask_name
+                    );
                     continue;
                 }
             }
@@ -3830,7 +3823,8 @@ mod tests {
             subflows: HashMap::new(),
             imports: HashMap::new(),
             notifications: None,
-            limits: None,        };
+            limits: None,
+        };
 
         let executor = DSLExecutor::new(workflow).unwrap();
         let (name, version) = executor.get_workflow_info();
@@ -3858,7 +3852,8 @@ mod tests {
             subflows: HashMap::new(),
             imports: HashMap::new(),
             notifications: None,
-            limits: None,        };
+            limits: None,
+        };
 
         let executor = DSLExecutor::new(workflow).unwrap();
 
@@ -3890,7 +3885,7 @@ mod tests {
         assert_eq!(options.add_dirs[0], std::path::PathBuf::from("./src"));
         assert_eq!(options.add_dirs[1], std::path::PathBuf::from("/tmp/test"));
         assert_eq!(options.cwd, None); // No cwd set
-        assert_eq!(options.create_cwd, false); // Default is false
+        assert!(!options.create_cwd); // Default is false
     }
 
     #[test]
@@ -3913,7 +3908,8 @@ mod tests {
             subflows: HashMap::new(),
             imports: HashMap::new(),
             notifications: None,
-            limits: None,        };
+            limits: None,
+        };
 
         let executor = DSLExecutor::new(workflow).unwrap();
 
@@ -3957,7 +3953,8 @@ mod tests {
             subflows: HashMap::new(),
             imports: HashMap::new(),
             notifications: None,
-            limits: None,        };
+            limits: None,
+        };
 
         let executor = DSLExecutor::new(workflow).unwrap();
 
@@ -4001,7 +3998,8 @@ mod tests {
             subflows: HashMap::new(),
             imports: HashMap::new(),
             notifications: None,
-            limits: None,        };
+            limits: None,
+        };
 
         let executor = DSLExecutor::new(workflow).unwrap();
 
@@ -4046,7 +4044,8 @@ mod tests {
             subflows: HashMap::new(),
             imports: HashMap::new(),
             notifications: None,
-            limits: None,        };
+            limits: None,
+        };
 
         let executor = DSLExecutor::new(workflow).unwrap();
 
@@ -4091,7 +4090,8 @@ mod tests {
             subflows: HashMap::new(),
             imports: HashMap::new(),
             notifications: None,
-            limits: None,        };
+            limits: None,
+        };
 
         let executor = DSLExecutor::new(workflow).unwrap();
 
@@ -4112,7 +4112,7 @@ mod tests {
         let options = executor
             .agent_spec_to_options(&agent_spec, Some("/tmp/test"), Some(true), &var_context)
             .unwrap();
-        assert_eq!(options.create_cwd, true);
+        assert!(options.create_cwd);
     }
 
     #[test]
@@ -4135,7 +4135,8 @@ mod tests {
             subflows: HashMap::new(),
             imports: HashMap::new(),
             notifications: None,
-            limits: None,        };
+            limits: None,
+        };
 
         let executor = DSLExecutor::new(workflow).unwrap();
 
@@ -4157,7 +4158,7 @@ mod tests {
             .agent_spec_to_options(&agent_spec, Some("/tmp/test"), Some(true), &var_context)
             .unwrap();
         // Agent-level create_cwd should override workflow-level
-        assert_eq!(options.create_cwd, false);
+        assert!(!options.create_cwd);
     }
 
     #[test]
@@ -4180,7 +4181,8 @@ mod tests {
             subflows: HashMap::new(),
             imports: HashMap::new(),
             notifications: None,
-            limits: None,        };
+            limits: None,
+        };
 
         let executor = DSLExecutor::new(workflow).unwrap();
 
@@ -4202,7 +4204,7 @@ mod tests {
             .agent_spec_to_options(&agent_spec, Some("/tmp/test"), None, &var_context)
             .unwrap();
         // No create_cwd set - should default to false
-        assert_eq!(options.create_cwd, false);
+        assert!(!options.create_cwd);
     }
 
     #[test]

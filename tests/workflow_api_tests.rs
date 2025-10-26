@@ -6,13 +6,10 @@
 #[cfg(all(test, feature = "server"))]
 mod workflow_api_tests {
     use chrono::Utc;
-    use periplon_sdk::dsl::schema::{
-        AgentSpec, DSLWorkflow, PermissionsSpec, TaskSpec,
-    };
     use periplon_sdk::dsl::executor::DSLExecutor;
+    use periplon_sdk::dsl::schema::{AgentSpec, DSLWorkflow, PermissionsSpec, TaskSpec};
     use periplon_sdk::dsl::state::{WorkflowState, WorkflowStatus};
     use periplon_sdk::dsl::task_graph::TaskStatus;
-    use std::time::SystemTime;
     use periplon_sdk::server::queue::{Job, WorkQueue};
     use periplon_sdk::server::storage::{
         Execution, ExecutionStatus, ExecutionStorage, WorkflowMetadata, WorkflowStorage,
@@ -20,6 +17,7 @@ mod workflow_api_tests {
     use periplon_sdk::testing::{MockQueue, MockStorage};
     use std::collections::HashMap;
     use std::sync::Arc;
+    use std::time::SystemTime;
     use uuid::Uuid;
 
     /// Helper to create a minimal test workflow
@@ -193,10 +191,7 @@ mod workflow_api_tests {
         let workflow = create_test_workflow("lifecycle_test", 3);
         let metadata = create_workflow_metadata("lifecycle_test", "1.0.0");
 
-        let workflow_id = storage
-            .store_workflow(&workflow, &metadata)
-            .await
-            .unwrap();
+        let workflow_id = storage.store_workflow(&workflow, &metadata).await.unwrap();
 
         // Create execution in queued state
         let mut execution = create_execution(workflow_id, ExecutionStatus::Queued);
@@ -212,11 +207,7 @@ mod workflow_api_tests {
             .await
             .unwrap();
 
-        let retrieved = storage
-            .get_execution(execution.id)
-            .await
-            .unwrap()
-            .unwrap();
+        let retrieved = storage.get_execution(execution.id).await.unwrap().unwrap();
         assert_eq!(retrieved.status, ExecutionStatus::Running);
 
         // Complete execution
@@ -227,11 +218,7 @@ mod workflow_api_tests {
             .await
             .unwrap();
 
-        let completed = storage
-            .get_execution(execution.id)
-            .await
-            .unwrap()
-            .unwrap();
+        let completed = storage.get_execution(execution.id).await.unwrap().unwrap();
         assert_eq!(completed.status, ExecutionStatus::Completed);
         assert!(completed.completed_at.is_some());
     }
@@ -356,7 +343,10 @@ mod workflow_api_tests {
             storage.store_execution(&execution).await.unwrap();
 
             execution.status = to_status.clone();
-            if matches!(to_status, ExecutionStatus::Completed | ExecutionStatus::Failed | ExecutionStatus::Cancelled) {
+            if matches!(
+                to_status,
+                ExecutionStatus::Completed | ExecutionStatus::Failed | ExecutionStatus::Cancelled
+            ) {
                 execution.completed_at = Some(Utc::now());
             }
 
@@ -365,11 +355,7 @@ mod workflow_api_tests {
                 .await
                 .unwrap();
 
-            let updated = storage
-                .get_execution(execution.id)
-                .await
-                .unwrap()
-                .unwrap();
+            let updated = storage.get_execution(execution.id).await.unwrap().unwrap();
 
             assert_eq!(
                 updated.status, to_status,
@@ -459,11 +445,7 @@ mod workflow_api_tests {
             .await
             .unwrap();
 
-        let failed = storage
-            .get_execution(execution.id)
-            .await
-            .unwrap()
-            .unwrap();
+        let failed = storage.get_execution(execution.id).await.unwrap().unwrap();
 
         assert_eq!(failed.status, ExecutionStatus::Failed);
         assert!(failed.error.is_some());
@@ -499,11 +481,7 @@ mod workflow_api_tests {
             .await
             .unwrap();
 
-        let cancelled = storage
-            .get_execution(execution.id)
-            .await
-            .unwrap()
-            .unwrap();
+        let cancelled = storage.get_execution(execution.id).await.unwrap().unwrap();
         assert_eq!(cancelled.status, ExecutionStatus::Cancelled);
 
         let stats = queue.stats().await.unwrap();
@@ -539,11 +517,17 @@ mod workflow_api_tests {
 
         // Test non-existent workflow retrieval
         let non_existent = storage.get_workflow(Uuid::new_v4()).await.unwrap();
-        assert!(non_existent.is_none(), "Should return None for non-existent workflow");
+        assert!(
+            non_existent.is_none(),
+            "Should return None for non-existent workflow"
+        );
 
         // Test non-existent execution retrieval
         let non_existent = storage.get_execution(Uuid::new_v4()).await.unwrap();
-        assert!(non_existent.is_none(), "Should return None for non-existent execution");
+        assert!(
+            non_existent.is_none(),
+            "Should return None for non-existent execution"
+        );
 
         // Test failure simulation
         storage.fail_store();

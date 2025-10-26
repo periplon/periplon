@@ -319,17 +319,16 @@ impl WorkQueue for FilesystemQueue {
         {
             let path = entry.path();
 
-            if path.extension() == Some(OsStr::new("lock"))
-                && self.is_lock_stale(&path).await? {
-                    // Extract job ID from lock file name
-                    if let Some(job_id_str) = path.file_stem().and_then(|s| s.to_str()) {
-                        if let Ok(job_id) = Uuid::parse_str(job_id_str) {
-                            // Move back to pending
-                            self.move_job(job_id, "processing", "pending").await?;
-                            released.push(job_id);
-                        }
+            if path.extension() == Some(OsStr::new("lock")) && self.is_lock_stale(&path).await? {
+                // Extract job ID from lock file name
+                if let Some(job_id_str) = path.file_stem().and_then(|s| s.to_str()) {
+                    if let Ok(job_id) = Uuid::parse_str(job_id_str) {
+                        // Move back to pending
+                        self.move_job(job_id, "processing", "pending").await?;
+                        released.push(job_id);
                     }
                 }
+            }
         }
 
         Ok(released)

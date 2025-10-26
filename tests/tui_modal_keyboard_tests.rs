@@ -4,8 +4,8 @@
 
 #![cfg(feature = "tui")]
 
-use periplon_sdk::tui::state::{AppState, ConfirmAction, InputAction, Modal};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use periplon_sdk::tui::state::{AppState, ConfirmAction, InputAction, Modal};
 
 // ============================================================================
 // Test Utilities
@@ -192,10 +192,7 @@ async fn test_confirm_modal_enter_key() {
         .await
         .unwrap();
 
-    assert_eq!(
-        action,
-        ModalAction::Confirmed(ConfirmAction::StopExecution)
-    );
+    assert_eq!(action, ModalAction::Confirmed(ConfirmAction::StopExecution));
     assert!(!state.has_modal());
 }
 
@@ -329,7 +326,10 @@ async fn test_input_modal_enter_submit() {
         ModalAction::InputSubmitted(InputAction::CreateWorkflow, "test".to_string())
     );
     assert!(!state.has_modal());
-    assert_eq!(state.input_buffer, "", "Buffer should be cleared after submit");
+    assert_eq!(
+        state.input_buffer, "",
+        "Buffer should be cleared after submit"
+    );
 }
 
 #[tokio::test]

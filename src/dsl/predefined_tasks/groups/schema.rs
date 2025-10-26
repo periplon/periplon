@@ -10,8 +10,7 @@ use std::collections::HashMap;
 use std::fmt;
 
 /// API version for task group format
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum TaskGroupApiVersion {
     /// Version 1 of the task group API
     #[serde(rename = "taskgroup/v1")]
@@ -19,16 +18,13 @@ pub enum TaskGroupApiVersion {
     V1,
 }
 
-
 /// Kind identifier for task groups
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum TaskGroupKind {
     /// Task group definition
     #[default]
     TaskGroup,
 }
-
 
 /// Complete task group definition
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -80,34 +80,34 @@ impl Theme {
     /// Create monokai theme
     pub fn monokai() -> Self {
         Self {
-            primary: Color::Rgb(102, 217, 239),     // cyan
-            secondary: Color::Rgb(249, 38, 114),    // pink
-            accent: Color::Rgb(166, 226, 46),       // green
-            bg: Color::Rgb(39, 40, 34),             // dark bg
-            fg: Color::Rgb(248, 248, 242),          // light fg
-            success: Color::Rgb(166, 226, 46),      // green
-            warning: Color::Rgb(230, 219, 116),     // yellow
-            error: Color::Rgb(249, 38, 114),        // pink
-            muted: Color::Rgb(117, 113, 94),        // gray
-            border: Color::Rgb(73, 72, 62),         // border
-            highlight: Color::Rgb(73, 72, 62),      // selection
+            primary: Color::Rgb(102, 217, 239),  // cyan
+            secondary: Color::Rgb(249, 38, 114), // pink
+            accent: Color::Rgb(166, 226, 46),    // green
+            bg: Color::Rgb(39, 40, 34),          // dark bg
+            fg: Color::Rgb(248, 248, 242),       // light fg
+            success: Color::Rgb(166, 226, 46),   // green
+            warning: Color::Rgb(230, 219, 116),  // yellow
+            error: Color::Rgb(249, 38, 114),     // pink
+            muted: Color::Rgb(117, 113, 94),     // gray
+            border: Color::Rgb(73, 72, 62),      // border
+            highlight: Color::Rgb(73, 72, 62),   // selection
         }
     }
 
     /// Create solarized dark theme
     pub fn solarized() -> Self {
         Self {
-            primary: Color::Rgb(38, 139, 210),      // blue
-            secondary: Color::Rgb(42, 161, 152),    // cyan
-            accent: Color::Rgb(211, 54, 130),       // magenta
-            bg: Color::Rgb(0, 43, 54),              // base03
-            fg: Color::Rgb(131, 148, 150),          // base0
-            success: Color::Rgb(133, 153, 0),       // green
-            warning: Color::Rgb(181, 137, 0),       // yellow
-            error: Color::Rgb(220, 50, 47),         // red
-            muted: Color::Rgb(88, 110, 117),        // base01
-            border: Color::Rgb(7, 54, 66),          // base02
-            highlight: Color::Rgb(7, 54, 66),       // base02
+            primary: Color::Rgb(38, 139, 210),   // blue
+            secondary: Color::Rgb(42, 161, 152), // cyan
+            accent: Color::Rgb(211, 54, 130),    // magenta
+            bg: Color::Rgb(0, 43, 54),           // base03
+            fg: Color::Rgb(131, 148, 150),       // base0
+            success: Color::Rgb(133, 153, 0),    // green
+            warning: Color::Rgb(181, 137, 0),    // yellow
+            error: Color::Rgb(220, 50, 47),      // red
+            muted: Color::Rgb(88, 110, 117),     // base01
+            border: Color::Rgb(7, 54, 66),       // base02
+            highlight: Color::Rgb(7, 54, 66),    // base02
         }
     }
 
@@ -175,16 +175,12 @@ impl Theme {
 
     /// Get bold style
     pub fn bold(&self) -> Style {
-        Style::default()
-            .fg(self.fg)
-            .add_modifier(Modifier::BOLD)
+        Style::default().fg(self.fg).add_modifier(Modifier::BOLD)
     }
 
     /// Get dim style
     pub fn dim(&self) -> Style {
-        Style::default()
-            .fg(self.muted)
-            .add_modifier(Modifier::DIM)
+        Style::default().fg(self.muted).add_modifier(Modifier::DIM)
     }
 
     /// Get normal text style
@@ -194,9 +190,7 @@ impl Theme {
 
     /// Get modal background style
     pub fn modal_bg(&self) -> Style {
-        Style::default()
-            .fg(self.fg)
-            .bg(Color::DarkGray)
+        Style::default().fg(self.fg).bg(Color::DarkGray)
     }
 
     /// Get modal border style

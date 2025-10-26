@@ -158,7 +158,13 @@ impl App {
             // Route to appropriate view based on state
             match view_mode {
                 ViewMode::WorkflowList => {
-                    WorkflowListView::render(frame, area, &self.state.workflows, self.state.selected_workflow, &self.theme);
+                    WorkflowListView::render(
+                        frame,
+                        area,
+                        &self.state.workflows,
+                        self.state.selected_workflow,
+                        &self.theme,
+                    );
                 }
                 ViewMode::Viewer => {
                     Self::render_viewer_static(frame, area, &self.state, &self.theme);
@@ -167,13 +173,23 @@ impl App {
                     Self::render_editor_static(frame, area, &self.state.editor_state, &self.theme);
                 }
                 ViewMode::Generator => {
-                    Self::render_generator_static(frame, area, &self.state.generator_state, &self.theme);
+                    Self::render_generator_static(
+                        frame,
+                        area,
+                        &self.state.generator_state,
+                        &self.theme,
+                    );
                 }
                 ViewMode::ExecutionMonitor => {
                     Self::render_execution_monitor_static(frame, area);
                 }
                 ViewMode::StateBrowser => {
-                    Self::render_state_browser_static(frame, area, &mut self.state.state_browser, &self.theme);
+                    Self::render_state_browser_static(
+                        frame,
+                        area,
+                        &mut self.state.state_browser,
+                        &self.theme,
+                    );
                 }
                 ViewMode::Help => {
                     Self::render_help_static(frame, area, &mut self.state.help_state, &self.theme);
@@ -182,7 +198,13 @@ impl App {
 
             // Render modal if active
             if let Some(ref modal) = modal {
-                Self::render_modal_static(frame, area, modal, &self.state.input_buffer, &self.theme);
+                Self::render_modal_static(
+                    frame,
+                    area,
+                    modal,
+                    &self.state.input_buffer,
+                    &self.theme,
+                );
             }
         })?;
 
@@ -504,7 +526,8 @@ impl App {
 
             KeyCode::Char('v') if !key.is_ctrl() => {
                 // Toggle validation expanded view
-                self.state.editor_state.validation_expanded = !self.state.editor_state.validation_expanded;
+                self.state.editor_state.validation_expanded =
+                    !self.state.editor_state.validation_expanded;
             }
 
             KeyCode::Char('s') if key.is_ctrl() => {
@@ -518,7 +541,13 @@ impl App {
             // Text editing
             KeyCode::Char(c) if !key.is_ctrl() => {
                 let (mut line, mut col) = self.state.editor_state.cursor;
-                let mut lines: Vec<String> = self.state.editor_state.content.lines().map(String::from).collect();
+                let mut lines: Vec<String> = self
+                    .state
+                    .editor_state
+                    .content
+                    .lines()
+                    .map(String::from)
+                    .collect();
 
                 if lines.is_empty() {
                     lines.push(String::new());
@@ -545,7 +574,13 @@ impl App {
 
             KeyCode::Enter => {
                 let (line, col) = self.state.editor_state.cursor;
-                let mut lines: Vec<String> = self.state.editor_state.content.lines().map(String::from).collect();
+                let mut lines: Vec<String> = self
+                    .state
+                    .editor_state
+                    .content
+                    .lines()
+                    .map(String::from)
+                    .collect();
 
                 if lines.is_empty() {
                     lines.push(String::new());
@@ -567,7 +602,13 @@ impl App {
 
             KeyCode::Backspace => {
                 let (line, col) = self.state.editor_state.cursor;
-                let mut lines: Vec<String> = self.state.editor_state.content.lines().map(String::from).collect();
+                let mut lines: Vec<String> = self
+                    .state
+                    .editor_state
+                    .content
+                    .lines()
+                    .map(String::from)
+                    .collect();
 
                 if col > 0 && line < lines.len() {
                     // Delete character before cursor
@@ -588,7 +629,13 @@ impl App {
 
             KeyCode::Delete => {
                 let (line, col) = self.state.editor_state.cursor;
-                let mut lines: Vec<String> = self.state.editor_state.content.lines().map(String::from).collect();
+                let mut lines: Vec<String> = self
+                    .state
+                    .editor_state
+                    .content
+                    .lines()
+                    .map(String::from)
+                    .collect();
 
                 if lines.is_empty() {
                     return Ok(());
@@ -704,46 +751,50 @@ impl App {
             match key.code {
                 // All regular characters (not modified by Ctrl or Alt)
                 KeyCode::Char(c) if !key.is_ctrl() && !key.is_alt() => {
-                    self.state.generator_state.nl_input.insert(
-                        self.state.generator_state.input_cursor,
-                        c,
-                    );
+                    self.state
+                        .generator_state
+                        .nl_input
+                        .insert(self.state.generator_state.input_cursor, c);
                     self.state.generator_state.input_cursor += 1;
                     return Ok(());
                 }
 
                 // Markdown formatting shortcuts (Ctrl+letter)
                 KeyCode::Char('b') if key.is_ctrl() => {
-                    self.state.generator_state.nl_input.insert_str(
-                        self.state.generator_state.input_cursor,
-                        "****",
-                    );
+                    self.state
+                        .generator_state
+                        .nl_input
+                        .insert_str(self.state.generator_state.input_cursor, "****");
                     self.state.generator_state.input_cursor += 2;
                     return Ok(());
                 }
 
                 KeyCode::Char('i') if key.is_ctrl() => {
-                    self.state.generator_state.nl_input.insert_str(
-                        self.state.generator_state.input_cursor,
-                        "**",
-                    );
+                    self.state
+                        .generator_state
+                        .nl_input
+                        .insert_str(self.state.generator_state.input_cursor, "**");
                     self.state.generator_state.input_cursor += 1;
                     return Ok(());
                 }
 
                 KeyCode::Char('k') if key.is_ctrl() => {
-                    self.state.generator_state.nl_input.insert_str(
-                        self.state.generator_state.input_cursor,
-                        "``",
-                    );
+                    self.state
+                        .generator_state
+                        .nl_input
+                        .insert_str(self.state.generator_state.input_cursor, "``");
                     self.state.generator_state.input_cursor += 1;
                     return Ok(());
                 }
 
                 KeyCode::Char('h') if key.is_ctrl() => {
-                    let before = &self.state.generator_state.nl_input[..self.state.generator_state.input_cursor];
+                    let before = &self.state.generator_state.nl_input
+                        [..self.state.generator_state.input_cursor];
                     let line_start = before.rfind('\n').map(|p| p + 1).unwrap_or(0);
-                    self.state.generator_state.nl_input.insert_str(line_start, "# ");
+                    self.state
+                        .generator_state
+                        .nl_input
+                        .insert_str(line_start, "# ");
                     self.state.generator_state.input_cursor += 2;
                     return Ok(());
                 }
@@ -800,22 +851,28 @@ impl App {
 
             // Input/Preview panel specific handlers
             _ => {
-                if self.state.generator_state.focus == crate::tui::views::generator::FocusPanel::Input {
+                if self.state.generator_state.focus
+                    == crate::tui::views::generator::FocusPanel::Input
+                {
                     match key.code {
                         KeyCode::Backspace => {
                             if self.state.generator_state.input_cursor > 0 {
                                 self.state.generator_state.input_cursor -= 1;
-                                self.state.generator_state.nl_input.remove(
-                                    self.state.generator_state.input_cursor
-                                );
+                                self.state
+                                    .generator_state
+                                    .nl_input
+                                    .remove(self.state.generator_state.input_cursor);
                             }
                         }
 
                         KeyCode::Delete => {
-                            if self.state.generator_state.input_cursor < self.state.generator_state.nl_input.len() {
-                                self.state.generator_state.nl_input.remove(
-                                    self.state.generator_state.input_cursor
-                                );
+                            if self.state.generator_state.input_cursor
+                                < self.state.generator_state.nl_input.len()
+                            {
+                                self.state
+                                    .generator_state
+                                    .nl_input
+                                    .remove(self.state.generator_state.input_cursor);
                             }
                         }
 
@@ -826,7 +883,9 @@ impl App {
                         }
 
                         KeyCode::Right => {
-                            if self.state.generator_state.input_cursor < self.state.generator_state.nl_input.len() {
+                            if self.state.generator_state.input_cursor
+                                < self.state.generator_state.nl_input.len()
+                            {
                                 self.state.generator_state.input_cursor += 1;
                             }
                         }
@@ -836,15 +895,16 @@ impl App {
                         }
 
                         KeyCode::End => {
-                            self.state.generator_state.input_cursor = self.state.generator_state.nl_input.len();
+                            self.state.generator_state.input_cursor =
+                                self.state.generator_state.nl_input.len();
                         }
 
                         KeyCode::Enter => {
                             // Insert newline
-                            self.state.generator_state.nl_input.insert(
-                                self.state.generator_state.input_cursor,
-                                '\n',
-                            );
+                            self.state
+                                .generator_state
+                                .nl_input
+                                .insert(self.state.generator_state.input_cursor, '\n');
                             self.state.generator_state.input_cursor += 1;
                         }
 
@@ -1066,8 +1126,8 @@ impl App {
 
     /// Load workflows from default directory
     async fn load_workflows(&mut self) -> Result<()> {
-        use std::fs;
         use crate::tui::state::WorkflowEntry;
+        use std::fs;
 
         self.state.workflows.clear();
 
@@ -1081,25 +1141,23 @@ impl App {
         };
 
         // Find all YAML workflow files
-        for entry in entries {
-            if let Ok(entry) = entry {
-                let path = entry.path();
+        for entry in entries.flatten() {
+            let path = entry.path();
 
-                // Check if it's a YAML file
-                if path.is_file() {
-                    if let Some(ext) = path.extension() {
-                        if ext == "yaml" || ext == "yml" {
-                            // Try to get the filename
-                            if let Some(name) = path.file_stem() {
-                                self.state.workflows.push(WorkflowEntry {
-                                    name: name.to_string_lossy().to_string(),
-                                    path: path.clone(),
-                                    description: None,
-                                    version: None,
-                                    valid: true,
-                                    errors: Vec::new(),
-                                });
-                            }
+            // Check if it's a YAML file
+            if path.is_file() {
+                if let Some(ext) = path.extension() {
+                    if ext == "yaml" || ext == "yml" {
+                        // Try to get the filename
+                        if let Some(name) = path.file_stem() {
+                            self.state.workflows.push(WorkflowEntry {
+                                name: name.to_string_lossy().to_string(),
+                                path: path.clone(),
+                                description: None,
+                                version: None,
+                                valid: true,
+                                errors: Vec::new(),
+                            });
                         }
                     }
                 }
@@ -1236,13 +1294,16 @@ impl App {
 
         // Check if file already exists
         if filepath.exists() {
-            self.show_error("File Exists", &format!("Workflow '{}' already exists", filename));
+            self.show_error(
+                "File Exists",
+                &format!("Workflow '{}' already exists", filename),
+            );
             return Ok(());
         }
 
         // Generate basic workflow YAML
         let template = format!(
-r#"# Workflow: {}
+            r#"# Workflow: {}
 name: "{}"
 version: "1.0.0"
 
@@ -1262,7 +1323,9 @@ tasks:
   research_task:
     description: "Perform research on the topic"
     agent: "researcher"
-"#, name, name);
+"#,
+            name, name
+        );
 
         // Write to file
         match fs::write(&filepath, template) {
@@ -1272,7 +1335,10 @@ tasks:
                 self.load_workflows().await?;
             }
             Err(e) => {
-                self.show_error("Creation Failed", &format!("Failed to create workflow: {}", e));
+                self.show_error(
+                    "Creation Failed",
+                    &format!("Failed to create workflow: {}", e),
+                );
             }
         }
 
@@ -1318,9 +1384,10 @@ tasks:
     async fn generate_workflow_from_nl(&mut self) -> Result<()> {
         // TODO: Implement NL workflow generation using the generator state
         // This will call the nl_generator module with the nl_input
-        self.state.generator_state.status = crate::tui::views::generator::GenerationStatus::InProgress {
-            progress: "Generating workflow...".to_string(),
-        };
+        self.state.generator_state.status =
+            crate::tui::views::generator::GenerationStatus::InProgress {
+                progress: "Generating workflow...".to_string(),
+            };
 
         // For now, just show a placeholder
         self.show_info("Generation", "Workflow generation not yet implemented");
@@ -1420,7 +1487,12 @@ tasks:
         }
     }
 
-    fn render_editor_static(frame: &mut ratatui::Frame, area: ratatui::layout::Rect, state: &crate::tui::state::EditorState, theme: &Theme) {
+    fn render_editor_static(
+        frame: &mut ratatui::Frame,
+        area: ratatui::layout::Rect,
+        state: &crate::tui::state::EditorState,
+        theme: &Theme,
+    ) {
         use crate::tui::views::editor;
 
         // Validate content and get feedback
@@ -1428,19 +1500,26 @@ tasks:
         editor::render(frame, area, state, &feedback, theme);
     }
 
-    fn render_generator_static(frame: &mut ratatui::Frame, area: ratatui::layout::Rect, state: &crate::tui::views::generator::GeneratorState, theme: &Theme) {
+    fn render_generator_static(
+        frame: &mut ratatui::Frame,
+        area: ratatui::layout::Rect,
+        state: &crate::tui::views::generator::GeneratorState,
+        theme: &Theme,
+    ) {
         use crate::tui::views::generator;
         generator::render(frame, area, state, theme);
     }
 
-    fn render_execution_monitor_static(
-        _frame: &mut ratatui::Frame,
-        _area: ratatui::layout::Rect,
-    ) {
+    fn render_execution_monitor_static(_frame: &mut ratatui::Frame, _area: ratatui::layout::Rect) {
         // TODO: Implement in ui module
     }
 
-    fn render_help_static(frame: &mut ratatui::Frame, area: ratatui::layout::Rect, help_state: &mut crate::tui::help::HelpViewState, theme: &Theme) {
+    fn render_help_static(
+        frame: &mut ratatui::Frame,
+        area: ratatui::layout::Rect,
+        help_state: &mut crate::tui::help::HelpViewState,
+        theme: &Theme,
+    ) {
         use crate::tui::help::HelpView;
         let help_view = HelpView::new();
         help_view.render(frame, area, help_state, theme);
@@ -1456,7 +1535,13 @@ tasks:
         state_browser::render_state_browser(frame, area, state, theme);
     }
 
-    fn render_modal_static(frame: &mut ratatui::Frame, area: ratatui::layout::Rect, modal: &Modal, input_buffer: &str, theme: &Theme) {
+    fn render_modal_static(
+        frame: &mut ratatui::Frame,
+        area: ratatui::layout::Rect,
+        modal: &Modal,
+        input_buffer: &str,
+        theme: &Theme,
+    ) {
         use super::ui::ModalView;
         ModalView::render(frame, area, modal, input_buffer, theme);
     }

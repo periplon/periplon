@@ -92,7 +92,9 @@ impl HelpSearchEngine {
             // Exact matches
             if let Some(topic_ids) = self.index.get(term) {
                 for topic_id in topic_ids {
-                    let entry = topic_scores.entry(topic_id.clone()).or_insert((0.0, Vec::new()));
+                    let entry = topic_scores
+                        .entry(topic_id.clone())
+                        .or_insert((0.0, Vec::new()));
                     entry.0 += 1.0; // Exact match gets full point
                     entry.1.push(term.clone());
                 }
@@ -102,7 +104,9 @@ impl HelpSearchEngine {
             for (indexed_term, topic_ids) in &self.index {
                 if indexed_term.starts_with(term) && indexed_term != term {
                     for topic_id in topic_ids {
-                        let entry = topic_scores.entry(topic_id.clone()).or_insert((0.0, Vec::new()));
+                        let entry = topic_scores
+                            .entry(topic_id.clone())
+                            .or_insert((0.0, Vec::new()));
                         entry.0 += 0.5; // Prefix match gets half point
                         entry.1.push(indexed_term.clone());
                     }

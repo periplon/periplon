@@ -28,7 +28,13 @@ impl ViewerView {
     }
 
     /// Render the workflow viewer
-    pub fn render(frame: &mut Frame, area: Rect, workflow: &DSLWorkflow, state: &ViewerState, theme: &Theme) {
+    pub fn render(
+        frame: &mut Frame,
+        area: Rect,
+        workflow: &DSLWorkflow,
+        state: &ViewerState,
+        theme: &Theme,
+    ) {
         render_impl(frame, area, workflow, state, theme);
     }
 }
@@ -40,12 +46,24 @@ impl Default for ViewerView {
 }
 
 /// Legacy render function for backward compatibility
-pub fn render(frame: &mut Frame, area: Rect, workflow: &DSLWorkflow, state: &ViewerState, theme: &Theme) {
+pub fn render(
+    frame: &mut Frame,
+    area: Rect,
+    workflow: &DSLWorkflow,
+    state: &ViewerState,
+    theme: &Theme,
+) {
     render_impl(frame, area, workflow, state, theme);
 }
 
 /// Internal render implementation
-fn render_impl(frame: &mut Frame, area: Rect, workflow: &DSLWorkflow, state: &ViewerState, theme: &Theme) {
+fn render_impl(
+    frame: &mut Frame,
+    area: Rect,
+    workflow: &DSLWorkflow,
+    state: &ViewerState,
+    theme: &Theme,
+) {
     // Create main layout with header and content
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -61,7 +79,9 @@ fn render_impl(frame: &mut Frame, area: Rect, workflow: &DSLWorkflow, state: &Vi
 
     // Render content based on view mode
     match state.view_mode {
-        WorkflowViewMode::Condensed => render_condensed_view_impl(frame, chunks[1], workflow, state, theme),
+        WorkflowViewMode::Condensed => {
+            render_condensed_view_impl(frame, chunks[1], workflow, state, theme)
+        }
         WorkflowViewMode::Full => render_full_view_impl(frame, chunks[1], workflow, state, theme),
     }
 
@@ -70,38 +90,61 @@ fn render_impl(frame: &mut Frame, area: Rect, workflow: &DSLWorkflow, state: &Vi
 }
 
 /// Render header with workflow metadata
-fn render_header_impl(frame: &mut Frame, area: Rect, workflow: &DSLWorkflow, state: &ViewerState, theme: &Theme) {
+fn render_header_impl(
+    frame: &mut Frame,
+    area: Rect,
+    workflow: &DSLWorkflow,
+    state: &ViewerState,
+    theme: &Theme,
+) {
     let view_mode_text = match state.view_mode {
         WorkflowViewMode::Condensed => "Condensed",
         WorkflowViewMode::Full => "Full YAML",
     };
 
-    let header_text = vec![
-        Line::from(vec![
-            Span::styled("Workflow: ", Style::default().fg(theme.muted)),
-            Span::styled(&workflow.name, Style::default().fg(theme.primary).add_modifier(Modifier::BOLD)),
-            Span::styled(" | Version: ", Style::default().fg(theme.muted)),
-            Span::styled(&workflow.version, Style::default().fg(theme.accent)),
-            Span::styled(" | View: ", Style::default().fg(theme.muted)),
-            Span::styled(view_mode_text, Style::default().fg(theme.success)),
-        ]),
-    ];
+    let header_text = vec![Line::from(vec![
+        Span::styled("Workflow: ", Style::default().fg(theme.muted)),
+        Span::styled(
+            &workflow.name,
+            Style::default()
+                .fg(theme.primary)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(" | Version: ", Style::default().fg(theme.muted)),
+        Span::styled(&workflow.version, Style::default().fg(theme.accent)),
+        Span::styled(" | View: ", Style::default().fg(theme.muted)),
+        Span::styled(view_mode_text, Style::default().fg(theme.success)),
+    ])];
 
-    let header = Paragraph::new(header_text)
-        .block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(theme.border)));
+    let header = Paragraph::new(header_text).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(theme.border)),
+    );
 
     frame.render_widget(header, area);
 }
 
 /// Render condensed summary view
 #[allow(clippy::vec_init_then_push)]
-fn render_condensed_view_impl(frame: &mut Frame, area: Rect, workflow: &DSLWorkflow, state: &ViewerState, theme: &Theme) {
+fn render_condensed_view_impl(
+    frame: &mut Frame,
+    area: Rect,
+    workflow: &DSLWorkflow,
+    state: &ViewerState,
+    theme: &Theme,
+) {
     let mut lines = Vec::new();
 
     // Workflow metadata section
     lines.push(Line::from(vec![
         Span::styled("━━━ ", Style::default().fg(theme.border)),
-        Span::styled("Workflow Metadata", Style::default().fg(theme.primary).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "Workflow Metadata",
+            Style::default()
+                .fg(theme.primary)
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(" ━━━", Style::default().fg(theme.border)),
     ]));
     lines.push(Line::from(""));
@@ -133,7 +176,12 @@ fn render_condensed_view_impl(frame: &mut Frame, area: Rect, workflow: &DSLWorkf
         let agents_count = format!(" ({}) ", workflow.agents.len());
         lines.push(Line::from(vec![
             Span::styled("━━━ ", Style::default().fg(theme.border)),
-            Span::styled("Agents", Style::default().fg(theme.primary).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "Agents",
+                Style::default()
+                    .fg(theme.primary)
+                    .add_modifier(Modifier::BOLD),
+            ),
             Span::styled(agents_count, Style::default().fg(theme.muted)),
             Span::styled("━━━", Style::default().fg(theme.border)),
         ]));
@@ -150,7 +198,12 @@ fn render_condensed_view_impl(frame: &mut Frame, area: Rect, workflow: &DSLWorkf
         let tasks_count = format!(" ({}) ", workflow.tasks.len());
         lines.push(Line::from(vec![
             Span::styled("━━━ ", Style::default().fg(theme.border)),
-            Span::styled("Tasks", Style::default().fg(theme.primary).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "Tasks",
+                Style::default()
+                    .fg(theme.primary)
+                    .add_modifier(Modifier::BOLD),
+            ),
             Span::styled(tasks_count, Style::default().fg(theme.muted)),
             Span::styled("━━━", Style::default().fg(theme.border)),
         ]));
@@ -167,7 +220,12 @@ fn render_condensed_view_impl(frame: &mut Frame, area: Rect, workflow: &DSLWorkf
         let inputs_count = format!(" ({}) ", workflow.inputs.len());
         lines.push(Line::from(vec![
             Span::styled("━━━ ", Style::default().fg(theme.border)),
-            Span::styled("Inputs", Style::default().fg(theme.primary).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "Inputs",
+                Style::default()
+                    .fg(theme.primary)
+                    .add_modifier(Modifier::BOLD),
+            ),
             Span::styled(inputs_count, Style::default().fg(theme.muted)),
             Span::styled("━━━", Style::default().fg(theme.border)),
         ]));
@@ -176,7 +234,12 @@ fn render_condensed_view_impl(frame: &mut Frame, area: Rect, workflow: &DSLWorkf
         for (name, spec) in &workflow.inputs {
             lines.push(Line::from(vec![
                 Span::styled("  • ", Style::default().fg(theme.muted)),
-                Span::styled(name, Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
+                Span::styled(
+                    name,
+                    Style::default()
+                        .fg(theme.accent)
+                        .add_modifier(Modifier::BOLD),
+                ),
                 Span::styled(": ", Style::default().fg(theme.muted)),
                 Span::styled(&spec.param_type, Style::default().fg(theme.success)),
                 if spec.required {
@@ -194,7 +257,12 @@ fn render_condensed_view_impl(frame: &mut Frame, area: Rect, workflow: &DSLWorkf
         let outputs_count = format!(" ({}) ", workflow.outputs.len());
         lines.push(Line::from(vec![
             Span::styled("━━━ ", Style::default().fg(theme.border)),
-            Span::styled("Outputs", Style::default().fg(theme.primary).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "Outputs",
+                Style::default()
+                    .fg(theme.primary)
+                    .add_modifier(Modifier::BOLD),
+            ),
             Span::styled(outputs_count, Style::default().fg(theme.muted)),
             Span::styled("━━━", Style::default().fg(theme.border)),
         ]));
@@ -203,7 +271,12 @@ fn render_condensed_view_impl(frame: &mut Frame, area: Rect, workflow: &DSLWorkf
         for name in workflow.outputs.keys() {
             lines.push(Line::from(vec![
                 Span::styled("  • ", Style::default().fg(theme.muted)),
-                Span::styled(name, Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
+                Span::styled(
+                    name,
+                    Style::default()
+                        .fg(theme.accent)
+                        .add_modifier(Modifier::BOLD),
+                ),
             ]));
         }
         lines.push(Line::from(""));
@@ -216,7 +289,11 @@ fn render_condensed_view_impl(frame: &mut Frame, area: Rect, workflow: &DSLWorkf
 
     let text = Text::from(lines);
     let paragraph = Paragraph::new(text)
-        .block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(theme.border)))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(theme.border)),
+        )
         .scroll((scroll_offset as u16, 0))
         .wrap(Wrap { trim: false });
 
@@ -224,7 +301,14 @@ fn render_condensed_view_impl(frame: &mut Frame, area: Rect, workflow: &DSLWorkf
 
     // Render scrollbar if needed
     if total_lines > content_height {
-        render_scrollbar(frame, area, total_lines, scroll_offset, content_height, theme);
+        render_scrollbar(
+            frame,
+            area,
+            total_lines,
+            scroll_offset,
+            content_height,
+            theme,
+        );
     }
 }
 
@@ -235,7 +319,12 @@ fn render_agent_summary(agent_id: &str, agent: &AgentSpec, theme: &Theme) -> Vec
     lines.push(Line::from(vec![
         Span::styled("  ", Style::default()),
         Span::styled("◆ ", Style::default().fg(theme.primary)),
-        Span::styled(agent_id.to_string(), Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            agent_id.to_string(),
+            Style::default()
+                .fg(theme.accent)
+                .add_modifier(Modifier::BOLD),
+        ),
     ]));
 
     lines.push(Line::from(vec![
@@ -274,7 +363,12 @@ fn render_task_summary(task_id: &str, task: &TaskSpec, theme: &Theme) -> Vec<Lin
     lines.push(Line::from(vec![
         Span::styled("  ", Style::default()),
         Span::styled("▶ ", Style::default().fg(theme.success)),
-        Span::styled(task_id.to_string(), Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            task_id.to_string(),
+            Style::default()
+                .fg(theme.accent)
+                .add_modifier(Modifier::BOLD),
+        ),
     ]));
 
     lines.push(Line::from(vec![
@@ -292,7 +386,10 @@ fn render_task_summary(task_id: &str, task: &TaskSpec, theme: &Theme) -> Vec<Lin
     if !task.depends_on.is_empty() {
         lines.push(Line::from(vec![
             Span::styled("    Depends On:  ", Style::default().fg(theme.muted)),
-            Span::styled(task.depends_on.join(", "), Style::default().fg(theme.warning)),
+            Span::styled(
+                task.depends_on.join(", "),
+                Style::default().fg(theme.warning),
+            ),
         ]));
     }
 
@@ -308,7 +405,13 @@ fn render_task_summary(task_id: &str, task: &TaskSpec, theme: &Theme) -> Vec<Lin
 }
 
 /// Render full YAML view with syntax highlighting
-fn render_full_view_impl(frame: &mut Frame, area: Rect, workflow: &DSLWorkflow, state: &ViewerState, theme: &Theme) {
+fn render_full_view_impl(
+    frame: &mut Frame,
+    area: Rect,
+    workflow: &DSLWorkflow,
+    state: &ViewerState,
+    theme: &Theme,
+) {
     // Serialize workflow to YAML
     let yaml_content = match serde_yaml::to_string(workflow) {
         Ok(yaml) => yaml,
@@ -325,7 +428,11 @@ fn render_full_view_impl(frame: &mut Frame, area: Rect, workflow: &DSLWorkflow, 
 
     let text = Text::from(highlighted_lines);
     let paragraph = Paragraph::new(text)
-        .block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(theme.border)))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(theme.border)),
+        )
         .scroll((scroll_offset as u16, 0))
         .wrap(Wrap { trim: false });
 
@@ -333,7 +440,14 @@ fn render_full_view_impl(frame: &mut Frame, area: Rect, workflow: &DSLWorkflow, 
 
     // Render scrollbar if needed
     if total_lines > content_height {
-        render_scrollbar(frame, area, total_lines, scroll_offset, content_height, theme);
+        render_scrollbar(
+            frame,
+            area,
+            total_lines,
+            scroll_offset,
+            content_height,
+            theme,
+        );
     }
 }
 
@@ -350,7 +464,9 @@ fn highlight_yaml(yaml: &str, theme: &Theme) -> Vec<Line<'static>> {
             // Comment
             Line::from(Span::styled(
                 line.to_string(),
-                Style::default().fg(theme.muted).add_modifier(Modifier::ITALIC),
+                Style::default()
+                    .fg(theme.muted)
+                    .add_modifier(Modifier::ITALIC),
             ))
         } else if trimmed.starts_with("---") || trimmed.starts_with("...") {
             // Document separator
@@ -358,15 +474,15 @@ fn highlight_yaml(yaml: &str, theme: &Theme) -> Vec<Line<'static>> {
                 line.to_string(),
                 Style::default().fg(theme.border),
             ))
-        } else if trimmed.starts_with('-') && trimmed.len() > 1 && trimmed.chars().nth(1) == Some(' ') {
+        } else if trimmed.starts_with('-')
+            && trimmed.len() > 1
+            && trimmed.chars().nth(1) == Some(' ')
+        {
             // List item
             Line::from(vec![
                 Span::styled(indent, Style::default()),
                 Span::styled("- ", Style::default().fg(theme.accent)),
-                Span::styled(
-                    trimmed[2..].to_string(),
-                    Style::default().fg(theme.fg),
-                ),
+                Span::styled(trimmed[2..].to_string(), Style::default().fg(theme.fg)),
             ])
         } else if let Some(colon_pos) = trimmed.find(':') {
             // Key-value pair
@@ -391,14 +507,19 @@ fn highlight_yaml(yaml: &str, theme: &Theme) -> Vec<Line<'static>> {
                 Span::styled(indent, Style::default()),
                 Span::styled(
                     key.to_string(),
-                    Style::default().fg(theme.accent).add_modifier(Modifier::BOLD),
+                    Style::default()
+                        .fg(theme.accent)
+                        .add_modifier(Modifier::BOLD),
                 ),
                 Span::styled(": ", Style::default().fg(theme.muted)),
                 Span::styled(value.to_string(), value_style),
             ])
         } else {
             // Plain line
-            Line::from(Span::styled(line.to_string(), Style::default().fg(theme.fg)))
+            Line::from(Span::styled(
+                line.to_string(),
+                Style::default().fg(theme.fg),
+            ))
         };
 
         lines.push(highlighted_line);
@@ -418,8 +539,7 @@ fn render_status_bar_impl(frame: &mut Frame, area: Rect, state: &ViewerState, th
         }
     };
 
-    let status = Paragraph::new(status_text)
-        .style(Style::default().fg(theme.muted).bg(theme.bg));
+    let status = Paragraph::new(status_text).style(Style::default().fg(theme.muted).bg(theme.bg));
 
     frame.render_widget(status, area);
 }

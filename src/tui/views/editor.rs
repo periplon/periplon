@@ -25,7 +25,10 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
-    widgets::{Block, Borders, List, ListItem, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, Wrap},
+    widgets::{
+        Block, Borders, List, ListItem, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState,
+        Wrap,
+    },
     Frame,
 };
 
@@ -130,9 +133,9 @@ pub fn render(
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),  // Header
-            Constraint::Min(0),     // Editor content
-            Constraint::Length(1),  // Status bar with validation
+            Constraint::Length(3), // Header
+            Constraint::Min(0),    // Editor content
+            Constraint::Length(1), // Status bar with validation
         ])
         .split(area);
 
@@ -226,10 +229,12 @@ fn render_text_editor(
     let total_lines = lines.len();
 
     // Calculate scroll to keep cursor visible
-    let scroll_offset = calculate_scroll_offset(state.cursor_line(), state.scroll_offset(), content_height);
+    let scroll_offset =
+        calculate_scroll_offset(state.cursor_line(), state.scroll_offset(), content_height);
 
     // Build error/warning map for inline markers
-    let mut line_markers: std::collections::HashMap<usize, Vec<String>> = std::collections::HashMap::new();
+    let mut line_markers: std::collections::HashMap<usize, Vec<String>> =
+        std::collections::HashMap::new();
     for (line_num, error) in &feedback.errors {
         line_markers
             .entry(*line_num)
@@ -319,7 +324,14 @@ fn render_text_editor(
 
     // Render scrollbar
     if total_lines > content_height {
-        render_scrollbar(frame, area, total_lines, scroll_offset, content_height, theme);
+        render_scrollbar(
+            frame,
+            area,
+            total_lines,
+            scroll_offset,
+            content_height,
+            theme,
+        );
     }
 }
 
@@ -346,7 +358,9 @@ fn render_form_editor(frame: &mut Frame, area: Rect, state: &EditorState, theme:
             Line::from(""),
             Line::from(Span::styled(
                 "Switch to Text mode to fix syntax errors.",
-                Style::default().fg(theme.muted).add_modifier(Modifier::ITALIC),
+                Style::default()
+                    .fg(theme.muted)
+                    .add_modifier(Modifier::ITALIC),
             )),
         ],
     };
@@ -377,10 +391,22 @@ fn render_status_bar_with_validation(
     } else {
         let mut parts = Vec::new();
         if !feedback.errors.is_empty() {
-            parts.push(format!("{} error{}", feedback.errors.len(), if feedback.errors.len() == 1 { "" } else { "s" }));
+            parts.push(format!(
+                "{} error{}",
+                feedback.errors.len(),
+                if feedback.errors.len() == 1 { "" } else { "s" }
+            ));
         }
         if !feedback.warnings.is_empty() {
-            parts.push(format!("{} warning{}", feedback.warnings.len(), if feedback.warnings.len() == 1 { "" } else { "s" }));
+            parts.push(format!(
+                "{} warning{}",
+                feedback.warnings.len(),
+                if feedback.warnings.len() == 1 {
+                    ""
+                } else {
+                    "s"
+                }
+            ));
         }
         let message = format!("✗ {}", parts.join(", "));
         Span::styled(message, Style::default().fg(theme.error))
@@ -470,8 +496,7 @@ fn render_validation_modal(
     };
 
     // Clear the area behind the modal (semi-transparent effect)
-    let clear_block = Block::default()
-        .style(Style::default().bg(Color::Black));
+    let clear_block = Block::default().style(Style::default().bg(Color::Black));
     frame.render_widget(clear_block, area);
 
     // Build validation items
@@ -561,7 +586,9 @@ fn highlight_yaml_line<'a>(line: &'a str, theme: &Theme) -> Vec<Span<'a>> {
         // Comment
         vec![Span::styled(
             line,
-            Style::default().fg(theme.muted).add_modifier(Modifier::ITALIC),
+            Style::default()
+                .fg(theme.muted)
+                .add_modifier(Modifier::ITALIC),
         )]
     } else if trimmed.starts_with("---") || trimmed.starts_with("...") {
         // Document separator
@@ -597,7 +624,11 @@ fn highlight_yaml_line<'a>(line: &'a str, theme: &Theme) -> Vec<Span<'a>> {
 }
 
 /// Highlight a YAML line with a visible cursor
-fn highlight_yaml_line_with_cursor(line: &str, cursor_col: usize, theme: &Theme) -> Vec<Span<'static>> {
+fn highlight_yaml_line_with_cursor(
+    line: &str,
+    cursor_col: usize,
+    theme: &Theme,
+) -> Vec<Span<'static>> {
     // Convert cursor column to byte position (handle multi-byte chars)
     let chars: Vec<char> = line.chars().collect();
     let cursor_pos = cursor_col.min(chars.len());
@@ -646,7 +677,11 @@ fn highlight_yaml_line_with_cursor(line: &str, cursor_col: usize, theme: &Theme)
 }
 
 /// Calculate scroll offset to keep cursor visible
-fn calculate_scroll_offset(cursor_line: usize, current_offset: usize, viewport_height: usize) -> usize {
+fn calculate_scroll_offset(
+    cursor_line: usize,
+    current_offset: usize,
+    viewport_height: usize,
+) -> usize {
     if cursor_line < current_offset {
         // Cursor above viewport, scroll up
         cursor_line
@@ -805,7 +840,10 @@ fn render_scrollbar(
 }
 
 /// Get auto-completion suggestions based on context
-pub fn get_autocomplete_suggestions(line: &str, cursor_col: usize) -> Vec<AutoCompletionSuggestion> {
+pub fn get_autocomplete_suggestions(
+    line: &str,
+    cursor_col: usize,
+) -> Vec<AutoCompletionSuggestion> {
     let mut suggestions = Vec::new();
 
     // Get word at cursor

@@ -33,11 +33,11 @@ mod mock_permission_service;
 mod test_helpers;
 
 #[cfg(feature = "server")]
+mod mock_auth_service;
+#[cfg(feature = "server")]
 mod mock_queue;
 #[cfg(feature = "server")]
 mod mock_storage;
-#[cfg(feature = "server")]
-mod mock_auth_service;
 
 pub use mock_hook_service::*;
 pub use mock_mcp_server::*;
@@ -45,8 +45,8 @@ pub use mock_permission_service::*;
 pub use test_helpers::*;
 
 #[cfg(feature = "server")]
+pub use mock_auth_service::*;
+#[cfg(feature = "server")]
 pub use mock_queue::*;
 #[cfg(feature = "server")]
 pub use mock_storage::*;
-#[cfg(feature = "server")]
-pub use mock_auth_service::*;

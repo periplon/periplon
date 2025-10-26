@@ -1,7 +1,7 @@
+use futures::StreamExt;
 use periplon_sdk::adapters::secondary::MockTransport;
 use periplon_sdk::application::Query;
 use periplon_sdk::domain::Message;
-use futures::StreamExt;
 use serde_json::json;
 
 #[tokio::test]

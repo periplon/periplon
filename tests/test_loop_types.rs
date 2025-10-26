@@ -1,28 +1,34 @@
 //! Test all loop types: for_each, repeat, while, repeat_until
 
 use periplon_sdk::dsl::parser::parse_workflow_file;
-use periplon_sdk::dsl::schema::{LoopSpec, CollectionSource, ConditionSpec};
+use periplon_sdk::dsl::schema::{CollectionSource, ConditionSpec, LoopSpec};
 use serde_json::json;
 
 #[tokio::test]
 async fn test_foreach_inline_collection() {
     let workflow_path = "tests/fixtures/loop_types.yaml";
-    let workflow = parse_workflow_file(workflow_path)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow_file(workflow_path).expect("Failed to parse workflow");
 
-    let task = workflow.tasks.get("test_foreach_inline")
+    let task = workflow
+        .tasks
+        .get("test_foreach_inline")
         .expect("test_foreach_inline should exist");
 
     // Verify loop specification
     assert!(task.loop_spec.is_some(), "Task should have loop spec");
 
     match task.loop_spec.as_ref().unwrap() {
-        LoopSpec::ForEach { collection, iterator, parallel, max_parallel } => {
+        LoopSpec::ForEach {
+            collection,
+            iterator,
+            parallel,
+            max_parallel,
+        } => {
             // Verify iterator name
             assert_eq!(iterator, "fruit");
 
             // Verify not parallel
-            assert_eq!(*parallel, false);
+            assert!(!(*parallel));
             assert!(max_parallel.is_none());
 
             // Verify inline collection
@@ -50,16 +56,22 @@ async fn test_foreach_inline_collection() {
 #[tokio::test]
 async fn test_foreach_range_collection() {
     let workflow_path = "tests/fixtures/loop_types.yaml";
-    let workflow = parse_workflow_file(workflow_path)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow_file(workflow_path).expect("Failed to parse workflow");
 
-    let task = workflow.tasks.get("test_foreach_range")
+    let task = workflow
+        .tasks
+        .get("test_foreach_range")
         .expect("test_foreach_range should exist");
 
     match task.loop_spec.as_ref().unwrap() {
-        LoopSpec::ForEach { collection, iterator, parallel, .. } => {
+        LoopSpec::ForEach {
+            collection,
+            iterator,
+            parallel,
+            ..
+        } => {
             assert_eq!(iterator, "number");
-            assert_eq!(*parallel, false);
+            assert!(!(*parallel));
 
             match collection {
                 CollectionSource::Range { start, end, step } => {
@@ -79,16 +91,22 @@ async fn test_foreach_range_collection() {
 #[tokio::test]
 async fn test_foreach_parallel() {
     let workflow_path = "tests/fixtures/loop_types.yaml";
-    let workflow = parse_workflow_file(workflow_path)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow_file(workflow_path).expect("Failed to parse workflow");
 
-    let task = workflow.tasks.get("test_foreach_parallel")
+    let task = workflow
+        .tasks
+        .get("test_foreach_parallel")
         .expect("test_foreach_parallel should exist");
 
     match task.loop_spec.as_ref().unwrap() {
-        LoopSpec::ForEach { collection, iterator, parallel, max_parallel } => {
+        LoopSpec::ForEach {
+            collection,
+            iterator,
+            parallel,
+            max_parallel,
+        } => {
             assert_eq!(iterator, "task_name");
-            assert_eq!(*parallel, true, "Should be parallel");
+            assert!(*parallel, "Should be parallel");
             assert_eq!(*max_parallel, Some(2), "Should have max_parallel=2");
 
             match collection {
@@ -107,19 +125,25 @@ async fn test_foreach_parallel() {
 #[tokio::test]
 async fn test_repeat_loop() {
     let workflow_path = "tests/fixtures/loop_types.yaml";
-    let workflow = parse_workflow_file(workflow_path)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow_file(workflow_path).expect("Failed to parse workflow");
 
-    let task = workflow.tasks.get("test_repeat")
+    let task = workflow
+        .tasks
+        .get("test_repeat")
         .expect("test_repeat should exist");
 
     assert!(task.loop_spec.is_some());
 
     match task.loop_spec.as_ref().unwrap() {
-        LoopSpec::Repeat { count, iterator, parallel, max_parallel } => {
+        LoopSpec::Repeat {
+            count,
+            iterator,
+            parallel,
+            max_parallel,
+        } => {
             assert_eq!(*count, 3, "Should repeat 3 times");
             assert_eq!(iterator, &Some("index".to_string()));
-            assert_eq!(*parallel, false);
+            assert!(!(*parallel));
             assert!(max_parallel.is_none());
         }
         _ => panic!("Expected Repeat loop"),
@@ -131,17 +155,23 @@ async fn test_repeat_loop() {
 #[tokio::test]
 async fn test_repeat_parallel() {
     let workflow_path = "tests/fixtures/loop_types.yaml";
-    let workflow = parse_workflow_file(workflow_path)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow_file(workflow_path).expect("Failed to parse workflow");
 
-    let task = workflow.tasks.get("test_repeat_parallel")
+    let task = workflow
+        .tasks
+        .get("test_repeat_parallel")
         .expect("test_repeat_parallel should exist");
 
     match task.loop_spec.as_ref().unwrap() {
-        LoopSpec::Repeat { count, iterator, parallel, max_parallel } => {
+        LoopSpec::Repeat {
+            count,
+            iterator,
+            parallel,
+            max_parallel,
+        } => {
             assert_eq!(*count, 4);
             assert_eq!(iterator, &Some("batch".to_string()));
-            assert_eq!(*parallel, true);
+            assert!(*parallel);
             assert_eq!(*max_parallel, Some(2));
         }
         _ => panic!("Expected Repeat loop"),
@@ -153,16 +183,22 @@ async fn test_repeat_parallel() {
 #[tokio::test]
 async fn test_while_loop() {
     let workflow_path = "tests/fixtures/loop_types.yaml";
-    let workflow = parse_workflow_file(workflow_path)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow_file(workflow_path).expect("Failed to parse workflow");
 
-    let task = workflow.tasks.get("test_while")
+    let task = workflow
+        .tasks
+        .get("test_while")
         .expect("test_while should exist");
 
     assert!(task.loop_spec.is_some());
 
     match task.loop_spec.as_ref().unwrap() {
-        LoopSpec::While { condition, max_iterations, iteration_variable, delay_between_secs } => {
+        LoopSpec::While {
+            condition,
+            max_iterations,
+            iteration_variable,
+            delay_between_secs,
+        } => {
             assert_eq!(*max_iterations, 5, "Should have max 5 iterations");
             assert_eq!(iteration_variable, &Some("iteration".to_string()));
             assert_eq!(*delay_between_secs, Some(1));
@@ -179,16 +215,23 @@ async fn test_while_loop() {
 #[tokio::test]
 async fn test_repeat_until_loop() {
     let workflow_path = "tests/fixtures/loop_types.yaml";
-    let workflow = parse_workflow_file(workflow_path)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow_file(workflow_path).expect("Failed to parse workflow");
 
-    let task = workflow.tasks.get("test_repeat_until")
+    let task = workflow
+        .tasks
+        .get("test_repeat_until")
         .expect("test_repeat_until should exist");
 
     assert!(task.loop_spec.is_some());
 
     match task.loop_spec.as_ref().unwrap() {
-        LoopSpec::RepeatUntil { condition, min_iterations, max_iterations, iteration_variable, delay_between_secs } => {
+        LoopSpec::RepeatUntil {
+            condition,
+            min_iterations,
+            max_iterations,
+            iteration_variable,
+            delay_between_secs,
+        } => {
             assert_eq!(*min_iterations, Some(1));
             assert_eq!(*max_iterations, 3);
             assert_eq!(iteration_variable, &Some("attempt".to_string()));
@@ -206,18 +249,22 @@ async fn test_repeat_until_loop() {
 #[tokio::test]
 async fn test_loop_with_break_condition() {
     let workflow_path = "tests/fixtures/loop_types.yaml";
-    let workflow = parse_workflow_file(workflow_path)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow_file(workflow_path).expect("Failed to parse workflow");
 
-    let task = workflow.tasks.get("test_loop_break")
+    let task = workflow
+        .tasks
+        .get("test_loop_break")
         .expect("test_loop_break should exist");
 
     // Verify loop control
     assert!(task.loop_control.is_some());
     let control = task.loop_control.as_ref().unwrap();
 
-    assert!(control.break_condition.is_some(), "Should have break condition");
-    assert_eq!(control.collect_results, true);
+    assert!(
+        control.break_condition.is_some(),
+        "Should have break condition"
+    );
+    assert!(control.collect_results);
     assert_eq!(control.result_key, Some("break_results".to_string()));
 
     println!("✓ loop with break condition test passed");
@@ -226,18 +273,22 @@ async fn test_loop_with_break_condition() {
 #[tokio::test]
 async fn test_loop_with_continue_condition() {
     let workflow_path = "tests/fixtures/loop_types.yaml";
-    let workflow = parse_workflow_file(workflow_path)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow_file(workflow_path).expect("Failed to parse workflow");
 
-    let task = workflow.tasks.get("test_loop_continue")
+    let task = workflow
+        .tasks
+        .get("test_loop_continue")
         .expect("test_loop_continue should exist");
 
     // Verify loop control
     assert!(task.loop_control.is_some());
     let control = task.loop_control.as_ref().unwrap();
 
-    assert!(control.continue_condition.is_some(), "Should have continue condition");
-    assert_eq!(control.collect_results, true);
+    assert!(
+        control.continue_condition.is_some(),
+        "Should have continue condition"
+    );
+    assert!(control.collect_results);
     assert_eq!(control.result_key, Some("continue_results".to_string()));
 
     println!("✓ loop with continue condition test passed");
@@ -246,17 +297,18 @@ async fn test_loop_with_continue_condition() {
 #[tokio::test]
 async fn test_loop_with_result_collection() {
     let workflow_path = "tests/fixtures/loop_types.yaml";
-    let workflow = parse_workflow_file(workflow_path)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow_file(workflow_path).expect("Failed to parse workflow");
 
-    let task = workflow.tasks.get("test_loop_results")
+    let task = workflow
+        .tasks
+        .get("test_loop_results")
         .expect("test_loop_results should exist");
 
     // Verify loop control
     assert!(task.loop_control.is_some());
     let control = task.loop_control.as_ref().unwrap();
 
-    assert_eq!(control.collect_results, true);
+    assert!(control.collect_results);
     assert_eq!(control.result_key, Some("collected_items".to_string()));
 
     // Verify subtask has outputs
@@ -270,16 +322,19 @@ async fn test_loop_with_result_collection() {
 #[tokio::test]
 async fn test_nested_loops() {
     let workflow_path = "tests/fixtures/loop_types.yaml";
-    let workflow = parse_workflow_file(workflow_path)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow_file(workflow_path).expect("Failed to parse workflow");
 
-    let outer_task = workflow.tasks.get("test_nested_loops")
+    let outer_task = workflow
+        .tasks
+        .get("test_nested_loops")
         .expect("test_nested_loops should exist");
 
     // Verify outer loop
     assert!(outer_task.loop_spec.is_some());
     match outer_task.loop_spec.as_ref().unwrap() {
-        LoopSpec::Repeat { count, iterator, .. } => {
+        LoopSpec::Repeat {
+            count, iterator, ..
+        } => {
             assert_eq!(*count, 2);
             assert_eq!(iterator, &Some("outer".to_string()));
         }
@@ -308,10 +363,11 @@ async fn test_nested_loops() {
 #[tokio::test]
 async fn test_loop_with_timeout() {
     let workflow_path = "tests/fixtures/loop_types.yaml";
-    let workflow = parse_workflow_file(workflow_path)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow_file(workflow_path).expect("Failed to parse workflow");
 
-    let task = workflow.tasks.get("test_loop_timeout")
+    let task = workflow
+        .tasks
+        .get("test_loop_timeout")
         .expect("test_loop_timeout should exist");
 
     // Verify loop control with timeout
@@ -327,10 +383,11 @@ async fn test_loop_with_timeout() {
 #[tokio::test]
 async fn test_loop_with_complex_condition() {
     let workflow_path = "tests/fixtures/loop_types.yaml";
-    let workflow = parse_workflow_file(workflow_path)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow_file(workflow_path).expect("Failed to parse workflow");
 
-    let task = workflow.tasks.get("test_complex_condition")
+    let task = workflow
+        .tasks
+        .get("test_complex_condition")
         .expect("test_complex_condition should exist");
 
     // Verify loop control with complex condition
@@ -353,8 +410,7 @@ async fn test_loop_with_complex_condition() {
 #[tokio::test]
 async fn test_loop_variable_substitution() {
     let workflow_path = "tests/fixtures/loop_types.yaml";
-    let workflow = parse_workflow_file(workflow_path)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow_file(workflow_path).expect("Failed to parse workflow");
 
     // Test variable substitution in for_each
     let foreach_task = workflow.tasks.get("test_foreach_inline").unwrap();
@@ -388,8 +444,7 @@ async fn test_loop_variable_substitution() {
 #[tokio::test]
 async fn test_all_loop_types_present() {
     let workflow_path = "tests/fixtures/loop_types.yaml";
-    let workflow = parse_workflow_file(workflow_path)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow_file(workflow_path).expect("Failed to parse workflow");
 
     // Count each loop type
     let mut foreach_count = 0;
@@ -397,7 +452,7 @@ async fn test_all_loop_types_present() {
     let mut while_count = 0;
     let mut repeat_until_count = 0;
 
-    for (_task_id, task) in &workflow.tasks {
+    for task in workflow.tasks.values() {
         if let Some(loop_spec) = &task.loop_spec {
             match loop_spec {
                 LoopSpec::ForEach { .. } => foreach_count += 1,
@@ -423,8 +478,7 @@ async fn test_all_loop_types_present() {
 #[tokio::test]
 async fn test_loop_max_parallel() {
     let workflow_path = "tests/fixtures/loop_types.yaml";
-    let workflow = parse_workflow_file(workflow_path)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow_file(workflow_path).expect("Failed to parse workflow");
 
     // Test for_each with max_parallel
     let foreach_parallel = workflow.tasks.get("test_foreach_parallel").unwrap();

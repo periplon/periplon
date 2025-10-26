@@ -260,17 +260,16 @@ fn validate_input_value(
         }
 
         // Enum validation (allowed_values)
-        if !validation.allowed_values.is_empty()
-            && !validation.allowed_values.contains(value) {
-                return Err(ResolveError::ValidationFailed {
-                    task: task_name.to_string(),
-                    input: input_name.to_string(),
-                    reason: format!(
-                        "Value not in allowed values: {:?}",
-                        validation.allowed_values
-                    ),
-                });
-            }
+        if !validation.allowed_values.is_empty() && !validation.allowed_values.contains(value) {
+            return Err(ResolveError::ValidationFailed {
+                task: task_name.to_string(),
+                input: input_name.to_string(),
+                reason: format!(
+                    "Value not in allowed values: {:?}",
+                    validation.allowed_values
+                ),
+            });
+        }
     }
 
     Ok(())

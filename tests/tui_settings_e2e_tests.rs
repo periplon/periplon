@@ -33,12 +33,7 @@ use std::path::PathBuf;
 // ============================================================================
 
 /// Create a custom app configuration for testing
-fn create_custom_config(
-    workflow_dir: &str,
-    theme: &str,
-    readonly: bool,
-    debug: bool,
-) -> AppConfig {
+fn create_custom_config(workflow_dir: &str, theme: &str, readonly: bool, debug: bool) -> AppConfig {
     AppConfig {
         workflow_dir: PathBuf::from(workflow_dir),
         workflow: None,
@@ -75,10 +70,10 @@ fn test_e2e_default_config_initialization() {
     // Verify all default values
     assert_eq!(config.workflow_dir, PathBuf::from("."));
     assert_eq!(config.workflow, None);
-    assert_eq!(config.readonly, false);
+    assert!(!config.readonly);
     assert_eq!(config.theme, "dark");
     assert_eq!(config.state_dir, None);
-    assert_eq!(config.debug, false);
+    assert!(!config.debug);
     assert_eq!(config.tick_rate, 250);
 }
 
@@ -91,7 +86,7 @@ fn test_e2e_default_config_is_valid() {
     assert!(!config.readonly); // Editing enabled by default
     assert!(!config.debug); // Debug off by default
     assert_eq!(config.tick_rate, 250); // Reasonable tick rate
-    assert!(config.workflow_dir.as_os_str().len() > 0); // Has a directory
+    assert!(!config.workflow_dir.as_os_str().is_empty()); // Has a directory
 }
 
 #[test]
@@ -518,9 +513,9 @@ fn test_e2e_demo_configuration() {
     let config = AppConfig {
         workflow_dir: PathBuf::from("./demo-workflows"),
         workflow: Some(PathBuf::from("./demo-workflows/showcase.yaml")),
-        readonly: true, // Don't allow modifications in demo
+        readonly: true,             // Don't allow modifications in demo
         theme: "light".to_string(), // Better for projectors
-        state_dir: None, // No persistence in demo
+        state_dir: None,            // No persistence in demo
         debug: false,
         tick_rate: 250,
     };
@@ -562,8 +557,8 @@ fn test_e2e_config_mutation_independence() {
     cloned.tick_rate = 500;
 
     // Original unchanged
-    assert_eq!(original.readonly, false);
-    assert_eq!(original.debug, false);
+    assert!(!original.readonly);
+    assert!(!original.debug);
     assert_eq!(original.tick_rate, 250);
 }
 
@@ -807,10 +802,7 @@ fn test_e2e_config_upgrade_compatibility() {
     // Should be identical to default
     let new_default = AppConfig::default();
 
-    assert_eq!(
-        old_style_config.workflow_dir,
-        new_default.workflow_dir
-    );
+    assert_eq!(old_style_config.workflow_dir, new_default.workflow_dir);
     assert_eq!(old_style_config.readonly, new_default.readonly);
 }
 

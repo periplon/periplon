@@ -8,45 +8,72 @@ use std::path::Path;
 #[ignore] // Missing test_dod_auto_elevate.yaml file
 fn test_dod_auto_elevate_workflow_structure() {
     // Load and parse the test workflow
-    let yaml_content = fs::read_to_string("test_dod_auto_elevate.yaml")
-        .expect("Failed to read test workflow");
+    let yaml_content =
+        fs::read_to_string("test_dod_auto_elevate.yaml").expect("Failed to read test workflow");
 
-    let workflow = parse_workflow(&yaml_content)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow(&yaml_content).expect("Failed to parse workflow");
 
     // Verify workflow structure
     assert_eq!(workflow.name, "Test DoD Auto-Elevate Permissions");
     assert_eq!(workflow.version, "1.0.0");
 
     // Verify agents exist
-    assert!(workflow.agents.contains_key("cleanup_agent"), "cleanup_agent not found");
-    assert!(workflow.agents.contains_key("test_agent"), "test_agent not found");
+    assert!(
+        workflow.agents.contains_key("cleanup_agent"),
+        "cleanup_agent not found"
+    );
+    assert!(
+        workflow.agents.contains_key("test_agent"),
+        "test_agent not found"
+    );
 
     // Verify cleanup agent has bypass permissions
     let cleanup_agent = &workflow.agents["cleanup_agent"];
-    assert_eq!(cleanup_agent.permissions.mode, "bypassPermissions",
-        "cleanup_agent should have bypassPermissions");
+    assert_eq!(
+        cleanup_agent.permissions.mode, "bypassPermissions",
+        "cleanup_agent should have bypassPermissions"
+    );
 
     // Verify test agent has acceptEdits permission mode initially
     let test_agent = &workflow.agents["test_agent"];
-    assert_eq!(test_agent.permissions.mode, "acceptEdits",
-        "test_agent should start with acceptEdits mode");
-    assert!(test_agent.tools.contains(&"Bash".to_string()), "Bash tool not enabled");
+    assert_eq!(
+        test_agent.permissions.mode, "acceptEdits",
+        "test_agent should start with acceptEdits mode"
+    );
+    assert!(
+        test_agent.tools.contains(&"Bash".to_string()),
+        "Bash tool not enabled"
+    );
 
     // Verify tasks exist
-    assert!(workflow.tasks.contains_key("cleanup"), "cleanup task not found");
-    assert!(workflow.tasks.contains_key("test_auto_elevate"), "test_auto_elevate task not found");
+    assert!(
+        workflow.tasks.contains_key("cleanup"),
+        "cleanup task not found"
+    );
+    assert!(
+        workflow.tasks.contains_key("test_auto_elevate"),
+        "test_auto_elevate task not found"
+    );
 
     // Verify the main task has DoD configured
     let main_task = &workflow.tasks["test_auto_elevate"];
-    assert!(main_task.definition_of_done.is_some(), "DoD should be configured");
+    assert!(
+        main_task.definition_of_done.is_some(),
+        "DoD should be configured"
+    );
 
     let dod = main_task.definition_of_done.as_ref().unwrap();
 
     // Verify auto_elevate_permissions is enabled
-    assert!(dod.auto_elevate_permissions, "auto_elevate_permissions should be true");
+    assert!(
+        dod.auto_elevate_permissions,
+        "auto_elevate_permissions should be true"
+    );
     assert_eq!(dod.max_retries, 2, "Should allow 2 retries");
-    assert!(dod.fail_on_unmet, "Should fail if DoD not met after retries");
+    assert!(
+        dod.fail_on_unmet,
+        "Should fail if DoD not met after retries"
+    );
 
     // Verify DoD criteria
     assert_eq!(dod.criteria.len(), 3, "Should have 3 DoD criteria");
@@ -63,30 +90,35 @@ fn test_dod_auto_elevate_workflow_structure() {
 fn test_dod_criteria_types() {
     use periplon_sdk::dsl::schema::DoneCriterion;
 
-    let yaml_content = fs::read_to_string("test_dod_auto_elevate.yaml")
-        .expect("Failed to read test workflow");
+    let yaml_content =
+        fs::read_to_string("test_dod_auto_elevate.yaml").expect("Failed to read test workflow");
 
-    let workflow = parse_workflow(&yaml_content)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow(&yaml_content).expect("Failed to parse workflow");
 
     let main_task = &workflow.tasks["test_auto_elevate"];
     let dod = main_task.definition_of_done.as_ref().unwrap();
 
     // Check that we have the expected criterion types
-    let has_file_exists = dod.criteria.iter().any(|c| {
-        matches!(c, DoneCriterion::FileExists { .. })
-    });
+    let has_file_exists = dod
+        .criteria
+        .iter()
+        .any(|c| matches!(c, DoneCriterion::FileExists { .. }));
     assert!(has_file_exists, "Should have FileExists criterion");
 
-    let has_file_contains = dod.criteria.iter().any(|c| {
-        matches!(c, DoneCriterion::FileContains { .. })
-    });
+    let has_file_contains = dod
+        .criteria
+        .iter()
+        .any(|c| matches!(c, DoneCriterion::FileContains { .. }));
     assert!(has_file_contains, "Should have FileContains criterion");
 
-    let has_command_succeeds = dod.criteria.iter().any(|c| {
-        matches!(c, DoneCriterion::CommandSucceeds { .. })
-    });
-    assert!(has_command_succeeds, "Should have CommandSucceeds criterion");
+    let has_command_succeeds = dod
+        .criteria
+        .iter()
+        .any(|c| matches!(c, DoneCriterion::CommandSucceeds { .. }));
+    assert!(
+        has_command_succeeds,
+        "Should have CommandSucceeds criterion"
+    );
 
     println!("✓ All expected DoD criterion types present");
 }
@@ -94,16 +126,17 @@ fn test_dod_criteria_types() {
 #[test]
 #[ignore] // Missing test_dod_auto_elevate.yaml file
 fn test_task_dependencies() {
-    let yaml_content = fs::read_to_string("test_dod_auto_elevate.yaml")
-        .expect("Failed to read test workflow");
+    let yaml_content =
+        fs::read_to_string("test_dod_auto_elevate.yaml").expect("Failed to read test workflow");
 
-    let workflow = parse_workflow(&yaml_content)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow(&yaml_content).expect("Failed to parse workflow");
 
     // Verify test_auto_elevate depends on cleanup
     let main_task = &workflow.tasks["test_auto_elevate"];
-    assert!(main_task.depends_on.contains(&"cleanup".to_string()),
-        "test_auto_elevate should depend on cleanup");
+    assert!(
+        main_task.depends_on.contains(&"cleanup".to_string()),
+        "test_auto_elevate should depend on cleanup"
+    );
 
     println!("✓ Task dependencies configured correctly");
 }
@@ -121,14 +154,11 @@ async fn test_dod_auto_elevate_full_workflow() {
         workflow_path
     );
 
-    let yaml_content = fs::read_to_string(workflow_path)
-        .expect("Failed to read workflow file");
+    let yaml_content = fs::read_to_string(workflow_path).expect("Failed to read workflow file");
 
-    let workflow = parse_workflow(&yaml_content)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow(&yaml_content).expect("Failed to parse workflow");
 
-    validate_workflow(&workflow)
-        .expect("Workflow validation failed");
+    validate_workflow(&workflow).expect("Workflow validation failed");
 
     println!("✓ Workflow loaded and validated successfully");
     println!("✓ auto_elevate_permissions enabled with 2 max retries");
@@ -146,12 +176,10 @@ fn test_definition_of_done_schema() {
 
     // Test that we can create a DoD with auto_elevate_permissions
     let dod = DefinitionOfDone {
-        criteria: vec![
-            DoneCriterion::FileExists {
-                path: "/tmp/test.txt".to_string(),
-                description: "Test file must exist".to_string(),
-            }
-        ],
+        criteria: vec![DoneCriterion::FileExists {
+            path: "/tmp/test.txt".to_string(),
+            description: "Test file must exist".to_string(),
+        }],
         max_retries: 3,
         fail_on_unmet: true,
         auto_elevate_permissions: true,

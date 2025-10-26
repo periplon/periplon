@@ -103,11 +103,10 @@ fn demo_generate_lock_file() -> Result<(), Box<dyn std::error::Error>> {
         println!("  - {} @ {}", name, locked.version);
         println!("    Checksum: {}", locked.checksum);
         println!("    Resolved at: {}", locked.resolved_at);
-        match &locked.source {
-            periplon_sdk::dsl::predefined_tasks::lockfile::TaskSource::Local { path } => {
-                println!("    Source: local ({})", path);
-            }
-            _ => {}
+        if let periplon_sdk::dsl::predefined_tasks::lockfile::TaskSource::Local { path } =
+            &locked.source
+        {
+            println!("    Source: local ({})", path);
         }
     }
 

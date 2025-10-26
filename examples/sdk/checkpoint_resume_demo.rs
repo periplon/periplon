@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
 
     // Check if we're resuming from a previous run
     if let Some(state) = executor.get_state() {
-        for (task_id, _loop_state) in &state.loop_states {
+        for task_id in state.loop_states.keys() {
             if let Some(last_completed) = state.get_last_completed_iteration(task_id) {
                 println!(
                     "Found checkpoint for '{}': {} iterations completed, resuming...",
