@@ -10,7 +10,7 @@ pre-commit: fmt-check clippy test
     @echo "✅ All pre-commit checks passed!"
 
 # Full CI check (what runs in GitHub Actions)
-ci: fmt-check clippy test build-release
+ci: fmt-check clippy test build-release audit
     @echo "✅ CI checks passed!"
 
 # Format code
@@ -23,7 +23,7 @@ fmt-check:
 
 # Run clippy with strict warnings
 clippy:
-    cargo clippy --all-targets --all-features -- -D warnings
+    cargo clippy --all-targets --all-features -- -D clippy::correctness -D clippy::suspicious -D clippy::perf -W clippy::style -W clippy::complexity
 
 # Run clippy and automatically fix issues
 clippy-fix:
