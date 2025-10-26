@@ -1141,25 +1141,23 @@ impl App {
         };
 
         // Find all YAML workflow files
-        for entry in entries {
-            if let Ok(entry) = entry {
-                let path = entry.path();
+        for entry in entries.flatten() {
+            let path = entry.path();
 
-                // Check if it's a YAML file
-                if path.is_file() {
-                    if let Some(ext) = path.extension() {
-                        if ext == "yaml" || ext == "yml" {
-                            // Try to get the filename
-                            if let Some(name) = path.file_stem() {
-                                self.state.workflows.push(WorkflowEntry {
-                                    name: name.to_string_lossy().to_string(),
-                                    path: path.clone(),
-                                    description: None,
-                                    version: None,
-                                    valid: true,
-                                    errors: Vec::new(),
-                                });
-                            }
+            // Check if it's a YAML file
+            if path.is_file() {
+                if let Some(ext) = path.extension() {
+                    if ext == "yaml" || ext == "yml" {
+                        // Try to get the filename
+                        if let Some(name) = path.file_stem() {
+                            self.state.workflows.push(WorkflowEntry {
+                                name: name.to_string_lossy().to_string(),
+                                path: path.clone(),
+                                description: None,
+                                version: None,
+                                valid: true,
+                                errors: Vec::new(),
+                            });
                         }
                     }
                 }

@@ -192,7 +192,7 @@ impl Default for PermissionContextBuilder {
 pub struct HookContextBuilder;
 
 impl HookContextBuilder {
-    pub fn new() -> HookContext {
+    pub fn build() -> HookContext {
         HookContext { signal: None }
     }
 }
