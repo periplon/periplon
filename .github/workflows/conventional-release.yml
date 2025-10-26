@@ -24,8 +24,28 @@ jobs:
           fetch-depth: 0  # Fetch all history for accurate commit analysis
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Free up disk space
+        run: |
+          echo "Available disk space before cleanup:"
+          df -h
+
+          # Remove unnecessary packages and files to free up space
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
+          echo "Available disk space after cleanup:"
+          df -h
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: false
+          shared-key: conventional-release
 
       - name: Configure Git
         run: |
@@ -129,6 +149,14 @@ jobs:
           npm ci
           npm run build
           echo "Web UI built successfully. Output directory created at web/out"
+
+      - name: Clean up web dependencies to save space
+        if: steps.version.outputs.should_release == 'true' && hashFiles('web/package-lock.json') != ''
+        run: |
+          # Remove node_modules after build to free up space
+          rm -rf web/node_modules
+          echo "Disk space after web cleanup:"
+          df -h
 
       - name: Run tests
         if: steps.version.outputs.should_release == 'true'
