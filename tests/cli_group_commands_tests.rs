@@ -22,13 +22,20 @@ fn get_dsl_executor_path() -> PathBuf {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("target");
 
+    // Binary name differs on Windows
+    let binary_name = if cfg!(windows) {
+        "dsl-executor.exe"
+    } else {
+        "dsl-executor"
+    };
+
     // Try release first, then debug
-    let release_path = path.join("release").join("dsl-executor");
+    let release_path = path.join("release").join(binary_name);
     if release_path.exists() {
         return release_path;
     }
 
-    path.join("debug").join("dsl-executor")
+    path.join("debug").join(binary_name)
 }
 
 /// Check if dsl-executor binary exists (built)
