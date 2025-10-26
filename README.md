@@ -182,7 +182,7 @@ cargo build --release --bin periplon-tui --features tui
 - [Architecture Guide](./docs/guides/architecture.md) - Hexagonal architecture overview
 - [Message Types](./docs/api/message-types.md) - Message type reference
 - [Error Handling](./docs/guides/error-handling.md) - Error types and patterns
-- [Testing Guide](./docs/guides/testing.md) - Testing strategies
+- [Testing Guide](./docs/guides/testing.md) - Comprehensive testing (166+ tests)
 
 ### DSL System
 - [DSL Overview](./docs/guides/dsl-overview.md) - Introduction to the DSL
@@ -229,11 +229,37 @@ See [examples/](./examples/) for more examples.
 - **Rust**: 1.70 or later
 - **Tokio runtime**: Required for async operations
 
+## Testing
+
+The SDK includes comprehensive test coverage with 166+ integration tests:
+
+```bash
+# Run all tests with server features
+cargo test --lib --tests --features server
+
+# Run specific test suite
+cargo test --test execution_api_tests --features server
+
+# Run tests with output
+cargo test --features server -- --nocapture
+```
+
+**Test Suites:**
+- Authentication & Authorization (26 tests)
+- Queue Backend Operations (22 tests)
+- Storage Backend Operations (21 tests)
+- Schedule Management API (22 tests)
+- Execution Management API (22 tests)
+- WebSocket Streaming (21 tests)
+- Workflow API Integration (32 tests)
+
+See [Testing Guide](./docs/guides/testing.md) for comprehensive documentation and examples.
+
 ## Contributing
 
 Contributions are welcome! Please ensure:
 
-1. All tests pass: `cargo test`
+1. All tests pass: `cargo test --lib --tests --features server`
 2. Code is formatted: `cargo fmt`
 3. No clippy warnings: `cargo clippy`
 4. Documentation is updated

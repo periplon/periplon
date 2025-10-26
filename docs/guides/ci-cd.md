@@ -87,27 +87,48 @@ The project uses GitHub Actions for CI/CD with three main workflows:
 
 ### Creating a Release
 
+#### Install cargo-release
+
 ```bash
-# 1. Bump version
-./scripts/bump-version.sh patch  # or minor, major, or x.y.z
+cargo install cargo-release
+```
 
-# 2. Review changes
-git diff
+#### Release Process
 
-# 3. Commit version bump
-git add Cargo.toml Cargo.lock
-git commit -m "chore: bump version to 0.1.1"
+```bash
+# 1. Dry run to preview changes
+cargo release patch --dry-run  # or minor, major
 
-# 4. Create and push tag
-git tag -a v0.1.1 -m "Release v0.1.1"
-git push origin main
-git push origin v0.1.1
+# 2. Execute the release
+cargo release patch --execute
 
-# 5. GitHub Actions will automatically:
+# This will automatically:
+# - Bump version in Cargo.toml
+# - Update Cargo.lock
+# - Create git commit
+# - Create git tag (v0.1.1)
+# - Push to remote
+
+# 3. GitHub Actions will automatically:
 #    - Build binaries for all platforms
 #    - Create GitHub release
 #    - Upload assets
 #    - Publish to crates.io
+```
+
+#### Manual Release (Alternative)
+
+```bash
+# 1. Bump version manually
+cargo release patch --no-push --no-tag --execute
+
+# 2. Review changes
+git diff
+
+# 3. Create and push tag manually
+git tag -a v0.1.1 -m "Release v0.1.1"
+git push origin main
+git push origin v0.1.1
 ```
 
 ## Nightly Workflow

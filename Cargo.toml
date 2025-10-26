@@ -177,3 +177,20 @@ required-features = ["tui"]
 [[bench]]
 name = "dsl_benchmarks"
 harness = false
+
+# cargo-release configuration
+[package.metadata.release]
+# Don't publish to crates.io automatically (GitHub Actions handles this)
+publish = false
+# Use v prefix for tags (e.g., v0.1.0)
+tag-prefix = "v"
+# Push changes and tags to remote
+push = true
+# Sign tags with GPG (set to false if you don't have GPG configured)
+sign-tag = false
+# Commit message template
+pre-release-commit-message = "chore: bump version to {{version}}"
+# Don't allow dirty working directory
+allow-branch = ["main"]
+# Verify the project is in a good state before release
+pre-release-hook = ["cargo", "test", "--all-features"]

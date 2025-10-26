@@ -104,6 +104,10 @@ pub mod server;
 #[cfg(feature = "tui")]
 pub mod tui;
 
+// Testing utilities - available in test/dev builds
+// This allows integration tests in the tests/ directory to access these utilities
+pub mod testing;
+
 // Re-export commonly used types
 pub use adapters::primary::{query, PeriplonSDKClient};
 pub use data_fetcher::{

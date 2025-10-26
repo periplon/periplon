@@ -32,25 +32,14 @@ for workflow in "${WORKFLOWS[@]}"; do
 done
 echo ""
 
-# Check if required scripts exist
-echo "Checking helper scripts..."
-SCRIPTS=(
-    "scripts/bump-version.sh"
-)
-
-for script in "${SCRIPTS[@]}"; do
-    if [ -f "$PROJECT_ROOT/$script" ]; then
-        if [ -x "$PROJECT_ROOT/$script" ]; then
-            echo -e "${GREEN}✓${NC} Found and executable: $script"
-        else
-            echo -e "${YELLOW}!${NC} Found but not executable: $script"
-            echo "  Run: chmod +x $PROJECT_ROOT/$script"
-        fi
-    else
-        echo -e "${RED}✗${NC} Missing: $script"
-        exit 1
-    fi
-done
+# Check for cargo-release
+echo "Checking release tools..."
+if command -v cargo-release &> /dev/null; then
+    echo -e "${GREEN}✓${NC} cargo-release installed"
+else
+    echo -e "${YELLOW}!${NC} cargo-release not installed"
+    echo "  Install with: cargo install cargo-release"
+fi
 echo ""
 
 # Check Cargo.toml configuration

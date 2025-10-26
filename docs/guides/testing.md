@@ -2,31 +2,86 @@
 
 ## Overview
 
-The SDK includes comprehensive testing support with unit tests, integration tests, and mock adapters.
+The SDK includes comprehensive testing support with **166+ integration tests** covering:
+- Authentication and Authorization (26 tests)
+- Queue Backend Operations (22 tests)
+- Storage Backend Operations (21 tests)
+- Schedule Management API (22 tests)
+- Execution Management API (22 tests)
+- WebSocket Real-time Streaming (21 tests)
+- Workflow API Integration (32 tests)
+- Unit tests, integration tests, and mock adapters
+
+## Quick Reference
+
+```bash
+# Run all tests with server features
+cargo test --lib --tests --features server
+
+# Run specific test suite
+cargo test --test execution_api_tests --features server
+
+# Run with output visible
+cargo test -- --nocapture
+
+# Run tests matching pattern
+cargo test websocket --features server
+```
 
 ## Running Tests
 
 ### All Tests
 
 ```bash
-# Run all tests
-cargo test
+# Run all tests with server features (recommended)
+cargo test --lib --tests --features server
+
+# Run all tests including examples
+cargo test --all-features
 
 # Run with output visible
 cargo test -- --nocapture
 
-# Run with all features
-cargo test --all-features
+# Run tests in parallel (default)
+cargo test --features server
+
+# Run tests sequentially
+cargo test --features server -- --test-threads=1
 ```
 
-### Specific Tests
+### Specific Test Suites
 
 ```bash
-# Run specific test
-cargo test test_message_parsing
+# Authentication and authorization tests (26 tests)
+cargo test --test auth_tests --features server
+
+# Queue backend tests (22 tests)
+cargo test --test queue_backend_tests --features server
+
+# Storage backend tests (21 tests)
+cargo test --test storage_backend_tests --features server
+
+# Schedule API tests (22 tests)
+cargo test --test schedule_api_tests --features server
+
+# Execution API tests (22 tests)
+cargo test --test execution_api_tests --features server
+
+# WebSocket streaming tests (21 tests)
+cargo test --test websocket_tests --features server
+
+# Workflow API tests (32 tests)
+cargo test --test workflow_api_tests --features server
+```
+
+### Running Specific Tests
+
+```bash
+# Run specific test by name
+cargo test test_create_execution --features server
 
 # Run tests matching pattern
-cargo test message
+cargo test execution --features server
 
 # Run integration tests only
 cargo test --test integration_tests
@@ -518,4 +573,406 @@ RUST_BACKTRACE=1 cargo test test_name -- --nocapture
 
 # Run with full backtrace
 RUST_BACKTRACE=full cargo test test_name
+```
+
+## Comprehensive Test Suite Documentation
+
+### Server API Tests (166+ tests)
+
+#### 1. Authentication and Authorization Tests (26 tests)
+
+Tests JWT authentication, user management, role-based access control (RBAC), and resource-level permissions.
+
+**Location:** `tests/auth_tests.rs`
+
+**Key Test Categories:**
+- JWT token generation, validation, and expiration (7 tests)
+- User registration, login, and password management (8 tests)
+- Role-based access control and permissions (9 tests)
+- Complete authentication flows (2 tests)
+
+**Example Test:**
+```rust
+#[tokio::test]
+async fn test_complete_auth_flow() {
+    let user_storage = Arc::new(MockUserStorage::new());
+    let auth_service = Arc::new(MockAuthorizationService::new());
+    let jwt_manager = Arc::new(JwtManager::new("test_secret", 24));
+
+    // 1. Register user
+    let user = create_test_user("user@example.com", "password123", vec!["user".to_string()]);
+    let user_id = user_storage.create_user(&user).await.unwrap();
+
+    // 2. Setup permissions
+    auth_service.grant_role(&user_id.to_string(), "user");
+    auth_service.grant_permission(&user_id.to_string(), "workflows:read");
+
+    // 3. Login and generate token
+    let token = jwt_manager.generate_token(&user_id.to_string(), vec!["user".to_string()]).unwrap();
+
+    // 4. Validate token
+    let claims = jwt_manager.validate_token(&token).unwrap();
+    assert_eq!(claims.sub, user_id.to_string());
+
+    // 5. Check authorization
+    let has_permission = auth_service.has_permission(&user_id.to_string(), "workflows:read").await;
+    assert!(has_permission);
+}
+```
+
+**Run Tests:**
+```bash
+cargo test --test auth_tests --features server -- --nocapture
+```
+
+#### 2. Queue Backend Tests (22 tests)
+
+Tests job queuing, worker management, priority handling, and persistence.
+
+**Location:** `tests/queue_backend_tests.rs`
+
+**Key Test Categories:**
+- Basic queue operations (enqueue, dequeue) (5 tests)
+- Priority queue ordering (3 tests)
+- Worker locking and heartbeat (4 tests)
+- Job completion and failure tracking (4 tests)
+- Persistence and recovery (3 tests)
+- Concurrent operations (3 tests)
+
+**Example Test:**
+```rust
+#[tokio::test]
+async fn test_priority_ordering() {
+    let temp_dir = TempDir::new().unwrap();
+    let queue = FilesystemQueue::new(temp_dir.path().to_path_buf()).await.unwrap();
+
+    // Enqueue jobs with different priorities
+    let job1 = Job::new(Uuid::new_v4(), Uuid::new_v4(), json!({})).with_priority(5);
+    let job2 = Job::new(Uuid::new_v4(), Uuid::new_v4(), json!({})).with_priority(10);
+    let job3 = Job::new(Uuid::new_v4(), Uuid::new_v4(), json!({})).with_priority(1);
+
+    queue.enqueue(job1.clone()).await.unwrap();
+    queue.enqueue(job2.clone()).await.unwrap();
+    queue.enqueue(job3.clone()).await.unwrap();
+
+    // Note: Filesystem queue uses FIFO, not priority-based ordering
+    // This test documents actual behavior
+}
+```
+
+**Run Tests:**
+```bash
+cargo test --test queue_backend_tests --features server -- --nocapture
+```
+
+#### 3. Storage Backend Tests (21 tests)
+
+Tests workflow storage, execution tracking, checkpoint management, and data persistence.
+
+**Location:** `tests/storage_backend_tests.rs`
+
+**Key Test Categories:**
+- Workflow CRUD operations (7 tests)
+- Execution lifecycle management (7 tests)
+- Checkpoint storage and retrieval (4 tests)
+- Data integrity and relationships (3 tests)
+
+**Example Test:**
+```rust
+#[tokio::test]
+async fn test_filesystem_workflow_execution_relationship() {
+    let (storage, _temp) = setup_filesystem_storage().await;
+    let (workflow, metadata) = create_test_workflow("linked-workflow");
+    let workflow_id = metadata.id;
+
+    // Store workflow
+    storage.store_workflow(&workflow, &metadata).await.unwrap();
+
+    // Create multiple executions for this workflow
+    for i in 0..3 {
+        let status = match i {
+            0 => ExecutionStatus::Queued,
+            1 => ExecutionStatus::Running,
+            _ => ExecutionStatus::Completed,
+        };
+        let execution = create_test_execution(workflow_id, status);
+        storage.store_execution(&execution).await.unwrap();
+    }
+
+    // Verify relationship via filter
+    let filter = ExecutionFilter {
+        workflow_id: Some(workflow_id),
+        ..Default::default()
+    };
+    let executions = storage.list_executions(&filter).await.unwrap();
+    assert_eq!(executions.len(), 3);
+}
+```
+
+**Run Tests:**
+```bash
+cargo test --test storage_backend_tests --features server -- --nocapture
+```
+
+#### 4. Schedule API Tests (22 tests)
+
+Tests schedule creation, cron scheduling, due schedule detection, and run tracking.
+
+**Location:** `tests/schedule_api_tests.rs`
+
+**Key Test Categories:**
+- Schedule CRUD operations (5 tests)
+- Schedule filtering and pagination (5 tests)
+- Due schedule detection (2 tests)
+- Schedule run tracking (3 tests)
+- Schedule lifecycle management (5 tests)
+- Error handling (2 tests)
+
+**Example Test:**
+```rust
+#[tokio::test]
+async fn test_get_due_schedules() {
+    let storage = setup_storage().await;
+    let (workflow, metadata) = create_test_workflow("test-workflow");
+    let workflow_id = metadata.id;
+
+    storage.store_workflow(&workflow, &metadata).await.unwrap();
+
+    let now = Utc::now();
+
+    // Create schedule due now
+    let mut schedule1 = create_test_schedule(workflow_id, "0 0 * * *");
+    schedule1.next_run_at = Some(now - Duration::minutes(5));
+    storage.store_schedule(&schedule1).await.unwrap();
+
+    // Create schedule due in future
+    let mut schedule2 = create_test_schedule(workflow_id, "0 12 * * *");
+    schedule2.next_run_at = Some(now + Duration::hours(1));
+    storage.store_schedule(&schedule2).await.unwrap();
+
+    // Get due schedules
+    let due_schedules = storage.get_due_schedules(now).await.unwrap();
+    assert_eq!(due_schedules.len(), 1);
+}
+```
+
+**Run Tests:**
+```bash
+cargo test --test schedule_api_tests --features server -- --nocapture
+```
+
+#### 5. Execution API Tests (22 tests)
+
+Tests execution creation, lifecycle management, status transitions, and logging.
+
+**Location:** `tests/execution_api_tests.rs`
+
+**Key Test Categories:**
+- Execution creation and queuing (4 tests)
+- Execution lifecycle transitions (6 tests)
+- Execution filtering and pagination (5 tests)
+- Execution log management (3 tests)
+- Concurrent operations (2 tests)
+- Error handling (2 tests)
+
+**Example Test:**
+```rust
+#[tokio::test]
+async fn test_execution_lifecycle_queued_to_running() {
+    let (storage, _queue) = setup_test_environment().await;
+    let (workflow, metadata) = create_test_workflow("test-workflow");
+    let workflow_id = metadata.id;
+
+    storage.store_workflow(&workflow, &metadata).await.unwrap();
+
+    // Create queued execution
+    let mut execution = create_test_execution(workflow_id, ExecutionStatus::Queued);
+    let execution_id = execution.id;
+    storage.store_execution(&execution).await.unwrap();
+
+    // Transition to running
+    execution.status = ExecutionStatus::Running;
+    execution.started_at = Some(Utc::now());
+    storage.update_execution(execution_id, &execution).await.unwrap();
+
+    // Verify status change
+    let retrieved = storage.get_execution(execution_id).await.unwrap().unwrap();
+    assert_eq!(retrieved.status, ExecutionStatus::Running);
+    assert!(retrieved.started_at.is_some());
+}
+```
+
+**Run Tests:**
+```bash
+cargo test --test execution_api_tests --features server -- --nocapture
+```
+
+#### 6. WebSocket Streaming Tests (21 tests)
+
+Tests real-time execution streaming, message formats, and connection management.
+
+**Location:** `tests/websocket_tests.rs`
+
+**Key Test Categories:**
+- Message format validation (7 tests)
+- Execution state streaming (3 tests)
+- Progress tracking (2 tests)
+- Connection management (3 tests)
+- Concurrent connections (2 tests)
+- Error and edge cases (4 tests)
+
+**Example Test:**
+```rust
+#[tokio::test]
+async fn test_stream_execution_state_changes() {
+    let storage = Arc::new(MockStorage::new());
+    let (workflow, metadata) = create_test_workflow("test-workflow");
+    let workflow_id = metadata.id;
+
+    storage.store_workflow(&workflow, &metadata).await.unwrap();
+
+    // Create execution and simulate state changes
+    let mut execution = create_test_execution(workflow_id, ExecutionStatus::Queued);
+    let execution_id = execution.id;
+    storage.store_execution(&execution).await.unwrap();
+
+    // Transition through states
+    execution.status = ExecutionStatus::Running;
+    execution.started_at = Some(Utc::now());
+    storage.update_execution(execution_id, &execution).await.unwrap();
+
+    execution.status = ExecutionStatus::Completed;
+    execution.completed_at = Some(Utc::now());
+    execution.result = Some(json!({"status": "success"}));
+    storage.update_execution(execution_id, &execution).await.unwrap();
+
+    // Verify final state
+    let retrieved = storage.get_execution(execution_id).await.unwrap().unwrap();
+    assert_eq!(retrieved.status, ExecutionStatus::Completed);
+    assert!(retrieved.result.is_some());
+}
+```
+
+**Run Tests:**
+```bash
+cargo test --test websocket_tests --features server -- --nocapture
+```
+
+### Mock Services
+
+The SDK provides comprehensive mock implementations for testing:
+
+#### MockStorage
+
+In-memory storage for workflows, executions, checkpoints, and schedules.
+
+```rust
+use periplon_sdk::testing::MockStorage;
+
+let storage = Arc::new(MockStorage::new());
+
+// Configure failure modes
+storage.fail_get();    // Fail all get operations
+storage.fail_store();  // Fail all store operations
+
+// Helper methods
+let count = storage.workflow_count();
+let count = storage.execution_count();
+let count = storage.schedule_count();
+
+// Get executions by status
+let running = storage.get_executions_by_status(ExecutionStatus::Running);
+
+// Clear all state
+storage.clear();
+```
+
+#### MockQueue
+
+In-memory job queue with worker management.
+
+```rust
+use periplon_sdk::testing::MockQueue;
+
+let queue = Arc::new(MockQueue::new());
+
+// Configure failure modes
+queue.fail_enqueue();  // Fail enqueue operations
+queue.fail_dequeue();  // Fail dequeue operations
+
+// Helper methods
+let count = queue.pending_count();
+let count = queue.processing_count();
+let count = queue.completed_count();
+let count = queue.failed_count();
+
+// Get jobs
+let pending = queue.get_pending();
+let completed = queue.get_completed();
+let failed = queue.get_failed();
+
+// Clear all state
+queue.clear();
+```
+
+#### MockAuthorizationService
+
+In-memory auth and permissions.
+
+```rust
+use periplon_sdk::testing::{MockAuthorizationService, MockUserStorage};
+
+let auth_service = Arc::new(MockAuthorizationService::new());
+let user_storage = Arc::new(MockUserStorage::new());
+
+// Grant permissions
+auth_service.grant_permission("user_id", "workflows:read");
+auth_service.grant_role("user_id", "admin");
+
+// Check permissions
+let has_perm = auth_service.has_permission("user_id", "workflows:read").await;
+let has_role = auth_service.has_role("user_id", "admin").await;
+```
+
+### Test Organization
+
+```
+tests/
+├── auth_tests.rs                 # Authentication & authorization (26 tests)
+├── queue_backend_tests.rs        # Queue operations (22 tests)
+├── storage_backend_tests.rs      # Storage persistence (21 tests)
+├── schedule_api_tests.rs         # Schedule management (22 tests)
+├── execution_api_tests.rs        # Execution lifecycle (22 tests)
+├── websocket_tests.rs            # Real-time streaming (21 tests)
+├── workflow_api_tests.rs         # Workflow API (32 tests)
+└── common/
+    └── mod.rs                    # Shared test utilities
+
+src/testing/
+├── mock_storage.rs               # MockStorage implementation
+├── mock_queue.rs                 # MockQueue implementation
+├── mock_auth_service.rs          # MockAuthorizationService
+└── mod.rs                        # Testing module exports
+```
+
+### Quick Test Commands
+
+```bash
+# Run all server tests
+cargo test --lib --tests --features server
+
+# Run specific test suite
+cargo test --test execution_api_tests --features server
+
+# Run tests matching a pattern
+cargo test websocket --features server
+
+# Run with output
+cargo test --features server -- --nocapture
+
+# Run single test
+cargo test test_create_execution --features server -- --nocapture
+
+# Run with backtrace
+RUST_BACKTRACE=1 cargo test test_name --features server
 ```

@@ -508,9 +508,6 @@ impl DSLExecutor {
     /// Executes tasks in topological order, respecting dependencies
     /// with support for parallel execution and hooks
     pub async fn execute(&mut self) -> Result<()> {
-        // Initialize the executor (create agents, build task graph)
-        self.initialize().await?;
-
         // Run pre-workflow hooks if they exist
         if let Some(workflows) = self.workflow.workflows.values().next() {
             if let Some(hooks) = &workflows.hooks {

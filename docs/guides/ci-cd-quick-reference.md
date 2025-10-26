@@ -90,22 +90,23 @@ cargo build-windows       # Windows x86_64
 ### Release Process
 
 ```bash
-# 1. Bump version
-./scripts/bump-version.sh patch  # or minor, major, 1.2.3
+# Install cargo-release (first time only)
+cargo install cargo-release
 
-# 2. Review and commit
-git diff
-git add Cargo.toml Cargo.lock
-git commit -m "chore: bump version to X.Y.Z"
+# 1. Dry run to preview changes
+cargo release patch --dry-run  # or minor, major
 
-# 3. Create tag
-git tag -a vX.Y.Z -m "Release vX.Y.Z"
+# 2. Execute release
+cargo release patch --execute
 
-# 4. Push
-git push origin main
-git push origin vX.Y.Z
+# This will automatically:
+#    - Bump version in Cargo.toml
+#    - Update Cargo.lock
+#    - Commit changes
+#    - Create tag (vX.Y.Z)
+#    - Push to remote
 
-# 5. GitHub Actions will:
+# 3. GitHub Actions will:
 #    - Build binaries for all platforms
 #    - Create GitHub release
 #    - Upload assets
@@ -122,16 +123,8 @@ git checkout -b hotfix/X.Y.Z vX.Y.Z
 # ... edit files ...
 cargo test
 
-# Bump patch version
-./scripts/bump-version.sh patch
-
-# Commit and tag
-git commit -am "fix: critical bug"
-git tag -a vX.Y.(Z+1) -m "Hotfix vX.Y.(Z+1)"
-
-# Push
-git push origin hotfix/X.Y.Z
-git push origin vX.Y.(Z+1)
+# Bump patch version and release
+cargo release patch --execute
 
 # Merge back to main
 git checkout main
@@ -242,9 +235,10 @@ lipo -create \
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/bump-version.sh` | Bump semantic version |
 | `scripts/validate-ci.sh` | Validate CI configuration |
 | `scripts/build-release-local.sh` | Build release locally |
+
+**Note**: Version bumping is handled by `cargo-release` instead of a custom script.
 
 ## Environment Variables
 
