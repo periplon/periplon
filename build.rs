@@ -12,16 +12,7 @@ fn main() {
     if has_server_feature {
         let web_out_path = PathBuf::from("web").join("out");
 
-        // Print diagnostic information
-        println!(
-            "cargo:warning=Checking web UI directory at: {}",
-            web_out_path.display()
-        );
-        println!("cargo:warning=Directory exists: {}", web_out_path.exists());
-
         if !web_out_path.exists() {
-            println!("cargo:warning=Creating web/out directory for RustEmbed");
-
             // Create the directory structure
             fs::create_dir_all(&web_out_path)
                 .expect("Failed to create web/out directory for RustEmbed");
@@ -34,26 +25,25 @@ fn main() {
             )
             .expect("Failed to create placeholder file");
 
-            println!("cargo:warning=Created web/out directory with placeholder");
+            eprintln!("Created web/out directory with placeholder for RustEmbed");
         } else {
             // Directory exists, check if it has content
             match fs::read_dir(&web_out_path) {
                 Ok(entries) => {
                     let count = entries.count();
-                    println!("cargo:warning=web/out directory has {} entries", count);
 
                     if count == 0 {
-                        println!("cargo:warning=web/out directory is empty, creating placeholder");
                         let placeholder = web_out_path.join(".placeholder");
                         fs::write(
                             &placeholder,
                             "This is a placeholder file created by build.rs to satisfy RustEmbed requirements.",
                         )
                         .expect("Failed to create placeholder file");
+                        eprintln!("web/out directory was empty, created placeholder");
                     }
                 }
                 Err(e) => {
-                    println!("cargo:warning=Failed to read web/out directory: {}", e);
+                    eprintln!("Warning: Failed to read web/out directory: {}", e);
                 }
             }
         }
