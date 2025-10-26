@@ -169,14 +169,14 @@ jobs:
           path: target
           key: ${{ runner.os }}-${{ matrix.rust }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Build required binaries for integration tests
+        run: cargo build --bin periplon-executor --features cli
+
       - name: Run tests (default features)
         run: cargo test --verbose
 
       - name: Clean build artifacts before all-features
         run: cargo clean --release
-
-      - name: Build required binaries for integration tests
-        run: cargo build --bin periplon-executor --features cli
 
       - name: Run tests (all features)
         run: cargo test --all-features --verbose
