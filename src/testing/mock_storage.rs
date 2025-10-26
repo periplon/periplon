@@ -305,10 +305,7 @@ impl ExecutionStorage for MockStorage {
 
     async fn store_execution_log(&self, log: &ExecutionLog) -> Result<()> {
         let mut state = self.state.lock().unwrap();
-        let logs = state
-            .execution_logs
-            .entry(log.execution_id)
-            .or_default();
+        let logs = state.execution_logs.entry(log.execution_id).or_default();
         logs.push(log.clone());
         Ok(())
     }
@@ -487,10 +484,7 @@ impl ScheduleStorage for MockStorage {
             ));
         }
 
-        let runs = state
-            .schedule_runs
-            .entry(run.schedule_id)
-            .or_default();
+        let runs = state.schedule_runs.entry(run.schedule_id).or_default();
         runs.push(run.clone());
         Ok(run.id)
     }

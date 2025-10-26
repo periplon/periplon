@@ -111,11 +111,13 @@ fn test_execution_state_creation() {
 
 #[test]
 fn test_execution_status_transitions() {
-    let statuses = [ExecutionStatus::Preparing,
+    let statuses = [
+        ExecutionStatus::Preparing,
         ExecutionStatus::Running,
         ExecutionStatus::Paused,
         ExecutionStatus::Completed,
-        ExecutionStatus::Failed];
+        ExecutionStatus::Failed,
+    ];
 
     // Verify all statuses are distinct from each other
     assert_eq!(statuses.len(), 5);
@@ -175,9 +177,11 @@ fn test_editor_error_creation() {
 
 #[test]
 fn test_error_severity_levels() {
-    let severities = [ErrorSeverity::Error,
+    let severities = [
+        ErrorSeverity::Error,
         ErrorSeverity::Warning,
-        ErrorSeverity::Info];
+        ErrorSeverity::Info,
+    ];
 
     assert_eq!(severities.len(), 3);
     assert_ne!(ErrorSeverity::Error, ErrorSeverity::Warning);
@@ -185,10 +189,12 @@ fn test_error_severity_levels() {
 
 #[test]
 fn test_viewer_section_navigation() {
-    let sections = [ViewerSection::Overview,
+    let sections = [
+        ViewerSection::Overview,
         ViewerSection::Agents,
         ViewerSection::Tasks,
-        ViewerSection::Variables];
+        ViewerSection::Variables,
+    ];
 
     assert_eq!(sections[0], ViewerSection::Overview);
     assert_eq!(sections[1], ViewerSection::Agents);
@@ -259,19 +265,23 @@ fn test_state_workflow_selection() {
 
 #[test]
 fn test_confirm_action_variants() {
-    let actions = [ConfirmAction::DeleteWorkflow(PathBuf::from("test.yaml")),
+    let actions = [
+        ConfirmAction::DeleteWorkflow(PathBuf::from("test.yaml")),
         ConfirmAction::ExecuteWorkflow(PathBuf::from("test.yaml")),
         ConfirmAction::DiscardChanges,
-        ConfirmAction::Exit];
+        ConfirmAction::Exit,
+    ];
 
     assert_eq!(actions.len(), 4);
 }
 
 #[test]
 fn test_input_action_variants() {
-    let actions = [InputAction::CreateWorkflow,
+    let actions = [
+        InputAction::CreateWorkflow,
         InputAction::RenameWorkflow(PathBuf::from("old.yaml")),
-        InputAction::GenerateWorkflow];
+        InputAction::GenerateWorkflow,
+    ];
 
     assert_eq!(actions.len(), 3);
 }
@@ -653,7 +663,8 @@ fn test_view_mode_transitions_all_combinations() {
 
 #[test]
 fn test_error_severity_ordering() {
-    let errors = [EditorError {
+    let errors = [
+        EditorError {
             line: 1,
             column: None,
             message: "Info".to_string(),
@@ -670,7 +681,8 @@ fn test_error_severity_ordering() {
             column: None,
             message: "Error".to_string(),
             severity: ErrorSeverity::Error,
-        }];
+        },
+    ];
 
     // Errors should be prioritized highest
     let critical: Vec<_> = errors
@@ -966,9 +978,11 @@ fn test_theme_color_consistency() {
 
 #[test]
 fn test_concurrent_workflow_execution_states() {
-    let workflows = [("workflow1.yaml", ExecutionStatus::Running),
+    let workflows = [
+        ("workflow1.yaml", ExecutionStatus::Running),
         ("workflow2.yaml", ExecutionStatus::Completed),
-        ("workflow3.yaml", ExecutionStatus::Failed)];
+        ("workflow3.yaml", ExecutionStatus::Failed),
+    ];
 
     let states: Vec<ExecutionState> = workflows
         .iter()

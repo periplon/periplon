@@ -79,8 +79,8 @@ tasks:
             mode
         );
 
-        let workflow =
-            parse_workflow(&yaml).unwrap_or_else(|_| panic!("Failed to parse workflow with mode: {}", mode));
+        let workflow = parse_workflow(&yaml)
+            .unwrap_or_else(|_| panic!("Failed to parse workflow with mode: {}", mode));
 
         let agent = workflow
             .agents

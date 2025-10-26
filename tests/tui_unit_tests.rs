@@ -182,7 +182,8 @@ fn test_editor_state_error_tracking() {
 
 #[test]
 fn test_editor_error_severity_levels() {
-    let errors = [EditorError {
+    let errors = [
+        EditorError {
             line: 1,
             column: None,
             message: "Error".to_string(),
@@ -199,7 +200,8 @@ fn test_editor_error_severity_levels() {
             column: None,
             message: "Info".to_string(),
             severity: ErrorSeverity::Info,
-        }];
+        },
+    ];
 
     assert_eq!(errors.len(), 3);
     assert_ne!(ErrorSeverity::Error, ErrorSeverity::Warning);

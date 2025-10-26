@@ -648,7 +648,6 @@ pub enum ExecutionMode {
     Parallel,
 }
 
-
 /// Hooks specification
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct HooksSpec {

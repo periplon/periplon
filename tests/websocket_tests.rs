@@ -306,12 +306,14 @@ async fn test_stream_execution_logs() {
     storage.store_execution(&execution).await.unwrap();
 
     // Simulate log streaming
-    let log_messages = ["Initializing workflow",
+    let log_messages = [
+        "Initializing workflow",
         "Starting task 1",
         "Task 1 completed",
         "Starting task 2",
         "Task 2 completed",
-        "Workflow completed"];
+        "Workflow completed",
+    ];
 
     for (i, message) in log_messages.iter().enumerate() {
         let log = ExecutionLog {
