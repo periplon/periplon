@@ -7,7 +7,10 @@
 use periplon_sdk::dsl::{parse_workflow, DSLExecutor};
 
 #[tokio::test]
-#[cfg_attr(not(feature = "cli-required-tests"), ignore = "Requires CLI binary installed")]
+#[cfg_attr(
+    not(feature = "cli-required-tests"),
+    ignore = "Requires CLI binary installed"
+)]
 async fn test_parent_task_with_subtasks_does_not_execute() {
     let yaml = r#"
 name: "Parent Task Test"
@@ -93,7 +96,10 @@ tasks:
 }
 
 #[tokio::test]
-#[cfg_attr(not(feature = "cli-required-tests"), ignore = "Requires CLI binary installed")]
+#[cfg_attr(
+    not(feature = "cli-required-tests"),
+    ignore = "Requires CLI binary installed"
+)]
 async fn test_nested_parent_tasks_do_not_execute() {
     let yaml = r#"
 name: "Nested Parent Test"
@@ -159,7 +165,10 @@ tasks:
 }
 
 #[tokio::test]
-#[cfg_attr(not(feature = "cli-required-tests"), ignore = "Requires CLI binary installed")]
+#[cfg_attr(
+    not(feature = "cli-required-tests"),
+    ignore = "Requires CLI binary installed"
+)]
 async fn test_parent_task_attributes_inherited_by_children() {
     let yaml = r#"
 name: "Inheritance Test"

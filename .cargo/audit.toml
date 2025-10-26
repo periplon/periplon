@@ -1,0 +1,25 @@
+# Cargo audit configuration
+# https://github.com/rustsec/rustsec/tree/main/cargo-audit
+
+[advisories]
+# Ignore advisories for dependencies that have no available fixes
+ignore = [
+    # RUSTSEC-2023-0071: RSA Marvin Attack
+    # No fix available - transitive dependency through sqlx-mysql
+    # This is a medium-severity timing attack that requires specific conditions
+    # Tracking: https://github.com/launchbadge/sqlx/issues/3397
+    "RUSTSEC-2023-0071",
+
+    # RUSTSEC-2024-0437: protobuf recursion vulnerability
+    # Waiting for prometheus to update to protobuf >=3.7.2
+    # TODO: Remove when prometheus releases update
+    "RUSTSEC-2024-0437",
+
+    # RUSTSEC-2024-0436: paste unmaintained
+    # Used by ratatui, still functional, no viable alternative
+    "RUSTSEC-2024-0436",
+
+    # RUSTSEC-2024-0320: yaml-rust unmaintained
+    # Used by syntect, still functional
+    "RUSTSEC-2024-0320",
+]
