@@ -1,0 +1,74 @@
+# Data Processing Pipeline
+# This workflow processes datasets through collection, cleaning, and analysis
+
+name: "Data Processing Pipeline"
+version: "1.0.0"
+
+agents:
+  data_collector:
+    description: "Collect data from various sources"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - Write
+      - Bash
+    permissions:
+      mode: "acceptEdits"
+
+  data_cleaner:
+    description: "Clean and validate data"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - Write
+      - Edit
+    permissions:
+      mode: "acceptEdits"
+
+  data_analyzer:
+    description: "Analyze data and generate insights"
+    model: "claude-opus-4"
+    tools:
+      - Read
+      - Write
+    permissions:
+      mode: "acceptEdits"
+
+tasks:
+  process_dataset:
+    description: "Complete data processing workflow"
+
+    subtasks:
+      - collect_data:
+          description: "Fetch data from APIs and files"
+          agent: "data_collector"
+          output: "raw_data.json"
+
+      - validate_schema:
+          description: "Validate data structure"
+          agent: "data_cleaner"
+          depends_on:
+            - collect_data
+
+      - clean_data:
+          description: "Remove duplicates and handle missing values"
+          agent: "data_cleaner"
+          depends_on:
+            - validate_schema
+          output: "cleaned_data.json"
+
+      - analyze_patterns:
+          description: "Identify trends and patterns"
+          agent: "data_analyzer"
+          depends_on:
+            - clean_data
+
+      - generate_report:
+          description: "Create analysis report"
+          agent: "data_analyzer"
+          depends_on:
+            - analyze_patterns
+          output: "analysis_report.md"
+
+    on_complete:
+      notify: "Data processing pipeline complete"

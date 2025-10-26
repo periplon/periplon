@@ -1,0 +1,492 @@
+name: "Real-World CI/CD Pipeline"
+version: "1.0.0"
+description: |
+  Complete CI/CD pipeline demonstrating:
+  - Multi-stage build and test
+  - Environment-specific deployments
+  - Rollback capabilities
+  - Monitoring and notifications
+  - Production safeguards
+
+inputs:
+  repo_url:
+    type: string
+    required: true
+    description: "Git repository URL"
+
+  branch:
+    type: string
+    required: true
+    description: "Branch to deploy"
+
+  target_env:
+    type: string
+    required: true
+    description: "Target environment (dev, staging, prod)"
+
+  skip_tests:
+    type: boolean
+    required: false
+    default: false
+    description: "Skip test execution (emergency only)"
+
+  auto_approve_prod:
+    type: boolean
+    required: false
+    default: false
+    description: "Auto-approve production deployment"
+
+agents:
+  ci_agent:
+    description: "Continuous integration agent"
+    tools: [Bash, Read, Write, Grep]
+    permissions:
+      mode: "acceptEdits"
+      max_turns: 30
+
+  test_agent:
+    description: "Test execution and validation agent"
+    tools: [Bash, Read, Write]
+    permissions:
+      mode: "acceptEdits"
+      max_turns: 20
+
+  deploy_agent:
+    description: "Deployment orchestration agent"
+    tools: [Bash, Read, Write]
+    permissions:
+      mode: "acceptEdits"
+      max_turns: 25
+
+  security_agent:
+    description: "Security scanning agent"
+    tools: [Bash, Read, WebSearch]
+    permissions:
+      mode: "default"
+      max_turns: 15
+
+  monitor_agent:
+    description: "Monitoring and alerting agent"
+    tools: [Bash, Read, Write]
+    permissions:
+      mode: "default"
+      max_turns: 10
+
+task_groups:
+  # Stage 1: Source preparation
+  source_preparation:
+    description: "Prepare source code"
+    execution_mode: "sequential"
+    tasks:
+      - checkout_code
+      - verify_branch
+      - fetch_dependencies
+
+    on_error: "stop"
+    timeout: 300
+
+    outputs:
+      commit_hash:
+        source:
+          type: state
+          key: "source.commit_hash"
+      version:
+        source:
+          type: state
+          key: "source.version"
+
+  # Stage 2: Build pipeline
+  build_pipeline:
+    description: "Build and package application"
+    execution_mode: "sequential"
+    groups:
+      - compile_and_build
+      - security_scanning
+
+    depends_on: [source_preparation]
+    timeout: 900
+
+  # Sub-group: Compilation
+  compile_and_build:
+    description: "Compile and build artifacts"
+    parent: "build_pipeline"
+    execution_mode: "parallel"
+    tasks:
+      - compile_backend
+      - build_frontend
+      - build_docker_image
+
+    max_concurrency: 3
+    on_error: "stop"
+
+  # Sub-group: Security scanning
+  security_scanning:
+    description: "Run security scans"
+    parent: "build_pipeline"
+    execution_mode: "parallel"
+    tasks:
+      - scan_dependencies
+      - scan_secrets
+      - scan_vulnerabilities
+
+    depends_on: [compile_and_build]
+    max_concurrency: 3
+    on_error: "continue"  # Collect all issues
+
+    outputs:
+      security_report:
+        source:
+          type: file
+          path: "./security_report.json"
+
+  # Stage 3: Test suite (conditional)
+  test_suite:
+    description: "Run comprehensive test suite"
+    execution_mode: "sequential"
+    groups:
+      - unit_and_integration
+      - e2e_tests
+
+    depends_on: [build_pipeline]
+    condition: "${workflow.skip_tests} == false"
+    timeout: 1200
+
+  # Sub-group: Unit and integration tests
+  unit_and_integration:
+    description: "Run unit and integration tests"
+    parent: "test_suite"
+    execution_mode: "parallel"
+    tasks:
+      - run_unit_tests
+      - run_integration_tests
+      - run_api_tests
+
+    max_concurrency: 3
+
+  # Sub-group: E2E tests
+  e2e_tests:
+    description: "Run end-to-end tests"
+    parent: "test_suite"
+    execution_mode: "sequential"
+    tasks:
+      - setup_test_env
+      - run_e2e_suite
+      - teardown_test_env
+
+    depends_on: [unit_and_integration]
+
+    outputs:
+      test_results:
+        source:
+          type: file
+          path: "./test_results.xml"
+      coverage_report:
+        source:
+          type: file
+          path: "./coverage.html"
+
+  # Stage 4: Pre-deployment validation
+  pre_deployment:
+    description: "Pre-deployment checks for ${workflow.target_env}"
+    execution_mode: "parallel"
+    tasks:
+      - validate_config
+      - check_capacity
+      - backup_current
+
+    depends_on: [test_suite]
+    max_concurrency: 3
+
+    outputs:
+      backup_id:
+        source:
+          type: state
+          key: "backup.id"
+
+  # Stage 5: Environment-specific deployment
+  deployment:
+    description: "Deploy to ${workflow.target_env}"
+    execution_mode: "sequential"
+    groups:
+      - deploy_infrastructure
+      - deploy_application
+      - post_deploy_validation
+
+    depends_on: [pre_deployment]
+    timeout: 600
+
+  # Sub-group: Infrastructure deployment
+  deploy_infrastructure:
+    description: "Deploy infrastructure changes"
+    parent: "deployment"
+    execution_mode: "sequential"
+    tasks:
+      - update_db_schema
+      - update_cache_config
+      - update_load_balancer
+
+  # Sub-group: Application deployment
+  deploy_application:
+    description: "Deploy application"
+    parent: "deployment"
+    execution_mode: "sequential"
+    tasks:
+      - deploy_to_canary
+      - validate_canary
+      - deploy_full
+
+    depends_on: [deploy_infrastructure]
+
+    outputs:
+      deployment_id:
+        source:
+          type: state
+          key: "deploy.id"
+
+  # Sub-group: Post-deployment validation
+  post_deploy_validation:
+    description: "Validate deployment"
+    parent: "deployment"
+    execution_mode: "parallel"
+    tasks:
+      - health_checks
+      - smoke_tests
+      - performance_tests
+
+    depends_on: [deploy_application]
+    max_concurrency: 3
+
+  # Stage 6: Monitoring and verification
+  monitoring:
+    description: "Monitor deployment health"
+    execution_mode: "parallel"
+    tasks:
+      - setup_alerts
+      - check_metrics
+      - verify_logs
+
+    depends_on: [deployment]
+    max_concurrency: 3
+    timeout: 300
+
+    outputs:
+      monitoring_status:
+        source:
+          type: state
+          key: "monitoring.status"
+
+  # Stage 7: Rollback (conditional - on failure)
+  rollback:
+    description: "Rollback deployment"
+    execution_mode: "sequential"
+    tasks:
+      - stop_new_traffic
+      - restore_backup
+      - verify_rollback
+
+    condition: "${group.monitoring.monitoring_status} == 'failed'"
+    inputs:
+      backup: "${group.pre_deployment.backup_id}"
+
+    on_error: "stop"
+
+tasks:
+  # Source preparation
+  checkout_code:
+    description: "Checkout ${workflow.branch} from ${workflow.repo_url}"
+    agent: "ci_agent"
+    group: "source_preparation"
+    outputs:
+      commit:
+        source:
+          type: state
+          key: "git.commit"
+
+  verify_branch:
+    description: "Verify branch ${workflow.branch}"
+    agent: "ci_agent"
+    group: "source_preparation"
+    depends_on: [checkout_code]
+
+  fetch_dependencies:
+    description: "Fetch project dependencies"
+    agent: "ci_agent"
+    group: "source_preparation"
+    depends_on: [verify_branch]
+
+  # Build tasks
+  compile_backend:
+    description: "Compile backend services"
+    agent: "ci_agent"
+    group: "compile_and_build"
+
+  build_frontend:
+    description: "Build frontend assets"
+    agent: "ci_agent"
+    group: "compile_and_build"
+
+  build_docker_image:
+    description: "Build Docker image"
+    agent: "ci_agent"
+    group: "compile_and_build"
+    outputs:
+      image_tag:
+        source:
+          type: state
+          key: "docker.image_tag"
+
+  # Security scanning
+  scan_dependencies:
+    description: "Scan dependencies for vulnerabilities"
+    agent: "security_agent"
+    group: "security_scanning"
+
+  scan_secrets:
+    description: "Scan for exposed secrets"
+    agent: "security_agent"
+    group: "security_scanning"
+
+  scan_vulnerabilities:
+    description: "Scan code for vulnerabilities"
+    agent: "security_agent"
+    group: "security_scanning"
+
+  # Test tasks
+  run_unit_tests:
+    description: "Run unit tests"
+    agent: "test_agent"
+    group: "unit_and_integration"
+
+  run_integration_tests:
+    description: "Run integration tests"
+    agent: "test_agent"
+    group: "unit_and_integration"
+
+  run_api_tests:
+    description: "Run API tests"
+    agent: "test_agent"
+    group: "unit_and_integration"
+
+  setup_test_env:
+    description: "Setup E2E test environment"
+    agent: "test_agent"
+    group: "e2e_tests"
+
+  run_e2e_suite:
+    description: "Run E2E test suite"
+    agent: "test_agent"
+    group: "e2e_tests"
+    depends_on: [setup_test_env]
+
+  teardown_test_env:
+    description: "Teardown test environment"
+    agent: "test_agent"
+    group: "e2e_tests"
+    depends_on: [run_e2e_suite]
+
+  # Pre-deployment
+  validate_config:
+    description: "Validate ${workflow.target_env} configuration"
+    agent: "deploy_agent"
+    group: "pre_deployment"
+
+  check_capacity:
+    description: "Check ${workflow.target_env} capacity"
+    agent: "deploy_agent"
+    group: "pre_deployment"
+
+  backup_current:
+    description: "Backup current ${workflow.target_env} state"
+    agent: "deploy_agent"
+    group: "pre_deployment"
+    outputs:
+      backup:
+        source:
+          type: state
+          key: "backup.id"
+
+  # Infrastructure deployment
+  update_db_schema:
+    description: "Update database schema"
+    agent: "deploy_agent"
+    group: "deploy_infrastructure"
+
+  update_cache_config:
+    description: "Update cache configuration"
+    agent: "deploy_agent"
+    group: "deploy_infrastructure"
+
+  update_load_balancer:
+    description: "Update load balancer config"
+    agent: "deploy_agent"
+    group: "deploy_infrastructure"
+
+  # Application deployment
+  deploy_to_canary:
+    description: "Deploy to canary servers"
+    agent: "deploy_agent"
+    group: "deploy_application"
+    inputs:
+      image: "${task.build_docker_image.image_tag}"
+
+  validate_canary:
+    description: "Validate canary deployment"
+    agent: "monitor_agent"
+    group: "deploy_application"
+    depends_on: [deploy_to_canary]
+
+  deploy_full:
+    description: "Deploy to all servers"
+    agent: "deploy_agent"
+    group: "deploy_application"
+    depends_on: [validate_canary]
+
+  # Post-deployment validation
+  health_checks:
+    description: "Run health checks"
+    agent: "monitor_agent"
+    group: "post_deploy_validation"
+
+  smoke_tests:
+    description: "Run smoke tests"
+    agent: "test_agent"
+    group: "post_deploy_validation"
+
+  performance_tests:
+    description: "Run performance tests"
+    agent: "test_agent"
+    group: "post_deploy_validation"
+
+  # Monitoring
+  setup_alerts:
+    description: "Setup monitoring alerts"
+    agent: "monitor_agent"
+    group: "monitoring"
+
+  check_metrics:
+    description: "Check deployment metrics"
+    agent: "monitor_agent"
+    group: "monitoring"
+
+  verify_logs:
+    description: "Verify application logs"
+    agent: "monitor_agent"
+    group: "monitoring"
+
+  # Rollback
+  stop_new_traffic:
+    description: "Stop routing traffic to new version"
+    agent: "deploy_agent"
+    group: "rollback"
+
+  restore_backup:
+    description: "Restore from backup ${group.pre_deployment.backup_id}"
+    agent: "deploy_agent"
+    group: "rollback"
+    depends_on: [stop_new_traffic]
+
+  verify_rollback:
+    description: "Verify rollback success"
+    agent: "monitor_agent"
+    group: "rollback"
+    depends_on: [restore_backup]

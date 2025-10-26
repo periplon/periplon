@@ -1,0 +1,48 @@
+name: "Predefined Tasks Demo"
+version: "1.0.0"
+description: "Demonstration of using predefined tasks in a workflow"
+
+inputs:
+  input_file:
+    type: string
+    required: true
+    description: "File to process"
+
+tasks:
+  # Task using a predefined task via 'uses'
+  process_file:
+    uses: "example-file-processor@1.0.0"
+    description: "Process the input file using predefined task"
+    inputs:
+      file_path: "${workflow.input_file}"
+      output_type: "detailed"
+      max_length: 1000
+    outputs:
+      summary: "${task.summary}"
+      word_count: "${task.word_count}"
+
+  # Example of another predefined task
+  # (commented out as it requires actual Google credentials)
+  # upload_to_drive:
+  #   uses: "google-drive-upload@1.2.0"
+  #   description: "Upload processed file to Google Drive"
+  #   depends_on: [process_file]
+  #   inputs:
+  #     file_path: "${workflow.input_file}"
+  #     folder_id: "root"
+  #     credentials: "${env.GOOGLE_CREDENTIALS}"
+
+  # Regular task for comparison
+  report_results:
+    description: "Report the processing results"
+    agent: reporter
+    depends_on: [process_file]
+
+agents:
+  reporter:
+    description: "Report the summary: ${task.process_file.summary}"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Write
+    permissions:
+      mode: "default"

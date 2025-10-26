@@ -1,0 +1,84 @@
+name: "Basic DSL Features Test"
+version: "1.0.0"
+description: "Test workflow for basic DSL features"
+
+agents:
+  researcher:
+    description: "Research and gather information"
+    model: "claude-sonnet-4-5"
+    tools: [Read, Grep, WebSearch]
+    permissions:
+      mode: "default"
+    max_turns: 5
+
+  coder:
+    description: "Write and edit code"
+    model: "claude-sonnet-4-5"
+    tools: [Read, Write, Edit, Bash]
+    permissions:
+      mode: "acceptEdits"
+    max_turns: 10
+
+  reviewer:
+    description: "Review and validate work"
+    model: "claude-sonnet-4-5"
+    tools: [Read, Grep]
+    permissions:
+      mode: "default"
+    max_turns: 3
+
+tasks:
+  init:
+    description: "Initialize project and workspace"
+    agent: "researcher"
+    output: "test_results/init.log"
+
+  gather_requirements:
+    description: "Gather and analyze requirements"
+    agent: "researcher"
+    depends_on: [init]
+    output: "test_results/requirements.md"
+
+  design_architecture:
+    description: "Design system architecture"
+    agent: "researcher"
+    depends_on: [gather_requirements]
+    output: "test_results/architecture.md"
+
+  create_test_plan:
+    description: "Create comprehensive test plan"
+    agent: "reviewer"
+    depends_on: [gather_requirements]
+    output: "test_results/test_plan.md"
+
+  implement_feature:
+    description: "Implement the feature based on design"
+    agent: "coder"
+    depends_on: [design_architecture, create_test_plan]
+    priority: 1
+    output: "test_results/implementation.log"
+
+  write_tests:
+    description: "Write automated tests"
+    agent: "coder"
+    depends_on: [implement_feature]
+    output: "test_results/tests.log"
+
+  run_tests:
+    description: "Execute test suite"
+    agent: "coder"
+    depends_on: [write_tests]
+    output: "test_results/test_results.log"
+
+  optimize_performance:
+    description: "Optimize implementation performance"
+    agent: "coder"
+    depends_on: [implement_feature]
+    parallel_with: [write_tests]
+    output: "test_results/optimization.log"
+
+  code_review:
+    description: "Review code quality and coverage"
+    agent: "reviewer"
+    depends_on: [run_tests]
+    output: "test_results/review.md"

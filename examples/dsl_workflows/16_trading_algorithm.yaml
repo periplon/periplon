@@ -1,0 +1,187 @@
+# Trading Algorithm - Automated trading system
+name: "trading_algorithm"
+version: "1.0"
+
+agents:
+  data_agent:
+    description: "Fetches and processes market data"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/trading/data"]
+    max_turns: 15
+
+  analysis_agent:
+    description: "Performs technical analysis"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/trading/analysis"]
+    max_turns: 20
+
+  fallback_analysis_agent:
+    description: "Fallback agent for alternative analysis strategies"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/trading/analysis"]
+    max_turns: 20
+
+  strategy_agent:
+    description: "Executes trading strategies"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/trading/strategies"]
+    max_turns: 15
+
+  execution_agent:
+    description: "Executes trades"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/trading/orders"]
+    max_turns: 12
+
+  risk_agent:
+    description: "Manages risk and position sizing"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/trading/risk"]
+    max_turns: 10
+
+tasks:
+  fetch_market_data:
+    description: "Fetch real-time market data"
+    agent: "data_agent"
+    priority: 1
+    output: "market_data.log"
+
+  fetch_historical_data:
+    description: "Fetch historical price data"
+    agent: "data_agent"
+    priority: 1
+    parallel_with: ["fetch_market_data"]
+    output: "historical_data.log"
+
+  calculate_indicators:
+    description: "Calculate technical indicators"
+    agent: "analysis_agent"
+    depends_on: ["fetch_market_data", "fetch_historical_data"]
+    output: "indicators.log"
+    on_error:
+      retry: 2
+      retry_delay_secs: 10
+      fallback_agent: "fallback_analysis_agent"
+
+  identify_signals:
+    description: "Identify trading signals"
+    agent: "analysis_agent"
+    depends_on: ["calculate_indicators"]
+    output: "signals.log"
+
+  assess_risk:
+    description: "Assess position risk"
+    agent: "risk_agent"
+    depends_on: ["identify_signals"]
+    output: "risk_assessment.log"
+
+  calculate_position_size:
+    description: "Calculate optimal position size"
+    agent: "risk_agent"
+    depends_on: ["assess_risk"]
+    output: "position_size.log"
+
+  generate_orders:
+    description: "Generate trade orders"
+    agent: "strategy_agent"
+    depends_on: ["calculate_position_size"]
+    output: "orders.log"
+
+  validate_orders:
+    description: "Validate order parameters"
+    agent: "risk_agent"
+    depends_on: ["generate_orders"]
+    output: "order_validation.log"
+
+  execute_trades:
+    description: "Execute validated trades"
+    agent: "execution_agent"
+    depends_on: ["validate_orders"]
+    output: "execution.log"
+
+  monitor_positions:
+    description: "Monitor open positions"
+    agent: "execution_agent"
+    depends_on: ["execute_trades"]
+    output: "monitoring.log"
+
+workflows:
+  automated_trading:
+    description: "Automated trading system with fallback agents"
+    steps:
+      - stage: "data_collection"
+        agents: ["data_agent"]
+        tasks:
+          - fetch_market_data:
+              description: "Fetch real-time market data"
+          - fetch_historical_data:
+              description: "Fetch historical price data"
+        mode: parallel
+
+      - stage: "analysis"
+        agents: ["analysis_agent", "fallback_analysis_agent"]
+        tasks:
+          - calculate_indicators:
+              description: "Calculate technical indicators"
+          - identify_signals:
+              description: "Identify trading signals"
+        mode: sequential
+        depends_on: ["data_collection"]
+
+      - stage: "risk_management"
+        agents: ["risk_agent"]
+        tasks:
+          - assess_risk:
+              description: "Assess position risk"
+          - calculate_position_size:
+              description: "Calculate optimal position size"
+        mode: sequential
+        depends_on: ["analysis"]
+
+      - stage: "order_generation"
+        agents: ["strategy_agent", "risk_agent"]
+        tasks:
+          - generate_orders:
+              description: "Generate trade orders"
+          - validate_orders:
+              description: "Validate order parameters"
+        mode: sequential
+        depends_on: ["risk_management"]
+
+      - stage: "execution"
+        agents: ["execution_agent"]
+        tasks:
+          - execute_trades:
+              description: "Execute validated trades"
+          - monitor_positions:
+              description: "Monitor open positions"
+        mode: sequential
+        depends_on: ["order_generation"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting trading algorithm'"
+
+      post_workflow:
+        - "echo 'Trading cycle complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

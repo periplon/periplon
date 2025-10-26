@@ -1,0 +1,161 @@
+name: "Dependency-Based Task Groups"
+version: "1.0.0"
+description: |
+  Demonstrates complex dependency patterns:
+  - Cross-group dependencies
+  - Conditional execution based on group results
+  - Dependency chains and DAG execution
+
+inputs:
+  repo_url:
+    type: string
+    required: true
+    description: "Repository URL to process"
+
+agents:
+  fetcher:
+    description: "Fetches and prepares data"
+    tools: [Bash, Read, Write]
+    permissions:
+      mode: "acceptEdits"
+
+  processor:
+    description: "Processes and transforms data"
+    tools: [Read, Write, Edit]
+    permissions:
+      mode: "acceptEdits"
+
+  validator:
+    description: "Validates results"
+    tools: [Read, Grep]
+    permissions:
+      mode: "default"
+
+task_groups:
+  # Stage 1: Data acquisition
+  data_acquisition:
+    description: "Fetch all required data sources"
+    execution_mode: "parallel"
+    tasks:
+      - clone_repo
+      - fetch_dependencies
+      - download_config
+
+    on_error: "stop"
+    max_concurrency: 3
+
+  # Stage 2: Data processing (depends on acquisition)
+  data_processing:
+    description: "Process fetched data"
+    execution_mode: "sequential"
+    tasks:
+      - parse_source
+      - extract_metadata
+      - transform_data
+
+    depends_on: [data_acquisition]  # Group-level dependency
+    on_error: "stop"
+
+  # Stage 3: Parallel validation (depends on processing)
+  validation_suite:
+    description: "Run validation checks"
+    execution_mode: "parallel"
+    tasks:
+      - validate_schema
+      - validate_integrity
+      - validate_security
+
+    depends_on: [data_processing]
+    on_error: "continue"  # Collect all validation errors
+
+  # Stage 4: Conditional cleanup (runs if validation passes)
+  cleanup_and_finalize:
+    description: "Clean up temporary files and finalize"
+    execution_mode: "sequential"
+    tasks:
+      - cleanup_temp
+      - generate_summary
+      - archive_results
+
+    depends_on: [validation_suite]
+    condition: "${group.validation_suite.status} == 'success'"
+
+tasks:
+  # Data acquisition group
+  clone_repo:
+    description: "Clone repository from ${workflow.repo_url}"
+    agent: "fetcher"
+    group: "data_acquisition"
+    outputs:
+      repo_path:
+        source:
+          type: state
+          key: "repo_path"
+
+  fetch_dependencies:
+    description: "Fetch project dependencies"
+    agent: "fetcher"
+    group: "data_acquisition"
+
+  download_config:
+    description: "Download configuration files"
+    agent: "fetcher"
+    group: "data_acquisition"
+
+  # Data processing group
+  parse_source:
+    description: "Parse source code"
+    agent: "processor"
+    group: "data_processing"
+    inputs:
+      repo_path: "${task.clone_repo.repo_path}"
+
+  extract_metadata:
+    description: "Extract metadata from source"
+    agent: "processor"
+    group: "data_processing"
+    depends_on: [parse_source]  # Task-level dependency within group
+
+  transform_data:
+    description: "Transform data to target format"
+    agent: "processor"
+    group: "data_processing"
+    depends_on: [extract_metadata]
+
+  # Validation group
+  validate_schema:
+    description: "Validate data schema"
+    agent: "validator"
+    group: "validation_suite"
+
+  validate_integrity:
+    description: "Check data integrity"
+    agent: "validator"
+    group: "validation_suite"
+
+  validate_security:
+    description: "Run security checks"
+    agent: "validator"
+    group: "validation_suite"
+
+  # Cleanup group
+  cleanup_temp:
+    description: "Remove temporary files"
+    agent: "fetcher"
+    group: "cleanup_and_finalize"
+
+  generate_summary:
+    description: "Generate processing summary"
+    agent: "processor"
+    group: "cleanup_and_finalize"
+    outputs:
+      summary:
+        source:
+          type: file
+          path: "./summary.json"
+
+  archive_results:
+    description: "Archive final results"
+    agent: "fetcher"
+    group: "cleanup_and_finalize"
+    depends_on: [generate_summary]

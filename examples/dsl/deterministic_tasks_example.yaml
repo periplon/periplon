@@ -1,0 +1,280 @@
+# Example: Deterministic Tasks with Variables, Secrets, and Multiple Execution Types
+# This workflow demonstrates all supported task execution types with variable interpolation
+
+name: "Deterministic Tasks Example"
+version: "1.0.0"
+dsl_version: "1.0.0"
+
+# Secrets management - secure credential handling
+secrets:
+  api_token:
+    source:
+      type: env
+      var: "API_TOKEN"
+    description: "API authentication token from environment"
+
+  db_password:
+    source:
+      type: file
+      path: ".secrets/db_password.txt"
+    description: "Database password from file"
+
+# Workflow input variables
+inputs:
+  project_name:
+    type: string
+    required: true
+    default: "MyProject"
+    description: "Name of the project to process"
+
+  api_endpoint:
+    type: string
+    required: true
+    default: "https://api.example.com"
+    description: "Base API endpoint URL"
+
+  max_retries:
+    type: number
+    required: false
+    default: 3
+    description: "Maximum number of retries for API calls"
+
+# Workflow output variables
+outputs:
+  final_report:
+    source:
+      type: file
+      path: "./reports/${workflow.project_name}_report.md"
+    description: "Generated project report"
+
+  analysis_data:
+    source:
+      type: state
+      key: "analysis_result"
+    description: "Parsed analysis data"
+
+# Tasks demonstrating different execution types
+tasks:
+  # 1. Script execution - Python
+  analyze_data:
+    description: "Analyze project data using Python script"
+    script:
+      language: python
+      content: |
+        import json
+        import sys
+        import os
+
+        project = os.environ.get('PROJECT_NAME', 'Unknown')
+        print(f"Analyzing project: {project}")
+
+        # Simulate analysis
+        result = {
+            "project": project,
+            "files_analyzed": 42,
+            "issues_found": 3,
+            "score": 85
+        }
+
+        # Output JSON result
+        print(json.dumps(result))
+      env:
+        PROJECT_NAME: "${workflow.project_name}"
+        MAX_RETRIES: "${workflow.max_retries}"
+      timeout_secs: 30
+    outputs:
+      analysis_result:
+        source:
+          type: state
+          key: "script_output"
+        description: "Analysis results from Python script"
+
+  # 2. Command execution - External tool
+  generate_report:
+    description: "Generate report using external command"
+    command:
+      executable: "pandoc"
+      args:
+        - "--from=markdown"
+        - "--to=html"
+        - "-o"
+        - "reports/${workflow.project_name}_report.html"
+        - "data/input.md"
+      working_dir: "."
+      timeout_secs: 60
+      capture_stdout: true
+      capture_stderr: true
+    depends_on:
+      - analyze_data
+    outputs:
+      report_path:
+        source:
+          type: file
+          path: "reports/${workflow.project_name}_report.html"
+
+  # 3. HTTP request - API call with authentication
+  fetch_external_data:
+    description: "Fetch data from external API with Bearer auth"
+    http:
+      method: GET
+      url: "${workflow.api_endpoint}/projects/${workflow.project_name}/data"
+      headers:
+        Content-Type: "application/json"
+        User-Agent: "DSL-Workflow/1.0"
+      auth:
+        type: bearer
+        token: "${secret.api_token}"
+      timeout_secs: 30
+      follow_redirects: true
+      verify_tls: true
+    outputs:
+      api_response:
+        source:
+          type: state
+          key: "http_response"
+        description: "Response from external API"
+
+  # 4. HTTP POST with Basic auth
+  submit_results:
+    description: "Submit analysis results to API with Basic auth"
+    http:
+      method: POST
+      url: "${workflow.api_endpoint}/projects/${workflow.project_name}/results"
+      headers:
+        Content-Type: "application/json"
+      body: |
+        {
+          "project": "${workflow.project_name}",
+          "score": "${task.analysis_result}",
+          "timestamp": "2024-01-01T00:00:00Z"
+        }
+      auth:
+        type: basic
+        username: "api_user"
+        password: "${secret.db_password}"
+      timeout_secs: 30
+    depends_on:
+      - analyze_data
+      - fetch_external_data
+
+  # 5. MCP tool invocation - Direct tool call
+  process_with_mcp:
+    description: "Process data using MCP tool"
+    mcp_tool:
+      server: "data_processor"
+      tool: "transform_data"
+      parameters:
+        input_file: "data/${workflow.project_name}.json"
+        output_format: "csv"
+        options:
+          normalize: true
+          remove_duplicates: true
+      timeout_secs: 60
+    depends_on:
+      - fetch_external_data
+    outputs:
+      transformed_data:
+        source:
+          type: file
+          path: "output/${workflow.project_name}.csv"
+
+  # 6. JavaScript script with API key authentication
+  validate_with_js:
+    description: "Validate data using Node.js script"
+    script:
+      language: javascript
+      content: |
+        const project = process.env.PROJECT_NAME;
+        const apiKey = process.env.API_KEY;
+
+        console.log(`Validating project: ${project}`);
+        console.log(`Using API key: ${apiKey.substring(0, 4)}...`);
+
+        // Validation logic
+        const isValid = project.length > 0;
+        console.log(JSON.stringify({ valid: isValid, project: project }));
+      env:
+        PROJECT_NAME: "${workflow.project_name}"
+        API_KEY: "${secret.api_token}"
+      timeout_secs: 15
+    depends_on:
+      - analyze_data
+
+  # 7. Bash script for file operations
+  cleanup_temp_files:
+    description: "Clean up temporary files"
+    script:
+      language: bash
+      content: |
+        #!/bin/bash
+        PROJECT="${PROJECT_NAME}"
+        echo "Cleaning up temp files for project: $PROJECT"
+
+        # Remove temp files
+        rm -f /tmp/${PROJECT}_*.tmp
+
+        echo "Cleanup complete"
+      env:
+        PROJECT_NAME: "${workflow.project_name}"
+      working_dir: "."
+      timeout_secs: 10
+    depends_on:
+      - generate_report
+      - submit_results
+      - process_with_mcp
+      - validate_with_js
+
+  # 8. Command with custom environment
+  run_tests:
+    description: "Run tests with custom environment"
+    command:
+      executable: "pytest"
+      args:
+        - "tests/"
+        - "-v"
+        - "--project=${workflow.project_name}"
+      env:
+        PYTHONPATH: "/app/src"
+        TEST_MODE: "ci"
+        PROJECT: "${workflow.project_name}"
+      working_dir: "."
+      timeout_secs: 300
+      capture_stdout: true
+      capture_stderr: true
+
+  # 9. HTTP with API key authentication
+  notify_webhook:
+    description: "Send notification to webhook"
+    http:
+      method: POST
+      url: "https://hooks.example.com/notify"
+      headers:
+        Content-Type: "application/json"
+      body: |
+        {
+          "event": "workflow_complete",
+          "project": "${workflow.project_name}",
+          "status": "success"
+        }
+      auth:
+        type: api_key
+        header: "X-API-Key"
+        key: "${secret.api_token}"
+      timeout_secs: 10
+    depends_on:
+      - cleanup_temp_files
+      - run_tests
+
+  # 10. Script from external file
+  run_external_script:
+    description: "Run script from external file"
+    script:
+      language: python
+      file: "scripts/process_data.py"
+      working_dir: "."
+      env:
+        PROJECT_NAME: "${workflow.project_name}"
+        DATA_DIR: "data"
+      timeout_secs: 120
+    depends_on:
+      - process_with_mcp

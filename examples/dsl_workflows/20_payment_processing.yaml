@@ -1,0 +1,190 @@
+# Payment Processing - Secure payment workflow
+name: "payment_processing"
+version: "1.0"
+
+agents:
+  validation_agent:
+    description: "Validates payment requests"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/payments/validation"]
+    max_turns: 12
+
+  fraud_check_agent:
+    description: "Performs fraud checks"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/payments/fraud"]
+    max_turns: 15
+
+  fallback_fraud_agent:
+    description: "Fallback fraud detection agent"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/payments/fraud"]
+    max_turns: 15
+
+  processing_agent:
+    description: "Processes payments"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/payments/processing"]
+    max_turns: 15
+
+  settlement_agent:
+    description: "Handles payment settlement"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/payments/settlement"]
+    max_turns: 12
+
+  notification_agent:
+    description: "Sends payment notifications"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/payments/notifications"]
+    max_turns: 8
+
+tasks:
+  validate_request:
+    description: "Validate payment request format"
+    agent: "validation_agent"
+    priority: 1
+    output: "validation.log"
+
+  verify_account:
+    description: "Verify account details"
+    agent: "validation_agent"
+    depends_on: ["validate_request"]
+    output: "account_verification.log"
+
+  check_balance:
+    description: "Check account balance"
+    agent: "validation_agent"
+    depends_on: ["verify_account"]
+    output: "balance_check.log"
+
+  fraud_screening:
+    description: "Screen for fraud indicators"
+    agent: "fraud_check_agent"
+    depends_on: ["check_balance"]
+    output: "fraud_screening.log"
+    on_error:
+      retry: 2
+      retry_delay_secs: 5
+      fallback_agent: "fallback_fraud_agent"
+
+  authorize_payment:
+    description: "Authorize payment transaction"
+    agent: "processing_agent"
+    depends_on: ["fraud_screening"]
+    output: "authorization.log"
+
+  process_payment:
+    description: "Process payment through gateway"
+    agent: "processing_agent"
+    depends_on: ["authorize_payment"]
+    output: "processing.log"
+
+  record_transaction:
+    description: "Record transaction in ledger"
+    agent: "settlement_agent"
+    depends_on: ["process_payment"]
+    output: "transaction_record.log"
+
+  initiate_settlement:
+    description: "Initiate settlement process"
+    agent: "settlement_agent"
+    depends_on: ["record_transaction"]
+    output: "settlement.log"
+
+  send_confirmation:
+    description: "Send payment confirmation"
+    agent: "notification_agent"
+    depends_on: ["initiate_settlement"]
+    output: "confirmation.log"
+
+  update_balances:
+    description: "Update account balances"
+    agent: "settlement_agent"
+    depends_on: ["initiate_settlement"]
+    parallel_with: ["send_confirmation"]
+    output: "balance_update.log"
+
+workflows:
+  process_payment:
+    description: "Secure payment processing with fallback agents"
+    steps:
+      - stage: "validation"
+        agents: ["validation_agent"]
+        tasks:
+          - validate_request:
+              description: "Validate payment request format"
+          - verify_account:
+              description: "Verify account details"
+          - check_balance:
+              description: "Check account balance"
+        mode: sequential
+
+      - stage: "fraud_check"
+        agents: ["fraud_check_agent", "fallback_fraud_agent"]
+        tasks:
+          - fraud_screening:
+              description: "Screen for fraud indicators"
+        mode: sequential
+        depends_on: ["validation"]
+
+      - stage: "authorization"
+        agents: ["processing_agent"]
+        tasks:
+          - authorize_payment:
+              description: "Authorize payment transaction"
+          - process_payment:
+              description: "Process payment through gateway"
+        mode: sequential
+        depends_on: ["fraud_check"]
+
+      - stage: "settlement"
+        agents: ["settlement_agent"]
+        tasks:
+          - record_transaction:
+              description: "Record transaction in ledger"
+          - initiate_settlement:
+              description: "Initiate settlement process"
+        mode: sequential
+        depends_on: ["authorization"]
+
+      - stage: "completion"
+        agents: ["notification_agent", "settlement_agent"]
+        tasks:
+          - send_confirmation:
+              description: "Send payment confirmation"
+          - update_balances:
+              description: "Update account balances"
+        mode: parallel
+        depends_on: ["settlement"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting payment processing'"
+
+      post_workflow:
+        - "echo 'Payment processed successfully'"
+
+      on_error:
+        - "echo 'Payment processing failed at: $WORKFLOW_STAGE'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

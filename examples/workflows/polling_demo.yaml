@@ -1,0 +1,55 @@
+name: "Polling Demo"
+version: "1.0.0"
+description: "Demonstrates RepeatUntil loop for polling scenarios"
+
+agents:
+  poller_agent:
+    description: "Agent that polls for task completion"
+    tools: []
+    permissions:
+      mode: "default"
+
+  retry_agent:
+    description: "Agent that retries operations with backoff"
+    tools: []
+    permissions:
+      mode: "default"
+
+tasks:
+  poll_for_completion:
+    description: "Poll attempt {{iteration}}: Check if task is complete"
+    agent: "poller_agent"
+    loop:
+      type: repeat_until
+      condition:
+        type: state_equals
+        key: "task_complete"
+        value: true
+      min_iterations: 1
+      max_iterations: 10
+      iteration_variable: "attempt"
+      delay_between_secs: 3
+    loop_control:
+      collect_results: true
+      result_key: "poll_results"
+
+  retry_with_backoff:
+    description: "Retry attempt {{iteration}}: Try operation until success"
+    agent: "retry_agent"
+    loop:
+      type: repeat_until
+      condition:
+        type: state_equals
+        key: "operation_succeeded"
+        value: true
+      min_iterations: 2  # Try at least twice
+      max_iterations: 5
+      iteration_variable: "retry_count"
+      delay_between_secs: 5  # 5 second backoff
+    loop_control:
+      collect_results: true
+      result_key: "retry_results"
+      break_condition:
+        type: state_equals
+        key: "fatal_error"
+        value: true

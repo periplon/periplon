@@ -1,0 +1,126 @@
+# DSL Executor Server Configuration
+# Copy this file to config.toml and adjust values as needed
+
+[server]
+host = "0.0.0.0"
+port = 8080
+workers = false              # Also start workers in same process
+worker_concurrency = 3       # Number of worker threads when workers=true
+
+# TLS configuration (optional)
+# tls_enabled = false
+# tls_cert_path = "/path/to/cert.pem"
+# tls_key_path = "/path/to/key.pem"
+
+# CORS configuration
+[server.cors]
+enabled = true
+allowed_origins = ["http://localhost:3000", "http://localhost:8080"]
+allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+allowed_headers = ["Content-Type", "Authorization"]
+max_age_secs = 3600
+
+# Storage backend configuration
+[storage]
+backend = "postgres"  # Options: "filesystem", "postgres", "s3"
+
+[storage.filesystem]
+base_path = "./.dsl_storage"
+workflows_dir = "workflows"
+executions_dir = "executions"
+checkpoints_dir = "checkpoints"
+logs_dir = "logs"
+
+[storage.postgres]
+url = "postgres://user:password@localhost:5432/dsl_executor"
+# Or use environment variable: url = "${DATABASE_URL}"
+max_connections = 10
+
+[storage.s3]
+endpoint = "https://s3.amazonaws.com"
+region = "us-east-1"
+bucket = "dsl-executor-storage"
+access_key_id = "${AWS_ACCESS_KEY_ID}"
+secret_access_key = "${AWS_SECRET_ACCESS_KEY}"
+path_prefix = "workflows"
+
+# Queue backend configuration
+[queue]
+backend = "postgres"  # Options: "filesystem", "postgres", "redis"
+
+[queue.filesystem]
+queue_dir = "./.dsl_queue"
+poll_interval_ms = 1000
+lock_timeout_secs = 300
+
+[queue.postgres]
+url = "postgres://user:password@localhost:5432/dsl_executor"
+# Or use environment variable: url = "${DATABASE_URL}"
+poll_interval_ms = 500
+max_retries = 3
+
+[queue.redis]
+url = "redis://localhost:6379/0"
+max_connections = 10
+
+# User storage backend
+[user_storage]
+backend = "postgres"  # Options: "filesystem", "postgres", "s3"
+
+[user_storage.filesystem]
+base_path = "./.dsl_users"
+
+[user_storage.postgres]
+url = "postgres://user:password@localhost:5432/dsl_executor"
+# Or use environment variable: url = "${DATABASE_URL}"
+
+[user_storage.s3]
+bucket = "dsl-executor-users"
+prefix = "users"
+
+# Authentication configuration
+[auth]
+jwt_secret = "${JWT_SECRET}"  # MUST be set via environment variable
+jwt_expiration_secs = 3600    # 1 hour
+refresh_token_expiration_secs = 2592000  # 30 days
+session_max_idle_secs = 1800  # 30 minutes
+password_min_length = 12
+mfa_enabled = false
+
+# OAuth providers (optional)
+# [[auth.oauth.providers]]
+# name = "github"
+# client_id = "${GITHUB_CLIENT_ID}"
+# client_secret = "${GITHUB_CLIENT_SECRET}"
+# scopes = ["user:email"]
+
+# [[auth.oauth.providers]]
+# name = "google"
+# client_id = "${GOOGLE_CLIENT_ID}"
+# client_secret = "${GOOGLE_CLIENT_SECRET}"
+# scopes = ["openid", "email", "profile"]
+
+# Rate limiting
+[rate_limit]
+enabled = true
+global_requests_per_minute = 10000
+per_user_requests_per_minute = 100
+per_api_key_requests_per_minute = 1000
+per_ip_requests_per_minute = 60
+
+# Monitoring and observability
+[monitoring]
+metrics_enabled = true
+metrics_port = 9090
+tracing_enabled = false
+# tracing_endpoint = "http://jaeger:14268/api/traces"
+# log_level = "info"  # Options: "error", "warn", "info", "debug", "trace"
+
+# Reliability and resilience
+[reliability]
+max_retries = 3
+retry_backoff_ms = 1000
+retry_backoff_multiplier = 2.0
+circuit_breaker_threshold = 5
+circuit_breaker_timeout_secs = 60
+health_check_interval_secs = 30

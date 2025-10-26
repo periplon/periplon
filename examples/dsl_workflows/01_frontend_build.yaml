@@ -1,0 +1,133 @@
+# Frontend Build Pipeline - Modern frontend build with testing and deployment
+name: "frontend_build"
+version: "1.0"
+
+# Set working directory for all agents in this workflow
+cwd: "/tmp/frontend"
+
+# Create the working directory if it doesn't exist
+create_cwd: true
+
+agents:
+  build_agent:
+    description: "Handles application compilation and bundling"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      # Relative to workflow cwd (/tmp/frontend)
+      allowed_directories: ["./", "/app"]
+    max_turns: 15
+
+  test_agent:
+    description: "Runs unit and integration tests"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read"]
+    permissions:
+      mode: "default"
+      # Relative to workflow cwd (/tmp/frontend)
+      allowed_directories: ["./", "/app"]
+    max_turns: 10
+
+  deploy_agent:
+    description: "Handles deployment to production"
+    model: "claude-sonnet-4-5"
+    # This agent needs a different working directory for deployment
+    cwd: "/deploy"
+    # Create the /deploy directory if it doesn't exist
+    create_cwd: true
+    tools: ["Bash", "Write"]
+    permissions:
+      mode: "default"
+      # Now relative to /deploy (agent-level cwd overrides workflow cwd)
+      allowed_directories: ["./"]
+    max_turns: 8
+
+tasks:
+  install_dependencies:
+    description: "Install npm packages and dependencies"
+    agent: "build_agent"
+    priority: 1
+    output: "dependencies.log"
+
+  build_app:
+    description: "Build the frontend application"
+    agent: "build_agent"
+    depends_on: ["install_dependencies"]
+    output: "build.log"
+
+  run_unit_tests:
+    description: "Execute unit test suite"
+    agent: "test_agent"
+    depends_on: ["build_app"]
+    parallel_with: ["run_e2e_tests"]
+    output: "unit_tests.log"
+
+  run_e2e_tests:
+    description: "Execute end-to-end tests"
+    agent: "test_agent"
+    depends_on: ["build_app"]
+    parallel_with: ["run_unit_tests"]
+    output: "e2e_tests.log"
+
+  deploy_app:
+    description: "Deploy to production environment"
+    agent: "deploy_agent"
+    depends_on: ["run_unit_tests", "run_e2e_tests"]
+    output: "deploy.log"
+
+workflows:
+  build_and_deploy:
+    description: "Complete frontend build and deployment pipeline"
+    steps:
+      - stage: "setup"
+        agents: ["build_agent"]
+        tasks:
+          - install_dependencies:
+              description: "Install npm packages and dependencies"
+        mode: sequential
+
+      - stage: "build"
+        agents: ["build_agent"]
+        tasks:
+          - build_app:
+              description: "Build the frontend application"
+        mode: sequential
+        depends_on: ["setup"]
+
+      - stage: "test"
+        agents: ["test_agent"]
+        tasks:
+          - run_unit_tests:
+              description: "Execute unit test suite"
+          - run_e2e_tests:
+              description: "Execute end-to-end tests"
+        mode: parallel
+        depends_on: ["build"]
+
+      - stage: "deploy"
+        agents: ["deploy_agent"]
+        tasks:
+          - deploy_app:
+              description: "Deploy to production environment"
+        mode: sequential
+        depends_on: ["test"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting frontend build pipeline'"
+        - command: "mkdir -p /tmp/frontend"
+          description: "Create build directory"
+
+      post_workflow:
+        - "echo 'Frontend deployment complete'"
+
+      on_stage_complete:
+        - "echo 'Stage $WORKFLOW_STAGE completed successfully'"
+
+      on_error:
+        - "echo 'Build failed at stage: $WORKFLOW_STAGE'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]
+  disallowed: []

@@ -1,0 +1,192 @@
+# Learning Analytics - Educational data analysis
+name: "learning_analytics"
+version: "1.0"
+
+agents:
+  data_agent:
+    description: "Collects learning data"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/analytics/data"]
+    max_turns: 15
+
+  engagement_agent:
+    description: "Analyzes student engagement"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/analytics/engagement"]
+    max_turns: 15
+
+  performance_agent:
+    description: "Analyzes academic performance"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/analytics/performance"]
+    max_turns: 15
+
+  prediction_agent:
+    description: "Predicts student outcomes"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/analytics/predictions"]
+    max_turns: 20
+
+  intervention_agent:
+    description: "Recommends interventions"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/analytics/interventions"]
+    max_turns: 12
+
+  reporting_agent:
+    description: "Creates analytics dashboards"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/analytics/reports"]
+    max_turns: 10
+
+tasks:
+  collect_lms_data:
+    description: "Collect LMS activity data"
+    agent: "data_agent"
+    priority: 1
+    output: "lms_data.log"
+
+  collect_assessment_data:
+    description: "Collect assessment and grade data"
+    agent: "data_agent"
+    priority: 1
+    parallel_with: ["collect_lms_data"]
+    output: "assessment_data.log"
+
+  clean_data:
+    description: "Clean and prepare analytics data"
+    agent: "data_agent"
+    depends_on: ["collect_lms_data", "collect_assessment_data"]
+    output: "data_cleaning.log"
+
+  analyze_time_on_task:
+    description: "Analyze time spent on learning activities"
+    agent: "engagement_agent"
+    depends_on: ["clean_data"]
+    output: "time_analysis.log"
+
+  analyze_interaction_patterns:
+    description: "Analyze student interaction patterns"
+    agent: "engagement_agent"
+    depends_on: ["analyze_time_on_task"]
+    output: "interaction_patterns.log"
+
+  analyze_grade_trends:
+    description: "Analyze grade trends over time"
+    agent: "performance_agent"
+    depends_on: ["clean_data"]
+    parallel_with: ["analyze_interaction_patterns"]
+    output: "grade_trends.log"
+
+  identify_knowledge_gaps:
+    description: "Identify subject knowledge gaps"
+    agent: "performance_agent"
+    depends_on: ["analyze_grade_trends"]
+    output: "knowledge_gaps.log"
+
+  predict_at_risk:
+    description: "Predict at-risk students"
+    agent: "prediction_agent"
+    depends_on: ["analyze_interaction_patterns", "identify_knowledge_gaps"]
+    output: "at_risk_prediction.log"
+
+  predict_course_completion:
+    description: "Predict course completion likelihood"
+    agent: "prediction_agent"
+    depends_on: ["predict_at_risk"]
+    output: "completion_prediction.log"
+
+  recommend_interventions:
+    description: "Recommend targeted interventions"
+    agent: "intervention_agent"
+    depends_on: ["predict_course_completion"]
+    output: "interventions.log"
+
+  create_dashboard:
+    description: "Create analytics dashboard"
+    agent: "reporting_agent"
+    depends_on: ["recommend_interventions"]
+    output: "analytics_dashboard.html"
+
+workflows:
+  analyze_learning:
+    description: "Educational data analysis and predictions"
+    steps:
+      - stage: "data_collection"
+        agents: ["data_agent"]
+        tasks:
+          - collect_lms_data:
+              description: "Collect LMS activity data"
+          - collect_assessment_data:
+              description: "Collect assessment and grade data"
+          - clean_data:
+              description: "Clean and prepare analytics data"
+        mode: sequential
+
+      - stage: "engagement_analysis"
+        agents: ["engagement_agent"]
+        tasks:
+          - analyze_time_on_task:
+              description: "Analyze time spent on learning activities"
+          - analyze_interaction_patterns:
+              description: "Analyze student interaction patterns"
+        mode: sequential
+        depends_on: ["data_collection"]
+
+      - stage: "performance_analysis"
+        agents: ["performance_agent"]
+        tasks:
+          - analyze_grade_trends:
+              description: "Analyze grade trends over time"
+          - identify_knowledge_gaps:
+              description: "Identify subject knowledge gaps"
+        mode: sequential
+        depends_on: ["data_collection"]
+
+      - stage: "predictions"
+        agents: ["prediction_agent"]
+        tasks:
+          - predict_at_risk:
+              description: "Predict at-risk students"
+          - predict_course_completion:
+              description: "Predict course completion likelihood"
+        mode: sequential
+        depends_on: ["engagement_analysis", "performance_analysis"]
+
+      - stage: "interventions"
+        agents: ["intervention_agent", "reporting_agent"]
+        tasks:
+          - recommend_interventions:
+              description: "Recommend targeted interventions"
+          - create_dashboard:
+              description: "Create analytics dashboard"
+        mode: sequential
+        depends_on: ["predictions"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting learning analytics'"
+
+      post_workflow:
+        - "echo 'Learning analytics complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

@@ -1,0 +1,180 @@
+# Video Processing - Video editing and transcoding
+name: "video_processing"
+version: "1.0"
+
+agents:
+  upload_agent:
+    description: "Handles video uploads"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/video/raw"]
+    max_turns: 12
+
+  transcoding_agent:
+    description: "Transcodes video files"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/video/transcoded"]
+    max_turns: 25
+
+  fallback_transcoding_agent:
+    description: "Fallback transcoding agent with alternative codecs"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/video/transcoded"]
+    max_turns: 25
+
+  thumbnail_agent:
+    description: "Generates video thumbnails"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/video/thumbnails"]
+    max_turns: 10
+
+  subtitle_agent:
+    description: "Generates subtitles"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/video/subtitles"]
+    max_turns: 15
+
+  distribution_agent:
+    description: "Distributes processed videos"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/video/cdn"]
+    max_turns: 12
+
+tasks:
+  upload_video:
+    description: "Upload and validate source video"
+    agent: "upload_agent"
+    priority: 1
+    output: "upload.log"
+
+  extract_metadata:
+    description: "Extract video metadata"
+    agent: "upload_agent"
+    depends_on: ["upload_video"]
+    output: "metadata.json"
+
+  transcode_4k:
+    description: "Transcode to 4K resolution"
+    agent: "transcoding_agent"
+    depends_on: ["extract_metadata"]
+    parallel_with: ["transcode_1080p", "transcode_720p"]
+    output: "4k_transcode.log"
+    on_error:
+      retry: 2
+      retry_delay_secs: 30
+      exponential_backoff: true
+      fallback_agent: "fallback_transcoding_agent"
+
+  transcode_1080p:
+    description: "Transcode to 1080p resolution"
+    agent: "transcoding_agent"
+    depends_on: ["extract_metadata"]
+    parallel_with: ["transcode_4k", "transcode_720p"]
+    output: "1080p_transcode.log"
+
+  transcode_720p:
+    description: "Transcode to 720p resolution"
+    agent: "transcoding_agent"
+    depends_on: ["extract_metadata"]
+    parallel_with: ["transcode_4k", "transcode_1080p"]
+    output: "720p_transcode.log"
+
+  generate_thumbnails:
+    description: "Generate video thumbnails"
+    agent: "thumbnail_agent"
+    depends_on: ["transcode_1080p"]
+    output: "thumbnails.log"
+
+  generate_subtitles:
+    description: "Generate automated subtitles"
+    agent: "subtitle_agent"
+    depends_on: ["upload_video"]
+    parallel_with: ["transcode_4k"]
+    output: "subtitles.log"
+
+  create_manifest:
+    description: "Create streaming manifest (HLS/DASH)"
+    agent: "distribution_agent"
+    depends_on: ["transcode_4k", "transcode_1080p", "transcode_720p"]
+    output: "manifest.log"
+
+  upload_to_cdn:
+    description: "Upload videos to CDN"
+    agent: "distribution_agent"
+    depends_on: ["create_manifest", "generate_thumbnails", "generate_subtitles"]
+    output: "cdn_upload.log"
+
+workflows:
+  process_video:
+    description: "Video processing with fallback transcoding"
+    steps:
+      - stage: "ingestion"
+        agents: ["upload_agent"]
+        tasks:
+          - upload_video:
+              description: "Upload and validate source video"
+          - extract_metadata:
+              description: "Extract video metadata"
+        mode: sequential
+
+      - stage: "transcoding"
+        agents: ["transcoding_agent", "fallback_transcoding_agent", "subtitle_agent"]
+        tasks:
+          - transcode_4k:
+              description: "Transcode to 4K resolution"
+          - transcode_1080p:
+              description: "Transcode to 1080p resolution"
+          - transcode_720p:
+              description: "Transcode to 720p resolution"
+          - generate_subtitles:
+              description: "Generate automated subtitles"
+        mode: parallel
+        depends_on: ["ingestion"]
+
+      - stage: "assets"
+        agents: ["thumbnail_agent"]
+        tasks:
+          - generate_thumbnails:
+              description: "Generate video thumbnails"
+        mode: sequential
+        depends_on: ["transcoding"]
+
+      - stage: "distribution"
+        agents: ["distribution_agent"]
+        tasks:
+          - create_manifest:
+              description: "Create streaming manifest (HLS/DASH)"
+          - upload_to_cdn:
+              description: "Upload videos to CDN"
+        mode: sequential
+        depends_on: ["assets"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting video processing pipeline'"
+
+      post_workflow:
+        - "echo 'Video processing complete'"
+
+      on_error:
+        - "echo 'Video processing error at: $WORKFLOW_STAGE'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

@@ -1,0 +1,141 @@
+# Main workflow demonstrating subflow composition
+# This workflow shows different ways to use subflows:
+# 1. Inline subflows
+# 2. Local file references
+# 3. Tasks referencing subflows
+
+name: "CI/CD Pipeline with Subflows"
+version: "1.0.0"
+
+# Define subflows
+subflows:
+  # Inline subflow - defined directly in this file
+  build:
+    description: "Build the project"
+    agents:
+      builder:
+        description: "Builds the application"
+        tools:
+          - Read
+          - Bash
+        permissions:
+          mode: "acceptEdits"
+    tasks:
+      compile:
+        description: "Compile source code"
+        agent: "builder"
+        output: "build.log"
+      package:
+        description: "Package artifacts"
+        agent: "builder"
+        depends_on:
+          - compile
+        output: "package.log"
+    inputs:
+      build_type:
+        type: "string"
+        required: false
+        default: "release"
+        description: "Build type: debug or release"
+    outputs:
+      artifact_path:
+        source:
+          type: file
+          path: "build/artifact.tar.gz"
+        description: "Path to build artifact"
+
+  # External subflow from local file
+  validation:
+    description: "Validate code quality"
+    source:
+      type: file
+      path: "./validation.yaml"
+
+  # Inline deployment subflow
+  deploy:
+    description: "Deploy to production"
+    agents:
+      deployer:
+        description: "Handles deployment"
+        tools:
+          - Read
+          - Bash
+        permissions:
+          mode: "acceptEdits"
+    tasks:
+      upload:
+        description: "Upload artifacts"
+        agent: "deployer"
+        output: "upload.log"
+      configure:
+        description: "Configure deployment"
+        agent: "deployer"
+        depends_on:
+          - upload
+        output: "config.log"
+      healthcheck:
+        description: "Verify deployment health"
+        agent: "deployer"
+        depends_on:
+          - configure
+        output: "health.log"
+    inputs:
+      environment:
+        type: "string"
+        required: true
+        description: "Target environment: staging or production"
+      artifact:
+        type: "string"
+        required: true
+        description: "Path to artifact to deploy"
+
+# Main workflow agents
+agents:
+  orchestrator:
+    description: "Orchestrates the CI/CD pipeline"
+    tools:
+      - Read
+      - Write
+    permissions:
+      mode: "default"
+
+# Main workflow tasks
+tasks:
+  prepare:
+    description: "Prepare build environment"
+    agent: "orchestrator"
+    output: "prep.log"
+
+  # Task executing the build subflow
+  build_project:
+    description: "Execute build subflow"
+    subflow: "build"
+    inputs:
+      build_type: "release"
+    depends_on:
+      - prepare
+
+  # Task executing the validation subflow
+  validate_code:
+    description: "Run validation checks"
+    subflow: "validation"
+    depends_on:
+      - build_project
+
+  # Task executing the deployment subflow
+  deploy_staging:
+    description: "Deploy to staging"
+    subflow: "deploy"
+    inputs:
+      environment: "staging"
+      artifact: "build/artifact.tar.gz"
+    depends_on:
+      - validate_code
+
+  # Final verification task
+  verify_deployment:
+    description: "Verify deployment success"
+    agent: "orchestrator"
+    depends_on:
+      - deploy_staging
+    output: "verification.log"

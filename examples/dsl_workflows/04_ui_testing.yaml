@@ -1,0 +1,117 @@
+# UI Testing Pipeline - Comprehensive UI/UX testing
+name: "ui_testing"
+version: "1.0"
+
+agents:
+  visual_test_agent:
+    description: "Performs visual regression testing"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/tests/visual"]
+    max_turns: 12
+
+  accessibility_agent:
+    description: "Runs accessibility audits"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/tests/a11y"]
+    max_turns: 10
+
+  performance_agent:
+    description: "Measures UI performance"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/tests/perf"]
+    max_turns: 10
+
+  cross_browser_agent:
+    description: "Tests across different browsers"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/tests/browsers"]
+    max_turns: 15
+
+tasks:
+  visual_regression_test:
+    description: "Run visual regression tests"
+    agent: "visual_test_agent"
+    priority: 1
+    output: "visual_tests.log"
+
+  accessibility_audit:
+    description: "Check WCAG compliance and accessibility"
+    agent: "accessibility_agent"
+    priority: 1
+    output: "a11y_audit.log"
+
+  performance_benchmark:
+    description: "Measure page load and render times"
+    agent: "performance_agent"
+    priority: 1
+    output: "performance.log"
+
+  chrome_test:
+    description: "Test on Chrome browser"
+    agent: "cross_browser_agent"
+    depends_on: ["visual_regression_test"]
+    parallel_with: ["firefox_test", "safari_test"]
+    output: "chrome_results.log"
+
+  firefox_test:
+    description: "Test on Firefox browser"
+    agent: "cross_browser_agent"
+    depends_on: ["visual_regression_test"]
+    parallel_with: ["chrome_test", "safari_test"]
+    output: "firefox_results.log"
+
+  safari_test:
+    description: "Test on Safari browser"
+    agent: "cross_browser_agent"
+    depends_on: ["visual_regression_test"]
+    parallel_with: ["chrome_test", "firefox_test"]
+    output: "safari_results.log"
+
+workflows:
+  comprehensive_ui_test:
+    description: "Complete UI testing across multiple dimensions"
+    steps:
+      - stage: "quality_checks"
+        agents: ["visual_test_agent", "accessibility_agent", "performance_agent"]
+        tasks:
+          - visual_regression_test:
+              description: "Run visual regression tests"
+          - accessibility_audit:
+              description: "Check WCAG compliance and accessibility"
+          - performance_benchmark:
+              description: "Measure page load and render times"
+        mode: parallel
+
+      - stage: "browser_compatibility"
+        agents: ["cross_browser_agent"]
+        tasks:
+          - chrome_test:
+              description: "Test on Chrome browser"
+          - firefox_test:
+              description: "Test on Firefox browser"
+          - safari_test:
+              description: "Test on Safari browser"
+        mode: parallel
+        depends_on: ["quality_checks"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting UI test suite'"
+
+      post_workflow:
+        - "echo 'UI testing complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

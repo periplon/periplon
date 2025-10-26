@@ -1,0 +1,190 @@
+# Adaptive Learning - Personalized learning paths
+name: "adaptive_learning"
+version: "1.0"
+
+agents:
+  assessment_agent:
+    description: "Assesses student knowledge"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/adaptive/assessment"]
+    max_turns: 15
+
+  profiling_agent:
+    description: "Creates learner profiles"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/adaptive/profiles"]
+    max_turns: 12
+
+  recommendation_agent:
+    description: "Recommends learning content"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/adaptive/recommendations"]
+    max_turns: 15
+
+  personalization_agent:
+    description: "Personalizes learning paths"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/adaptive/paths"]
+    max_turns: 20
+
+  delivery_agent:
+    description: "Delivers adaptive content"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/adaptive/delivery"]
+    max_turns: 12
+
+  analytics_agent:
+    description: "Analyzes learning progress"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/adaptive/analytics"]
+    max_turns: 15
+
+tasks:
+  conduct_diagnostic:
+    description: "Conduct diagnostic assessment"
+    agent: "assessment_agent"
+    priority: 1
+    output: "diagnostic.log"
+
+  identify_knowledge_level:
+    description: "Identify current knowledge level"
+    agent: "assessment_agent"
+    depends_on: ["conduct_diagnostic"]
+    output: "knowledge_level.log"
+
+  create_learner_profile:
+    description: "Create personalized learner profile"
+    agent: "profiling_agent"
+    depends_on: ["identify_knowledge_level"]
+    output: "learner_profile.json"
+
+  identify_learning_style:
+    description: "Identify preferred learning style"
+    agent: "profiling_agent"
+    depends_on: ["create_learner_profile"]
+    output: "learning_style.log"
+
+  map_competencies:
+    description: "Map required competencies"
+    agent: "personalization_agent"
+    depends_on: ["identify_learning_style"]
+    output: "competency_map.log"
+
+  generate_learning_path:
+    description: "Generate personalized learning path"
+    agent: "personalization_agent"
+    depends_on: ["map_competencies"]
+    output: "learning_path.json"
+
+  recommend_resources:
+    description: "Recommend learning resources"
+    agent: "recommendation_agent"
+    depends_on: ["generate_learning_path"]
+    output: "recommendations.log"
+
+  deliver_content:
+    description: "Deliver adaptive learning content"
+    agent: "delivery_agent"
+    depends_on: ["recommend_resources"]
+    output: "content_delivery.log"
+
+  track_progress:
+    description: "Track learning progress"
+    agent: "analytics_agent"
+    depends_on: ["deliver_content"]
+    output: "progress_tracking.log"
+
+  adjust_difficulty:
+    description: "Adjust content difficulty dynamically"
+    agent: "personalization_agent"
+    depends_on: ["track_progress"]
+    output: "difficulty_adjustment.log"
+
+  update_learning_path:
+    description: "Update learning path based on progress"
+    agent: "personalization_agent"
+    depends_on: ["adjust_difficulty"]
+    output: "path_update.log"
+
+workflows:
+  personalize_learning:
+    description: "Adaptive learning with personalized paths"
+    steps:
+      - stage: "assessment"
+        agents: ["assessment_agent"]
+        tasks:
+          - conduct_diagnostic:
+              description: "Conduct diagnostic assessment"
+          - identify_knowledge_level:
+              description: "Identify current knowledge level"
+        mode: sequential
+
+      - stage: "profiling"
+        agents: ["profiling_agent"]
+        tasks:
+          - create_learner_profile:
+              description: "Create personalized learner profile"
+          - identify_learning_style:
+              description: "Identify preferred learning style"
+        mode: sequential
+        depends_on: ["assessment"]
+
+      - stage: "personalization"
+        agents: ["personalization_agent"]
+        tasks:
+          - map_competencies:
+              description: "Map required competencies"
+          - generate_learning_path:
+              description: "Generate personalized learning path"
+        mode: sequential
+        depends_on: ["profiling"]
+
+      - stage: "delivery"
+        agents: ["recommendation_agent", "delivery_agent"]
+        tasks:
+          - recommend_resources:
+              description: "Recommend learning resources"
+          - deliver_content:
+              description: "Deliver adaptive learning content"
+        mode: sequential
+        depends_on: ["personalization"]
+
+      - stage: "adaptation"
+        agents: ["analytics_agent", "personalization_agent"]
+        tasks:
+          - track_progress:
+              description: "Track learning progress"
+          - adjust_difficulty:
+              description: "Adjust content difficulty dynamically"
+          - update_learning_path:
+              description: "Update learning path based on progress"
+        mode: sequential
+        depends_on: ["delivery"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting adaptive learning system'"
+
+      post_workflow:
+        - "echo 'Adaptive learning path delivered'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

@@ -1,0 +1,146 @@
+# Feature Engineering - Advanced feature engineering
+name: "feature_engineering"
+version: "1.0"
+
+agents:
+  data_agent:
+    description: "Loads and prepares raw data"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/features/raw"]
+    max_turns: 12
+
+  numeric_agent:
+    description: "Creates numeric features"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/features/numeric"]
+    max_turns: 15
+
+  categorical_agent:
+    description: "Encodes categorical features"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/features/categorical"]
+    max_turns: 15
+
+  temporal_agent:
+    description: "Extracts temporal features"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/features/temporal"]
+    max_turns: 12
+
+  selection_agent:
+    description: "Selects best features"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/features/selected"]
+    max_turns: 15
+
+tasks:
+  load_data:
+    description: "Load raw dataset"
+    agent: "data_agent"
+    priority: 1
+    output: "data_load.log"
+
+  create_numeric_features:
+    description: "Create numeric transformations and aggregations"
+    agent: "numeric_agent"
+    depends_on: ["load_data"]
+    parallel_with: ["encode_categorical", "extract_temporal"]
+    output: "numeric_features.log"
+
+  encode_categorical:
+    description: "Encode categorical variables"
+    agent: "categorical_agent"
+    depends_on: ["load_data"]
+    parallel_with: ["create_numeric_features", "extract_temporal"]
+    output: "categorical_features.log"
+
+  extract_temporal:
+    description: "Extract date/time features"
+    agent: "temporal_agent"
+    depends_on: ["load_data"]
+    parallel_with: ["create_numeric_features", "encode_categorical"]
+    output: "temporal_features.log"
+
+  create_interactions:
+    description: "Create feature interactions"
+    agent: "numeric_agent"
+    depends_on: ["create_numeric_features", "encode_categorical", "extract_temporal"]
+    output: "interactions.log"
+
+  select_features:
+    description: "Perform feature selection"
+    agent: "selection_agent"
+    depends_on: ["create_interactions"]
+    output: "feature_selection.log"
+
+  validate_features:
+    description: "Validate feature quality"
+    agent: "selection_agent"
+    depends_on: ["select_features"]
+    output: "validation.log"
+
+workflows:
+  engineer_features:
+    description: "Advanced feature engineering with parallel processing"
+    steps:
+      - stage: "load"
+        agents: ["data_agent"]
+        tasks:
+          - load_data:
+              description: "Load raw dataset"
+        mode: sequential
+
+      - stage: "feature_creation"
+        agents: ["numeric_agent", "categorical_agent", "temporal_agent"]
+        tasks:
+          - create_numeric_features:
+              description: "Create numeric transformations and aggregations"
+          - encode_categorical:
+              description: "Encode categorical variables"
+          - extract_temporal:
+              description: "Extract date/time features"
+        mode: parallel
+        depends_on: ["load"]
+
+      - stage: "advanced_features"
+        agents: ["numeric_agent"]
+        tasks:
+          - create_interactions:
+              description: "Create feature interactions"
+        mode: sequential
+        depends_on: ["feature_creation"]
+
+      - stage: "selection"
+        agents: ["selection_agent"]
+        tasks:
+          - select_features:
+              description: "Perform feature selection"
+          - validate_features:
+              description: "Validate feature quality"
+        mode: sequential
+        depends_on: ["advanced_features"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting feature engineering pipeline'"
+
+      post_workflow:
+        - "echo 'Feature engineering complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

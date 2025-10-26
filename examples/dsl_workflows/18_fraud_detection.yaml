@@ -1,0 +1,189 @@
+# Fraud Detection - Real-time fraud detection
+name: "fraud_detection"
+version: "1.0"
+
+agents:
+  ingestion_agent:
+    description: "Ingests transaction data"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/fraud/data"]
+    max_turns: 15
+
+  ml_agent:
+    description: "Runs ML fraud detection models"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/fraud/models"]
+    max_turns: 20
+
+  fallback_ml_agent:
+    description: "Fallback ML agent with alternative models"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/fraud/models"]
+    max_turns: 20
+
+  rules_agent:
+    description: "Applies rule-based detection"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/fraud/rules"]
+    max_turns: 12
+
+  investigation_agent:
+    description: "Investigates flagged transactions"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/fraud/investigations"]
+    max_turns: 15
+
+  reporting_agent:
+    description: "Generates fraud reports"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/fraud/reports"]
+    max_turns: 10
+
+tasks:
+  ingest_transactions:
+    description: "Ingest real-time transaction stream"
+    agent: "ingestion_agent"
+    priority: 1
+    output: "transactions.log"
+    on_error:
+      retry: 3
+      retry_delay_secs: 5
+      exponential_backoff: true
+
+  enrich_data:
+    description: "Enrich with customer and historical data"
+    agent: "ingestion_agent"
+    depends_on: ["ingest_transactions"]
+    output: "enrichment.log"
+
+  apply_ml_detection:
+    description: "Apply machine learning fraud models"
+    agent: "ml_agent"
+    depends_on: ["enrich_data"]
+    parallel_with: ["apply_rule_based"]
+    output: "ml_detection.log"
+    on_error:
+      retry: 2
+      retry_delay_secs: 10
+      exponential_backoff: true
+      fallback_agent: "fallback_ml_agent"
+
+  apply_rule_based:
+    description: "Apply rule-based detection"
+    agent: "rules_agent"
+    depends_on: ["enrich_data"]
+    parallel_with: ["apply_ml_detection"]
+    output: "rules_detection.log"
+
+  calculate_risk_scores:
+    description: "Calculate composite fraud risk scores"
+    agent: "ml_agent"
+    depends_on: ["apply_ml_detection", "apply_rule_based"]
+    output: "risk_scores.log"
+
+  flag_suspicious:
+    description: "Flag high-risk transactions"
+    agent: "rules_agent"
+    depends_on: ["calculate_risk_scores"]
+    output: "flagged_transactions.log"
+
+  investigate_cases:
+    description: "Investigate flagged cases"
+    agent: "investigation_agent"
+    depends_on: ["flag_suspicious"]
+    output: "investigations.log"
+
+  update_models:
+    description: "Update models with investigation outcomes"
+    agent: "ml_agent"
+    depends_on: ["investigate_cases"]
+    output: "model_update.log"
+
+  generate_report:
+    description: "Generate fraud detection report"
+    agent: "reporting_agent"
+    depends_on: ["investigate_cases"]
+    parallel_with: ["update_models"]
+    output: "fraud_report.html"
+
+workflows:
+  detect_fraud:
+    description: "Real-time fraud detection with combined error recovery"
+    steps:
+      - stage: "ingestion"
+        agents: ["ingestion_agent"]
+        tasks:
+          - ingest_transactions:
+              description: "Ingest real-time transaction stream"
+          - enrich_data:
+              description: "Enrich with customer and historical data"
+        mode: sequential
+
+      - stage: "detection"
+        agents: ["ml_agent", "fallback_ml_agent", "rules_agent"]
+        tasks:
+          - apply_ml_detection:
+              description: "Apply machine learning fraud models"
+          - apply_rule_based:
+              description: "Apply rule-based detection"
+        mode: parallel
+        depends_on: ["ingestion"]
+
+      - stage: "scoring"
+        agents: ["ml_agent", "rules_agent"]
+        tasks:
+          - calculate_risk_scores:
+              description: "Calculate composite fraud risk scores"
+          - flag_suspicious:
+              description: "Flag high-risk transactions"
+        mode: sequential
+        depends_on: ["detection"]
+
+      - stage: "investigation"
+        agents: ["investigation_agent"]
+        tasks:
+          - investigate_cases:
+              description: "Investigate flagged cases"
+        mode: sequential
+        depends_on: ["scoring"]
+
+      - stage: "feedback"
+        agents: ["ml_agent", "reporting_agent"]
+        tasks:
+          - update_models:
+              description: "Update models with investigation outcomes"
+          - generate_report:
+              description: "Generate fraud detection report"
+        mode: parallel
+        depends_on: ["investigation"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting fraud detection pipeline'"
+
+      post_workflow:
+        - "echo 'Fraud detection complete'"
+
+      on_error:
+        - "echo 'Fraud detection error at: $WORKFLOW_STAGE'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

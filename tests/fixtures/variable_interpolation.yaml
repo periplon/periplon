@@ -1,0 +1,160 @@
+name: "Variable Interpolation Test Workflow"
+version: "1.0.0"
+description: "Test workflow for variable interpolation across scopes"
+
+inputs:
+  project_name:
+    type: string
+    required: true
+    default: "TestProject"
+    description: "Name of the project"
+
+  environment:
+    type: string
+    required: false
+    default: "development"
+    description: "Target environment"
+
+  max_retries:
+    type: number
+    required: false
+    default: 3
+    description: "Maximum number of retries"
+
+  enable_debug:
+    type: boolean
+    required: false
+    default: true
+    description: "Enable debug mode"
+
+outputs:
+  final_report:
+    description: "Final workflow report"
+    source:
+      type: file
+      path: "./reports/${workflow.project_name}_report.md"
+
+agents:
+  analyzer:
+    description: "Analyze ${workflow.project_name} in ${workflow.environment} environment"
+    model: "claude-sonnet-4-5"
+    tools: [Read, Grep, WebSearch]
+    inputs:
+      analysis_depth:
+        type: string
+        required: false
+        default: "deep"
+        description: "Depth of analysis"
+    outputs:
+      analysis_result:
+        description: "Analysis results"
+        source:
+          type: file
+          path: "./analysis.json"
+
+  builder:
+    description: "Build ${workflow.project_name} components"
+    model: "claude-sonnet-4-5"
+    tools: [Read, Write, Bash]
+    inputs:
+      build_target:
+        type: string
+        required: false
+        default: "release"
+        description: "Build target"
+
+      optimization_level:
+        type: number
+        required: false
+        default: 2
+        description: "Optimization level"
+    outputs:
+      build_log:
+        description: "Build execution log"
+        source:
+          type: file
+          path: "./build.log"
+
+tasks:
+  init_project:
+    description: "Initialize ${workflow.project_name} for ${workflow.environment}"
+    agent: "analyzer"
+    inputs:
+      config_file: "${workflow.project_name}/config.yaml"
+      debug_mode: "${workflow.enable_debug}"
+    output: "${workflow.project_name}/init.log"
+    outputs:
+      init_status:
+        description: "Initialization status"
+        source:
+          type: file
+          path: "./init_status.json"
+
+  analyze_codebase:
+    description: "Analyze codebase with ${agent.analysis_depth} analysis"
+    agent: "analyzer"
+    depends_on: [init_project]
+    inputs:
+      project_path: "${workflow.project_name}/src"
+      depth: "${agent.analysis_depth}"
+      retries: "${workflow.max_retries}"
+    output: "analysis_${agent.analysis_depth}.md"
+    outputs:
+      code_metrics:
+        description: "Code quality metrics"
+        source:
+          type: file
+          path: "./metrics.json"
+
+  build_components:
+    description: "Build project components"
+    agent: "builder"
+    depends_on: [analyze_codebase]
+    inputs:
+      source_dir: "${workflow.project_name}/src"
+      target: "${agent.build_target}"
+      opt_level: "${agent.optimization_level}"
+    output: "build_output.log"
+    outputs:
+      build_artifact:
+        description: "Build artifact path"
+        source:
+          type: state
+          key: "artifact_path"
+
+  deploy_service:
+    description: "Deploy service to target environment"
+    agent: "builder"
+    depends_on: [build_components]
+    inputs:
+      target_env: "${workflow.environment}"
+      debug: "${workflow.enable_debug}"
+      build_type: "${agent.build_target}"
+      service_name: "${workflow.project_name}-api"
+    output: "deploy_${workflow.project_name}.log"
+    outputs:
+      deployment_status:
+        description: "Deployment status and URL"
+        source:
+          type: state
+          key: "deployment_info"
+
+  generate_report:
+    description: "Generate final report"
+    agent: "analyzer"
+    depends_on: [deploy_service]
+    inputs:
+      project: "${workflow.project_name}"
+      metrics_file: "metrics.json"
+    output: "${workflow.project_name}_final_report.md"
+
+  validate_deployment:
+    description: "Validate deployment in target environment"
+    agent: "analyzer"
+    depends_on: [deploy_service]
+    inputs:
+      max_attempts: "${workflow.max_retries}"
+      debug_enabled: "${workflow.enable_debug}"
+      env_name: "${workflow.environment}"
+      project: "${workflow.project_name}"
+    output: "validation_${workflow.environment}.log"

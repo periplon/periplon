@@ -1,0 +1,79 @@
+apiVersion: "task/v1"
+kind: "PredefinedTask"
+metadata:
+  name: "example-file-processor"
+  version: "1.0.0"
+  author: "example-author"
+  description: "Process a file and generate a summary"
+  license: "MIT"
+  tags: ["example", "file-processing", "demo"]
+
+spec:
+  agent_template:
+    description: "Process file ${input.file_path} and generate ${input.output_type} summary"
+    model: "claude-sonnet-4-5"
+    system_prompt: "You are a file processing assistant. Read the input file and create a concise summary."
+    tools:
+      - Read
+      - Write
+    permissions:
+      mode: "acceptEdits"
+    max_turns: 5
+
+  inputs:
+    file_path:
+      type: string
+      required: true
+      description: "Path to the file to process"
+      validation:
+        pattern: "^[^<>:\"|?*]+$"
+
+    output_type:
+      type: string
+      required: false
+      default: "brief"
+      description: "Type of summary to generate"
+      validation:
+        allowed_values:
+          - "brief"
+          - "detailed"
+          - "technical"
+
+    max_length:
+      type: number
+      required: false
+      default: 500
+      description: "Maximum length of summary in words"
+      validation:
+        min: 50
+        max: 2000
+
+  outputs:
+    summary:
+      type: string
+      description: "Generated summary text"
+      source:
+        type: state
+        key: "file_summary"
+
+    word_count:
+      type: string
+      description: "Number of words in summary"
+      source:
+        type: state
+        key: "summary_word_count"
+
+  examples:
+    - name: "Process README with brief summary"
+      description: "Generate a brief summary of the README file"
+      inputs:
+        file_path: "./README.md"
+        output_type: "brief"
+        max_length: 200
+
+    - name: "Process source code with technical summary"
+      description: "Generate a detailed technical summary"
+      inputs:
+        file_path: "./src/main.rs"
+        output_type: "technical"
+        max_length: 1000

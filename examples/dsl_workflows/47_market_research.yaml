@@ -1,0 +1,216 @@
+# Market Research - Market analysis and insights
+name: "market_research"
+version: "1.0"
+
+agents:
+  data_collection_agent:
+    description: "Collects market data"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/market/data"]
+    max_turns: 20
+
+  survey_agent:
+    description: "Conducts surveys and interviews"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/market/surveys"]
+    max_turns: 15
+
+  analysis_agent:
+    description: "Analyzes market trends"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/market/analysis"]
+    max_turns: 20
+
+  segmentation_agent:
+    description: "Performs market segmentation"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/market/segmentation"]
+    max_turns: 15
+
+  forecasting_agent:
+    description: "Forecasts market trends"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/market/forecasts"]
+    max_turns: 20
+
+  reporting_agent:
+    description: "Creates market research reports"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/market/reports"]
+    max_turns: 15
+
+tasks:
+  define_objectives:
+    description: "Define research objectives and scope"
+    agent: "data_collection_agent"
+    priority: 1
+    output: "objectives.md"
+
+  collect_secondary_data:
+    description: "Collect secondary market data"
+    agent: "data_collection_agent"
+    depends_on: ["define_objectives"]
+    output: "secondary_data.log"
+
+  design_survey:
+    description: "Design customer survey"
+    agent: "survey_agent"
+    depends_on: ["define_objectives"]
+    parallel_with: ["collect_secondary_data"]
+    output: "survey_design.log"
+
+  conduct_survey:
+    description: "Conduct customer surveys"
+    agent: "survey_agent"
+    depends_on: ["design_survey"]
+    output: "survey_results.log"
+
+  analyze_industry_trends:
+    description: "Analyze industry trends and dynamics"
+    agent: "analysis_agent"
+    depends_on: ["collect_secondary_data"]
+    output: "industry_analysis.log"
+
+  analyze_customer_needs:
+    description: "Analyze customer needs and preferences"
+    agent: "analysis_agent"
+    depends_on: ["conduct_survey"]
+    parallel_with: ["analyze_industry_trends"]
+    output: "customer_analysis.log"
+
+  segment_market:
+    description: "Segment target market"
+    agent: "segmentation_agent"
+    depends_on: ["analyze_customer_needs"]
+    output: "market_segments.log"
+
+  size_market:
+    description: "Calculate market size and potential"
+    agent: "analysis_agent"
+    depends_on: ["segment_market"]
+    output: "market_sizing.log"
+
+  forecast_growth:
+    description: "Forecast market growth"
+    agent: "forecasting_agent"
+    depends_on: ["size_market"]
+    output: "growth_forecast.log"
+
+  identify_opportunities:
+    description: "Identify market opportunities"
+    agent: "analysis_agent"
+    depends_on: ["forecast_growth"]
+    output: "opportunities.log"
+
+  assess_barriers:
+    description: "Assess market entry barriers"
+    agent: "analysis_agent"
+    depends_on: ["identify_opportunities"]
+    parallel_with: ["develop_recommendations"]
+    output: "barriers.log"
+
+  develop_recommendations:
+    description: "Develop strategic recommendations"
+    agent: "reporting_agent"
+    depends_on: ["identify_opportunities"]
+    parallel_with: ["assess_barriers"]
+    output: "recommendations.log"
+
+  create_report:
+    description: "Create comprehensive market research report"
+    agent: "reporting_agent"
+    depends_on: ["assess_barriers", "develop_recommendations"]
+    output: "market_research_report.html"
+
+workflows:
+  research_market:
+    description: "Multi-stage market research and analysis"
+    steps:
+      - stage: "planning"
+        agents: ["data_collection_agent"]
+        tasks:
+          - define_objectives:
+              description: "Define research objectives and scope"
+        mode: sequential
+
+      - stage: "data_collection"
+        agents: ["data_collection_agent", "survey_agent"]
+        tasks:
+          - collect_secondary_data:
+              description: "Collect secondary market data"
+          - design_survey:
+              description: "Design customer survey"
+          - conduct_survey:
+              description: "Conduct customer surveys"
+        mode: sequential
+        depends_on: ["planning"]
+
+      - stage: "analysis"
+        agents: ["analysis_agent"]
+        tasks:
+          - analyze_industry_trends:
+              description: "Analyze industry trends and dynamics"
+          - analyze_customer_needs:
+              description: "Analyze customer needs and preferences"
+        mode: parallel
+        depends_on: ["data_collection"]
+
+      - stage: "segmentation"
+        agents: ["segmentation_agent", "analysis_agent"]
+        tasks:
+          - segment_market:
+              description: "Segment target market"
+          - size_market:
+              description: "Calculate market size and potential"
+        mode: sequential
+        depends_on: ["analysis"]
+
+      - stage: "forecasting"
+        agents: ["forecasting_agent", "analysis_agent"]
+        tasks:
+          - forecast_growth:
+              description: "Forecast market growth"
+          - identify_opportunities:
+              description: "Identify market opportunities"
+        mode: sequential
+        depends_on: ["segmentation"]
+
+      - stage: "recommendations"
+        agents: ["analysis_agent", "reporting_agent"]
+        tasks:
+          - assess_barriers:
+              description: "Assess market entry barriers"
+          - develop_recommendations:
+              description: "Develop strategic recommendations"
+          - create_report:
+              description: "Create comprehensive market research report"
+        mode: sequential
+        depends_on: ["forecasting"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting market research'"
+
+      post_workflow:
+        - "echo 'Market research complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

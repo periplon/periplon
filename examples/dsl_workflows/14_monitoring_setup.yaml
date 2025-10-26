@@ -1,0 +1,153 @@
+# Monitoring Setup - Application monitoring and alerting
+name: "monitoring_setup"
+version: "1.0"
+
+agents:
+  metrics_agent:
+    description: "Configures metrics collection"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/monitoring/metrics"]
+    max_turns: 15
+
+  logging_agent:
+    description: "Sets up centralized logging"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/monitoring/logs"]
+    max_turns: 15
+
+  alerting_agent:
+    description: "Configures alerting rules"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/monitoring/alerts"]
+    max_turns: 12
+
+  dashboard_agent:
+    description: "Creates monitoring dashboards"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/monitoring/dashboards"]
+    max_turns: 10
+
+tasks:
+  install_prometheus:
+    description: "Install Prometheus server"
+    agent: "metrics_agent"
+    priority: 1
+    output: "prometheus.log"
+
+  configure_exporters:
+    description: "Configure metrics exporters"
+    agent: "metrics_agent"
+    depends_on: ["install_prometheus"]
+    output: "exporters.log"
+
+  install_elasticsearch:
+    description: "Install Elasticsearch for logging"
+    agent: "logging_agent"
+    priority: 1
+    output: "elasticsearch.log"
+
+  install_logstash:
+    description: "Install Logstash pipeline"
+    agent: "logging_agent"
+    depends_on: ["install_elasticsearch"]
+    output: "logstash.log"
+
+  install_kibana:
+    description: "Install Kibana for log visualization"
+    agent: "logging_agent"
+    depends_on: ["install_elasticsearch"]
+    parallel_with: ["install_logstash"]
+    output: "kibana.log"
+
+  configure_log_shipping:
+    description: "Configure log shipping from applications"
+    agent: "logging_agent"
+    depends_on: ["install_logstash"]
+    output: "log_shipping.log"
+
+  create_alert_rules:
+    description: "Define alerting rules"
+    agent: "alerting_agent"
+    depends_on: ["configure_exporters"]
+    output: "alert_rules.log"
+
+  configure_alertmanager:
+    description: "Configure alert routing and notifications"
+    agent: "alerting_agent"
+    depends_on: ["create_alert_rules"]
+    output: "alertmanager.log"
+
+  create_grafana_dashboards:
+    description: "Create Grafana monitoring dashboards"
+    agent: "dashboard_agent"
+    depends_on: ["configure_exporters", "configure_log_shipping"]
+    output: "dashboards.log"
+
+workflows:
+  setup_monitoring:
+    description: "Complete monitoring and alerting setup"
+    steps:
+      - stage: "metrics_infrastructure"
+        agents: ["metrics_agent"]
+        tasks:
+          - install_prometheus:
+              description: "Install Prometheus server"
+          - configure_exporters:
+              description: "Configure metrics exporters"
+        mode: sequential
+
+      - stage: "logging_infrastructure"
+        agents: ["logging_agent"]
+        tasks:
+          - install_elasticsearch:
+              description: "Install Elasticsearch for logging"
+          - install_logstash:
+              description: "Install Logstash pipeline"
+          - install_kibana:
+              description: "Install Kibana for log visualization"
+          - configure_log_shipping:
+              description: "Configure log shipping from applications"
+        mode: sequential
+
+      - stage: "alerting"
+        agents: ["alerting_agent"]
+        tasks:
+          - create_alert_rules:
+              description: "Define alerting rules"
+          - configure_alertmanager:
+              description: "Configure alert routing and notifications"
+        mode: sequential
+        depends_on: ["metrics_infrastructure"]
+
+      - stage: "dashboards"
+        agents: ["dashboard_agent"]
+        tasks:
+          - create_grafana_dashboards:
+              description: "Create Grafana monitoring dashboards"
+        mode: sequential
+        depends_on: ["metrics_infrastructure", "logging_infrastructure"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting monitoring setup'"
+
+      post_workflow:
+        - "echo 'Monitoring and alerting setup complete'"
+
+      on_stage_complete:
+        - "echo 'Monitoring stage complete: $WORKFLOW_STAGE'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

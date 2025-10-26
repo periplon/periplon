@@ -1,0 +1,198 @@
+# Curriculum Development - Course design workflow
+name: "curriculum_development"
+version: "1.0"
+
+agents:
+  design_agent:
+    description: "Designs curriculum structure"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/curriculum/design"]
+    max_turns: 15
+
+  content_agent:
+    description: "Creates course content"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/curriculum/content"]
+    max_turns: 20
+
+  assessment_agent:
+    description: "Creates assessments and quizzes"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/curriculum/assessments"]
+    max_turns: 15
+
+  multimedia_agent:
+    description: "Creates multimedia materials"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/curriculum/media"]
+    max_turns: 12
+
+  review_agent:
+    description: "Reviews curriculum quality"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/curriculum/review"]
+    max_turns: 12
+
+  publishing_agent:
+    description: "Publishes to LMS"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/curriculum/published"]
+    max_turns: 10
+
+tasks:
+  define_learning_objectives:
+    description: "Define course learning objectives"
+    agent: "design_agent"
+    priority: 1
+    output: "learning_objectives.md"
+
+  create_course_outline:
+    description: "Create detailed course outline"
+    agent: "design_agent"
+    depends_on: ["define_learning_objectives"]
+    output: "course_outline.md"
+
+  design_modules:
+    description: "Design individual course modules"
+    agent: "design_agent"
+    depends_on: ["create_course_outline"]
+    output: "module_design.md"
+
+  create_lesson_content:
+    description: "Create lesson content and materials"
+    agent: "content_agent"
+    depends_on: ["design_modules"]
+    output: "lessons.log"
+
+  create_exercises:
+    description: "Create practice exercises"
+    agent: "assessment_agent"
+    depends_on: ["create_lesson_content"]
+    parallel_with: ["create_videos"]
+    output: "exercises.log"
+
+  create_videos:
+    description: "Create instructional videos"
+    agent: "multimedia_agent"
+    depends_on: ["create_lesson_content"]
+    parallel_with: ["create_exercises"]
+    output: "videos.log"
+
+  create_quizzes:
+    description: "Create assessments and quizzes"
+    agent: "assessment_agent"
+    depends_on: ["create_exercises"]
+    output: "quizzes.log"
+
+  create_final_exam:
+    description: "Create final examination"
+    agent: "assessment_agent"
+    depends_on: ["create_quizzes"]
+    output: "final_exam.log"
+
+  peer_review:
+    description: "Conduct peer review of curriculum"
+    agent: "review_agent"
+    depends_on: ["create_final_exam", "create_videos"]
+    output: "peer_review.log"
+
+  revise_content:
+    description: "Revise based on feedback"
+    agent: "content_agent"
+    depends_on: ["peer_review"]
+    output: "revisions.log"
+
+  publish_to_lms:
+    description: "Publish course to LMS"
+    agent: "publishing_agent"
+    depends_on: ["revise_content"]
+    output: "lms_publication.log"
+
+workflows:
+  develop_curriculum:
+    description: "Complete curriculum development workflow"
+    steps:
+      - stage: "planning"
+        agents: ["design_agent"]
+        tasks:
+          - define_learning_objectives:
+              description: "Define course learning objectives"
+          - create_course_outline:
+              description: "Create detailed course outline"
+          - design_modules:
+              description: "Design individual course modules"
+        mode: sequential
+
+      - stage: "content_creation"
+        agents: ["content_agent"]
+        tasks:
+          - create_lesson_content:
+              description: "Create lesson content and materials"
+        mode: sequential
+        depends_on: ["planning"]
+
+      - stage: "materials"
+        agents: ["assessment_agent", "multimedia_agent"]
+        tasks:
+          - create_exercises:
+              description: "Create practice exercises"
+          - create_videos:
+              description: "Create instructional videos"
+        mode: parallel
+        depends_on: ["content_creation"]
+
+      - stage: "assessment"
+        agents: ["assessment_agent"]
+        tasks:
+          - create_quizzes:
+              description: "Create assessments and quizzes"
+          - create_final_exam:
+              description: "Create final examination"
+        mode: sequential
+        depends_on: ["materials"]
+
+      - stage: "review"
+        agents: ["review_agent", "content_agent"]
+        tasks:
+          - peer_review:
+              description: "Conduct peer review of curriculum"
+          - revise_content:
+              description: "Revise based on feedback"
+        mode: sequential
+        depends_on: ["assessment"]
+
+      - stage: "publication"
+        agents: ["publishing_agent"]
+        tasks:
+          - publish_to_lms:
+              description: "Publish course to LMS"
+        mode: sequential
+        depends_on: ["review"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting curriculum development'"
+
+      post_workflow:
+        - "echo 'Curriculum published to LMS'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

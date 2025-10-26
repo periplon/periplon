@@ -1,0 +1,189 @@
+# Recommendation Engine - Product recommendation system
+name: "recommendation_engine"
+version: "1.0"
+
+agents:
+  data_agent:
+    description: "Collects user and product data"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/recommendations/data"]
+    max_turns: 15
+
+  feature_agent:
+    description: "Extracts user and item features"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/recommendations/features"]
+    max_turns: 15
+
+  ml_agent:
+    description: "Trains recommendation models"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/recommendations/models"]
+    max_turns: 20
+
+  fallback_ml_agent:
+    description: "Fallback ML agent with alternative algorithms"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/recommendations/models"]
+    max_turns: 20
+
+  serving_agent:
+    description: "Serves recommendations"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/recommendations/serving"]
+    max_turns: 12
+
+  evaluation_agent:
+    description: "Evaluates recommendation quality"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/recommendations/evaluation"]
+    max_turns: 12
+
+tasks:
+  collect_user_data:
+    description: "Collect user behavior and preferences"
+    agent: "data_agent"
+    priority: 1
+    output: "user_data.log"
+
+  collect_product_data:
+    description: "Collect product catalog and metadata"
+    agent: "data_agent"
+    priority: 1
+    parallel_with: ["collect_user_data"]
+    output: "product_data.log"
+
+  extract_user_features:
+    description: "Extract user profile features"
+    agent: "feature_agent"
+    depends_on: ["collect_user_data"]
+    output: "user_features.log"
+
+  extract_item_features:
+    description: "Extract product features"
+    agent: "feature_agent"
+    depends_on: ["collect_product_data"]
+    parallel_with: ["extract_user_features"]
+    output: "item_features.log"
+
+  train_collaborative_model:
+    description: "Train collaborative filtering model"
+    agent: "ml_agent"
+    depends_on: ["extract_user_features", "extract_item_features"]
+    output: "collaborative_model.log"
+    on_error:
+      retry: 2
+      retry_delay_secs: 15
+      fallback_agent: "fallback_ml_agent"
+
+  train_content_model:
+    description: "Train content-based model"
+    agent: "ml_agent"
+    depends_on: ["extract_user_features", "extract_item_features"]
+    parallel_with: ["train_collaborative_model"]
+    output: "content_model.log"
+
+  generate_recommendations:
+    description: "Generate personalized recommendations"
+    agent: "serving_agent"
+    depends_on: ["train_collaborative_model", "train_content_model"]
+    output: "recommendations.log"
+
+  rank_recommendations:
+    description: "Rank and filter recommendations"
+    agent: "serving_agent"
+    depends_on: ["generate_recommendations"]
+    output: "ranking.log"
+
+  evaluate_quality:
+    description: "Evaluate recommendation quality"
+    agent: "evaluation_agent"
+    depends_on: ["rank_recommendations"]
+    output: "evaluation.log"
+
+  deploy_model:
+    description: "Deploy model to production"
+    agent: "serving_agent"
+    depends_on: ["evaluate_quality"]
+    output: "deployment.log"
+
+workflows:
+  build_recommendation_engine:
+    description: "ML-powered recommendation engine with fallback"
+    steps:
+      - stage: "data_collection"
+        agents: ["data_agent"]
+        tasks:
+          - collect_user_data:
+              description: "Collect user behavior and preferences"
+          - collect_product_data:
+              description: "Collect product catalog and metadata"
+        mode: parallel
+
+      - stage: "feature_extraction"
+        agents: ["feature_agent"]
+        tasks:
+          - extract_user_features:
+              description: "Extract user profile features"
+          - extract_item_features:
+              description: "Extract product features"
+        mode: parallel
+        depends_on: ["data_collection"]
+
+      - stage: "model_training"
+        agents: ["ml_agent", "fallback_ml_agent"]
+        tasks:
+          - train_collaborative_model:
+              description: "Train collaborative filtering model"
+          - train_content_model:
+              description: "Train content-based model"
+        mode: parallel
+        depends_on: ["feature_extraction"]
+
+      - stage: "serving"
+        agents: ["serving_agent"]
+        tasks:
+          - generate_recommendations:
+              description: "Generate personalized recommendations"
+          - rank_recommendations:
+              description: "Rank and filter recommendations"
+        mode: sequential
+        depends_on: ["model_training"]
+
+      - stage: "evaluation"
+        agents: ["evaluation_agent", "serving_agent"]
+        tasks:
+          - evaluate_quality:
+              description: "Evaluate recommendation quality"
+          - deploy_model:
+              description: "Deploy model to production"
+        mode: sequential
+        depends_on: ["serving"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Building recommendation engine'"
+
+      post_workflow:
+        - "echo 'Recommendation engine deployed'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

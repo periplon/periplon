@@ -1,0 +1,35 @@
+# Reusable validation subflow
+# This can be referenced by other workflows
+
+name: "Validation Subflow"
+version: "1.0.0"
+
+agents:
+  validator:
+    description: "Validates code, data, and configurations"
+    tools:
+      - Read
+      - Bash
+      - Grep
+    permissions:
+      mode: "default"
+
+tasks:
+  check_syntax:
+    description: "Check code syntax"
+    agent: "validator"
+    output: "syntax_check.log"
+
+  run_linter:
+    description: "Run linting tools"
+    agent: "validator"
+    depends_on:
+      - check_syntax
+    output: "lint_results.log"
+
+  validate_tests:
+    description: "Ensure tests pass"
+    agent: "validator"
+    depends_on:
+      - run_linter
+    output: "test_results.log"

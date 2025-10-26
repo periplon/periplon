@@ -1,0 +1,193 @@
+# Course Content Generation - Educational content creation
+name: "course_content_generation"
+version: "1.0"
+
+agents:
+  research_agent:
+    description: "Researches course topics"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/course/research"]
+    max_turns: 15
+
+  writing_agent:
+    description: "Writes course materials"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/course/content"]
+    max_turns: 20
+
+  video_agent:
+    description: "Creates educational videos"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/course/videos"]
+    max_turns: 15
+
+  interactive_agent:
+    description: "Creates interactive exercises"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/course/interactive"]
+    max_turns: 15
+
+  assessment_agent:
+    description: "Creates assessments"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/course/assessments"]
+    max_turns: 12
+
+  review_agent:
+    description: "Reviews content quality"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/course/review"]
+    max_turns: 12
+
+tasks:
+  research_subject:
+    description: "Research subject matter and learning resources"
+    agent: "research_agent"
+    priority: 1
+    output: "research.log"
+
+  create_lesson_plan:
+    description: "Create detailed lesson plan"
+    agent: "writing_agent"
+    depends_on: ["research_subject"]
+    output: "lesson_plan.md"
+
+  write_lecture_notes:
+    description: "Write comprehensive lecture notes"
+    agent: "writing_agent"
+    depends_on: ["create_lesson_plan"]
+    output: "lecture_notes.md"
+
+  create_presentations:
+    description: "Create slide presentations"
+    agent: "writing_agent"
+    depends_on: ["write_lecture_notes"]
+    parallel_with: ["script_videos"]
+    output: "presentations.log"
+
+  script_videos:
+    description: "Write video scripts"
+    agent: "writing_agent"
+    depends_on: ["write_lecture_notes"]
+    parallel_with: ["create_presentations"]
+    output: "video_scripts.log"
+
+  produce_videos:
+    description: "Produce educational videos"
+    agent: "video_agent"
+    depends_on: ["script_videos"]
+    output: "video_production.log"
+
+  create_simulations:
+    description: "Create interactive simulations"
+    agent: "interactive_agent"
+    depends_on: ["write_lecture_notes"]
+    parallel_with: ["produce_videos"]
+    output: "simulations.log"
+
+  create_practice_problems:
+    description: "Create practice problems and exercises"
+    agent: "interactive_agent"
+    depends_on: ["create_simulations"]
+    output: "practice_problems.log"
+
+  create_quizzes:
+    description: "Create chapter quizzes"
+    agent: "assessment_agent"
+    depends_on: ["create_practice_problems"]
+    output: "quizzes.log"
+
+  peer_review:
+    description: "Conduct peer review of content"
+    agent: "review_agent"
+    depends_on: ["produce_videos", "create_quizzes"]
+    output: "peer_review.log"
+
+  revise_content:
+    description: "Revise based on review feedback"
+    agent: "writing_agent"
+    depends_on: ["peer_review"]
+    output: "revisions.log"
+
+workflows:
+  generate_course_content:
+    description: "Educational content creation with complex dependencies"
+    steps:
+      - stage: "research"
+        agents: ["research_agent"]
+        tasks:
+          - research_subject:
+              description: "Research subject matter and learning resources"
+        mode: sequential
+
+      - stage: "planning"
+        agents: ["writing_agent"]
+        tasks:
+          - create_lesson_plan:
+              description: "Create detailed lesson plan"
+          - write_lecture_notes:
+              description: "Write comprehensive lecture notes"
+        mode: sequential
+        depends_on: ["research"]
+
+      - stage: "content_creation"
+        agents: ["writing_agent", "video_agent", "interactive_agent"]
+        tasks:
+          - create_presentations:
+              description: "Create slide presentations"
+          - script_videos:
+              description: "Write video scripts"
+          - produce_videos:
+              description: "Produce educational videos"
+          - create_simulations:
+              description: "Create interactive simulations"
+        mode: sequential
+        depends_on: ["planning"]
+
+      - stage: "practice"
+        agents: ["interactive_agent", "assessment_agent"]
+        tasks:
+          - create_practice_problems:
+              description: "Create practice problems and exercises"
+          - create_quizzes:
+              description: "Create chapter quizzes"
+        mode: sequential
+        depends_on: ["content_creation"]
+
+      - stage: "review"
+        agents: ["review_agent", "writing_agent"]
+        tasks:
+          - peer_review:
+              description: "Conduct peer review of content"
+          - revise_content:
+              description: "Revise based on review feedback"
+        mode: sequential
+        depends_on: ["practice"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting course content generation'"
+
+      post_workflow:
+        - "echo 'Course content creation complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

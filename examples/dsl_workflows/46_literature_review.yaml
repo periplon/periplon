@@ -1,0 +1,204 @@
+# Literature Review - Academic research workflow
+name: "literature_review"
+version: "1.0"
+
+agents:
+  search_agent:
+    description: "Searches academic databases"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/research/search"]
+    max_turns: 20
+
+  screening_agent:
+    description: "Screens papers for relevance"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/research/screening"]
+    max_turns: 20
+
+  analysis_agent:
+    description: "Analyzes research papers"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/research/analysis"]
+    max_turns: 25
+
+  synthesis_agent:
+    description: "Synthesizes research findings"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/research/synthesis"]
+    max_turns: 20
+
+  citation_agent:
+    description: "Manages citations and references"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/research/citations"]
+    max_turns: 12
+
+  writing_agent:
+    description: "Writes review manuscript"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/research/manuscript"]
+    max_turns: 25
+
+tasks:
+  define_research_question:
+    description: "Define research question and scope"
+    agent: "search_agent"
+    priority: 1
+    output: "research_question.md"
+
+  search_databases:
+    description: "Search academic databases"
+    agent: "search_agent"
+    depends_on: ["define_research_question"]
+    output: "database_search.log"
+
+  remove_duplicates:
+    description: "Remove duplicate papers"
+    agent: "screening_agent"
+    depends_on: ["search_databases"]
+    output: "deduplication.log"
+
+  screen_titles_abstracts:
+    description: "Screen titles and abstracts"
+    agent: "screening_agent"
+    depends_on: ["remove_duplicates"]
+    output: "title_screening.log"
+
+  retrieve_full_text:
+    description: "Retrieve full-text papers"
+    agent: "search_agent"
+    depends_on: ["screen_titles_abstracts"]
+    output: "full_text_retrieval.log"
+
+  screen_full_text:
+    description: "Screen full-text for inclusion"
+    agent: "screening_agent"
+    depends_on: ["retrieve_full_text"]
+    output: "full_text_screening.log"
+
+  extract_data:
+    description: "Extract data from included papers"
+    agent: "analysis_agent"
+    depends_on: ["screen_full_text"]
+    output: "data_extraction.log"
+
+  assess_quality:
+    description: "Assess study quality and bias"
+    agent: "analysis_agent"
+    depends_on: ["extract_data"]
+    output: "quality_assessment.log"
+
+  synthesize_findings:
+    description: "Synthesize research findings"
+    agent: "synthesis_agent"
+    depends_on: ["assess_quality"]
+    output: "synthesis.log"
+
+  identify_themes:
+    description: "Identify research themes and patterns"
+    agent: "synthesis_agent"
+    depends_on: ["synthesize_findings"]
+    output: "themes.log"
+
+  organize_citations:
+    description: "Organize citations and bibliography"
+    agent: "citation_agent"
+    depends_on: ["identify_themes"]
+    output: "citations.bib"
+
+  write_review:
+    description: "Write literature review manuscript"
+    agent: "writing_agent"
+    depends_on: ["organize_citations"]
+    output: "manuscript.md"
+
+workflows:
+  conduct_literature_review:
+    description: "Academic literature review workflow"
+    steps:
+      - stage: "planning"
+        agents: ["search_agent"]
+        tasks:
+          - define_research_question:
+              description: "Define research question and scope"
+        mode: sequential
+
+      - stage: "search"
+        agents: ["search_agent", "screening_agent"]
+        tasks:
+          - search_databases:
+              description: "Search academic databases"
+          - remove_duplicates:
+              description: "Remove duplicate papers"
+        mode: sequential
+        depends_on: ["planning"]
+
+      - stage: "screening"
+        agents: ["screening_agent", "search_agent"]
+        tasks:
+          - screen_titles_abstracts:
+              description: "Screen titles and abstracts"
+          - retrieve_full_text:
+              description: "Retrieve full-text papers"
+          - screen_full_text:
+              description: "Screen full-text for inclusion"
+        mode: sequential
+        depends_on: ["search"]
+
+      - stage: "analysis"
+        agents: ["analysis_agent"]
+        tasks:
+          - extract_data:
+              description: "Extract data from included papers"
+          - assess_quality:
+              description: "Assess study quality and bias"
+        mode: sequential
+        depends_on: ["screening"]
+
+      - stage: "synthesis"
+        agents: ["synthesis_agent", "citation_agent"]
+        tasks:
+          - synthesize_findings:
+              description: "Synthesize research findings"
+          - identify_themes:
+              description: "Identify research themes and patterns"
+          - organize_citations:
+              description: "Organize citations and bibliography"
+        mode: sequential
+        depends_on: ["analysis"]
+
+      - stage: "writing"
+        agents: ["writing_agent"]
+        tasks:
+          - write_review:
+              description: "Write literature review manuscript"
+        mode: sequential
+        depends_on: ["synthesis"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting literature review'"
+
+      post_workflow:
+        - "echo 'Literature review complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

@@ -1,0 +1,178 @@
+# Patient Data Processing - HIPAA-compliant data processing
+name: "patient_data_processing"
+version: "1.0"
+
+agents:
+  ingestion_agent:
+    description: "Ingests patient data securely"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/hipaa/ingest"]
+    max_turns: 15
+
+  validation_agent:
+    description: "Validates data compliance"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/hipaa/validation"]
+    max_turns: 12
+
+  anonymization_agent:
+    description: "Anonymizes patient data"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/hipaa/anonymized"]
+    max_turns: 15
+
+  encryption_agent:
+    description: "Encrypts sensitive data"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/hipaa/encrypted"]
+    max_turns: 12
+
+  audit_agent:
+    description: "Logs audit trail"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/hipaa/audit"]
+    max_turns: 10
+
+  storage_agent:
+    description: "Stores in secure database"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/hipaa/storage"]
+    max_turns: 12
+
+tasks:
+  ingest_patient_records:
+    description: "Ingest patient medical records"
+    agent: "ingestion_agent"
+    priority: 1
+    output: "ingestion.log"
+
+  validate_hipaa_compliance:
+    description: "Validate HIPAA compliance requirements"
+    agent: "validation_agent"
+    depends_on: ["ingest_patient_records"]
+    output: "compliance_validation.log"
+
+  log_access:
+    description: "Log data access for audit trail"
+    agent: "audit_agent"
+    depends_on: ["validate_hipaa_compliance"]
+    output: "access_log.log"
+
+  remove_identifiers:
+    description: "Remove direct patient identifiers"
+    agent: "anonymization_agent"
+    depends_on: ["log_access"]
+    output: "deidentification.log"
+
+  encrypt_phi:
+    description: "Encrypt protected health information"
+    agent: "encryption_agent"
+    depends_on: ["remove_identifiers"]
+    output: "encryption.log"
+
+  validate_encryption:
+    description: "Validate encryption integrity"
+    agent: "validation_agent"
+    depends_on: ["encrypt_phi"]
+    output: "encryption_validation.log"
+
+  store_securely:
+    description: "Store in HIPAA-compliant database"
+    agent: "storage_agent"
+    depends_on: ["validate_encryption"]
+    output: "storage.log"
+
+  create_audit_report:
+    description: "Generate compliance audit report"
+    agent: "audit_agent"
+    depends_on: ["store_securely"]
+    output: "audit_report.html"
+
+workflows:
+  process_patient_data:
+    description: "HIPAA-compliant data processing with tool constraints"
+    steps:
+      - stage: "ingestion"
+        agents: ["ingestion_agent"]
+        tasks:
+          - ingest_patient_records:
+              description: "Ingest patient medical records"
+        mode: sequential
+
+      - stage: "validation"
+        agents: ["validation_agent", "audit_agent"]
+        tasks:
+          - validate_hipaa_compliance:
+              description: "Validate HIPAA compliance requirements"
+          - log_access:
+              description: "Log data access for audit trail"
+        mode: sequential
+        depends_on: ["ingestion"]
+
+      - stage: "anonymization"
+        agents: ["anonymization_agent"]
+        tasks:
+          - remove_identifiers:
+              description: "Remove direct patient identifiers"
+        mode: sequential
+        depends_on: ["validation"]
+
+      - stage: "encryption"
+        agents: ["encryption_agent", "validation_agent"]
+        tasks:
+          - encrypt_phi:
+              description: "Encrypt protected health information"
+          - validate_encryption:
+              description: "Validate encryption integrity"
+        mode: sequential
+        depends_on: ["anonymization"]
+
+      - stage: "storage"
+        agents: ["storage_agent", "audit_agent"]
+        tasks:
+          - store_securely:
+              description: "Store in HIPAA-compliant database"
+          - create_audit_report:
+              description: "Generate compliance audit report"
+        mode: sequential
+        depends_on: ["encryption"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting HIPAA-compliant patient data processing'"
+        - command: "mkdir -p /hipaa/ingest /hipaa/validation /hipaa/anonymized /hipaa/encrypted /hipaa/audit /hipaa/storage"
+          description: "Create secure directories"
+
+      post_workflow:
+        - "echo 'Patient data processing complete'"
+
+      on_error:
+        - "echo 'HIPAA workflow error at: $WORKFLOW_STAGE'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]
+  disallowed: []
+  constraints:
+    Bash:
+      timeout: 180000
+      allowed_commands: ["openssl", "gpg", "sha256sum", "mkdir", "cp", "mv", "echo"]
+    Write:
+      max_file_size: 104857600

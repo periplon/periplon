@@ -1,0 +1,202 @@
+# Competitive Analysis - Competitor intelligence
+name: "competitive_analysis"
+version: "1.0"
+
+agents:
+  monitoring_agent:
+    description: "Monitors competitor activities"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/competitive/monitoring"]
+    max_turns: 20
+
+  research_agent:
+    description: "Researches competitor information"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/competitive/research"]
+    max_turns: 20
+
+  analysis_agent:
+    description: "Analyzes competitive landscape"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/competitive/analysis"]
+    max_turns: 20
+
+  benchmarking_agent:
+    description: "Performs competitive benchmarking"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/competitive/benchmarking"]
+    max_turns: 15
+
+  strategy_agent:
+    description: "Develops competitive strategies"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/competitive/strategy"]
+    max_turns: 15
+
+  reporting_agent:
+    description: "Creates competitive intelligence reports"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/competitive/reports"]
+    max_turns: 12
+
+tasks:
+  identify_competitors:
+    description: "Identify key competitors"
+    agent: "research_agent"
+    priority: 1
+    output: "competitor_list.log"
+
+  research_products:
+    description: "Research competitor products and services"
+    agent: "research_agent"
+    depends_on: ["identify_competitors"]
+    output: "product_research.log"
+
+  monitor_pricing:
+    description: "Monitor competitor pricing strategies"
+    agent: "monitoring_agent"
+    depends_on: ["research_products"]
+    parallel_with: ["monitor_marketing"]
+    output: "pricing_monitoring.log"
+
+  monitor_marketing:
+    description: "Monitor competitor marketing activities"
+    agent: "monitoring_agent"
+    depends_on: ["research_products"]
+    parallel_with: ["monitor_pricing"]
+    output: "marketing_monitoring.log"
+
+  analyze_strengths_weaknesses:
+    description: "Analyze competitor strengths and weaknesses"
+    agent: "analysis_agent"
+    depends_on: ["monitor_pricing", "monitor_marketing"]
+    output: "swot_analysis.log"
+
+  analyze_market_position:
+    description: "Analyze market positioning"
+    agent: "analysis_agent"
+    depends_on: ["analyze_strengths_weaknesses"]
+    output: "market_position.log"
+
+  benchmark_features:
+    description: "Benchmark product features"
+    agent: "benchmarking_agent"
+    depends_on: ["analyze_market_position"]
+    output: "feature_benchmark.log"
+
+  benchmark_performance:
+    description: "Benchmark performance metrics"
+    agent: "benchmarking_agent"
+    depends_on: ["benchmark_features"]
+    parallel_with: ["identify_threats"]
+    output: "performance_benchmark.log"
+
+  identify_threats:
+    description: "Identify competitive threats"
+    agent: "analysis_agent"
+    depends_on: ["analyze_market_position"]
+    parallel_with: ["benchmark_performance"]
+    output: "threat_identification.log"
+
+  identify_opportunities:
+    description: "Identify competitive opportunities"
+    agent: "strategy_agent"
+    depends_on: ["identify_threats", "benchmark_performance"]
+    output: "opportunities.log"
+
+  develop_strategies:
+    description: "Develop competitive response strategies"
+    agent: "strategy_agent"
+    depends_on: ["identify_opportunities"]
+    output: "competitive_strategies.log"
+
+  create_report:
+    description: "Create competitive intelligence report"
+    agent: "reporting_agent"
+    depends_on: ["develop_strategies"]
+    output: "competitive_analysis_report.html"
+
+workflows:
+  analyze_competition:
+    description: "Competitive intelligence and analysis"
+    steps:
+      - stage: "identification"
+        agents: ["research_agent"]
+        tasks:
+          - identify_competitors:
+              description: "Identify key competitors"
+          - research_products:
+              description: "Research competitor products and services"
+        mode: sequential
+
+      - stage: "monitoring"
+        agents: ["monitoring_agent"]
+        tasks:
+          - monitor_pricing:
+              description: "Monitor competitor pricing strategies"
+          - monitor_marketing:
+              description: "Monitor competitor marketing activities"
+        mode: parallel
+        depends_on: ["identification"]
+
+      - stage: "analysis"
+        agents: ["analysis_agent"]
+        tasks:
+          - analyze_strengths_weaknesses:
+              description: "Analyze competitor strengths and weaknesses"
+          - analyze_market_position:
+              description: "Analyze market positioning"
+        mode: sequential
+        depends_on: ["monitoring"]
+
+      - stage: "benchmarking"
+        agents: ["benchmarking_agent", "analysis_agent"]
+        tasks:
+          - benchmark_features:
+              description: "Benchmark product features"
+          - benchmark_performance:
+              description: "Benchmark performance metrics"
+          - identify_threats:
+              description: "Identify competitive threats"
+        mode: sequential
+        depends_on: ["analysis"]
+
+      - stage: "strategy"
+        agents: ["strategy_agent", "reporting_agent"]
+        tasks:
+          - identify_opportunities:
+              description: "Identify competitive opportunities"
+          - develop_strategies:
+              description: "Develop competitive response strategies"
+          - create_report:
+              description: "Create competitive intelligence report"
+        mode: sequential
+        depends_on: ["benchmarking"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting competitive analysis'"
+
+      post_workflow:
+        - "echo 'Competitive analysis complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

@@ -1,0 +1,142 @@
+name: Nightly Builds
+
+on:
+  schedule:
+    # Run every day at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Build nightly TUI binaries
+  build-nightly-tui:
+    name: Nightly TUI (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: periplon-tui
+            asset_name: periplon-tui-nightly-linux-x86_64
+
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: periplon-tui
+            asset_name: periplon-tui-nightly-macos-x86_64
+
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: periplon-tui
+            asset_name: periplon-tui-nightly-macos-aarch64
+
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: periplon-tui.exe
+            asset_name: periplon-tui-nightly-windows-x86_64.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build nightly binary
+        run: cargo build --release --bin periplon-tui --features tui --target ${{ matrix.target }}
+
+      - name: Strip binary (Unix)
+        if: matrix.os != 'windows-latest'
+        run: strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
+
+      - name: Upload nightly artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
+          retention-days: 7
+
+  # Build nightly executor binaries
+  build-nightly-executor:
+    name: Nightly Executor (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: periplon-executor
+            asset_name: periplon-executor-nightly-linux-x86_64
+
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: periplon-executor
+            asset_name: periplon-executor-nightly-macos-x86_64
+
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: periplon-executor.exe
+            asset_name: periplon-executor-nightly-windows-x86_64.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build nightly binary
+        run: cargo build --release --bin periplon-executor --target ${{ matrix.target }}
+
+      - name: Strip binary (Unix)
+        if: matrix.os != 'windows-latest'
+        run: strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
+
+      - name: Upload nightly artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
+          retention-days: 7
+
+  # Performance benchmarks
+  benchmarks:
+    name: Nightly Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run benchmarks
+        run: cargo bench --bench dsl_benchmarks -- --output-format bencher | tee benchmark_results.txt
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: benchmark_results.txt
+          retention-days: 30
+
+  # Notify on failure
+  notify-failure:
+    name: Notify on Failure
+    needs: [build-nightly-tui, build-nightly-executor, benchmarks]
+    runs-on: ubuntu-latest
+    if: failure()
+    steps:
+      - name: Send notification
+        run: |
+          echo "Nightly build failed on $(date)"
+          # Add notification logic here (Slack, email, etc.)

@@ -1,0 +1,193 @@
+# Student Assessment - Automated grading system
+name: "student_assessment"
+version: "1.0"
+
+agents:
+  collection_agent:
+    description: "Collects student submissions"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/assessment/submissions"]
+    max_turns: 12
+
+  grading_agent:
+    description: "Grades assignments automatically"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/assessment/grading"]
+    max_turns: 20
+
+  plagiarism_agent:
+    description: "Checks for plagiarism"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/assessment/plagiarism"]
+    max_turns: 15
+
+  feedback_agent:
+    description: "Generates personalized feedback"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/assessment/feedback"]
+    max_turns: 15
+
+  analytics_agent:
+    description: "Analyzes class performance"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/assessment/analytics"]
+    max_turns: 12
+
+  reporting_agent:
+    description: "Generates grade reports"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/assessment/reports"]
+    max_turns: 10
+
+tasks:
+  collect_submissions:
+    description: "Collect student assignment submissions"
+    agent: "collection_agent"
+    priority: 1
+    output: "submissions.log"
+
+  validate_submissions:
+    description: "Validate submission formats"
+    agent: "collection_agent"
+    depends_on: ["collect_submissions"]
+    output: "validation.log"
+
+  check_plagiarism:
+    description: "Check for plagiarism and academic integrity"
+    agent: "plagiarism_agent"
+    depends_on: ["validate_submissions"]
+    output: "plagiarism_check.log"
+
+  auto_grade_objective:
+    description: "Auto-grade objective questions"
+    agent: "grading_agent"
+    depends_on: ["check_plagiarism"]
+    output: "objective_grading.log"
+
+  grade_essays:
+    description: "Grade essay responses"
+    agent: "grading_agent"
+    depends_on: ["check_plagiarism"]
+    parallel_with: ["auto_grade_objective"]
+    output: "essay_grading.log"
+
+  grade_code:
+    description: "Grade programming assignments"
+    agent: "grading_agent"
+    depends_on: ["check_plagiarism"]
+    parallel_with: ["auto_grade_objective", "grade_essays"]
+    output: "code_grading.log"
+
+  calculate_scores:
+    description: "Calculate final scores"
+    agent: "grading_agent"
+    depends_on: ["auto_grade_objective", "grade_essays", "grade_code"]
+    output: "final_scores.log"
+
+  generate_feedback:
+    description: "Generate personalized feedback"
+    agent: "feedback_agent"
+    depends_on: ["calculate_scores"]
+    output: "feedback.log"
+
+  analyze_performance:
+    description: "Analyze class performance metrics"
+    agent: "analytics_agent"
+    depends_on: ["calculate_scores"]
+    parallel_with: ["generate_feedback"]
+    output: "performance_analysis.log"
+
+  identify_struggling_students:
+    description: "Identify students needing support"
+    agent: "analytics_agent"
+    depends_on: ["analyze_performance"]
+    output: "struggling_students.log"
+
+  generate_reports:
+    description: "Generate grade reports and transcripts"
+    agent: "reporting_agent"
+    depends_on: ["generate_feedback", "identify_struggling_students"]
+    output: "grade_reports.html"
+
+workflows:
+  assess_students:
+    description: "Automated student assessment and grading"
+    steps:
+      - stage: "collection"
+        agents: ["collection_agent"]
+        tasks:
+          - collect_submissions:
+              description: "Collect student assignment submissions"
+          - validate_submissions:
+              description: "Validate submission formats"
+        mode: sequential
+
+      - stage: "integrity"
+        agents: ["plagiarism_agent"]
+        tasks:
+          - check_plagiarism:
+              description: "Check for plagiarism and academic integrity"
+        mode: sequential
+        depends_on: ["collection"]
+
+      - stage: "grading"
+        agents: ["grading_agent"]
+        tasks:
+          - auto_grade_objective:
+              description: "Auto-grade objective questions"
+          - grade_essays:
+              description: "Grade essay responses"
+          - grade_code:
+              description: "Grade programming assignments"
+          - calculate_scores:
+              description: "Calculate final scores"
+        mode: sequential
+        depends_on: ["integrity"]
+
+      - stage: "feedback"
+        agents: ["feedback_agent", "analytics_agent"]
+        tasks:
+          - generate_feedback:
+              description: "Generate personalized feedback"
+          - analyze_performance:
+              description: "Analyze class performance metrics"
+        mode: parallel
+        depends_on: ["grading"]
+
+      - stage: "reporting"
+        agents: ["analytics_agent", "reporting_agent"]
+        tasks:
+          - identify_struggling_students:
+              description: "Identify students needing support"
+          - generate_reports:
+              description: "Generate grade reports and transcripts"
+        mode: sequential
+        depends_on: ["feedback"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting student assessment'"
+
+      post_workflow:
+        - "echo 'Assessment complete and grades published'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

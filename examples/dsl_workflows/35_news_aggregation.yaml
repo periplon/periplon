@@ -1,0 +1,184 @@
+# News Aggregation - News collection and curation
+name: "news_aggregation"
+version: "1.0"
+
+agents:
+  crawler_agent:
+    description: "Crawls news sources"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/news/raw"]
+    max_turns: 20
+
+  parsing_agent:
+    description: "Parses article content"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/news/parsed"]
+    max_turns: 15
+
+  classification_agent:
+    description: "Classifies and categorizes news"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/news/classified"]
+    max_turns: 15
+
+  summarization_agent:
+    description: "Summarizes articles"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/news/summaries"]
+    max_turns: 20
+
+  curation_agent:
+    description: "Curates top stories"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/news/curated"]
+    max_turns: 12
+
+  publishing_agent:
+    description: "Publishes news feed"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/news/published"]
+    max_turns: 10
+
+tasks:
+  crawl_sources:
+    description: "Crawl news sources and RSS feeds"
+    agent: "crawler_agent"
+    priority: 1
+    output: "crawl.log"
+
+  deduplicate_articles:
+    description: "Remove duplicate articles"
+    agent: "crawler_agent"
+    depends_on: ["crawl_sources"]
+    output: "deduplication.log"
+
+  parse_content:
+    description: "Parse article content and metadata"
+    agent: "parsing_agent"
+    depends_on: ["deduplicate_articles"]
+    output: "parsing.log"
+
+  extract_entities:
+    description: "Extract named entities"
+    agent: "parsing_agent"
+    depends_on: ["parse_content"]
+    output: "entities.log"
+
+  classify_topics:
+    description: "Classify articles by topic"
+    agent: "classification_agent"
+    depends_on: ["extract_entities"]
+    output: "classification.log"
+
+  analyze_sentiment:
+    description: "Analyze article sentiment"
+    agent: "classification_agent"
+    depends_on: ["classify_topics"]
+    parallel_with: ["generate_summaries"]
+    output: "sentiment.log"
+
+  generate_summaries:
+    description: "Generate article summaries"
+    agent: "summarization_agent"
+    depends_on: ["classify_topics"]
+    parallel_with: ["analyze_sentiment"]
+    output: "summaries.log"
+
+  rank_articles:
+    description: "Rank articles by relevance and importance"
+    agent: "curation_agent"
+    depends_on: ["analyze_sentiment", "generate_summaries"]
+    output: "ranking.log"
+
+  curate_top_stories:
+    description: "Curate top stories for publication"
+    agent: "curation_agent"
+    depends_on: ["rank_articles"]
+    output: "curation.log"
+
+  publish_feed:
+    description: "Publish news feed"
+    agent: "publishing_agent"
+    depends_on: ["curate_top_stories"]
+    output: "publication.log"
+
+workflows:
+  aggregate_news:
+    description: "News aggregation and curation pipeline"
+    steps:
+      - stage: "collection"
+        agents: ["crawler_agent"]
+        tasks:
+          - crawl_sources:
+              description: "Crawl news sources and RSS feeds"
+          - deduplicate_articles:
+              description: "Remove duplicate articles"
+        mode: sequential
+
+      - stage: "parsing"
+        agents: ["parsing_agent"]
+        tasks:
+          - parse_content:
+              description: "Parse article content and metadata"
+          - extract_entities:
+              description: "Extract named entities"
+        mode: sequential
+        depends_on: ["collection"]
+
+      - stage: "classification"
+        agents: ["classification_agent", "summarization_agent"]
+        tasks:
+          - classify_topics:
+              description: "Classify articles by topic"
+          - analyze_sentiment:
+              description: "Analyze article sentiment"
+          - generate_summaries:
+              description: "Generate article summaries"
+        mode: sequential
+        depends_on: ["parsing"]
+
+      - stage: "curation"
+        agents: ["curation_agent"]
+        tasks:
+          - rank_articles:
+              description: "Rank articles by relevance and importance"
+          - curate_top_stories:
+              description: "Curate top stories for publication"
+        mode: sequential
+        depends_on: ["classification"]
+
+      - stage: "publication"
+        agents: ["publishing_agent"]
+        tasks:
+          - publish_feed:
+              description: "Publish news feed"
+        mode: sequential
+        depends_on: ["curation"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting news aggregation'"
+
+      post_workflow:
+        - "echo 'News feed published'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

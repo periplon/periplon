@@ -1,0 +1,99 @@
+name: "Simple Task Group Example"
+version: "1.0.0"
+description: |
+  A simple example demonstrating basic task group features:
+  - Sequential task execution within a group
+  - Parallel task execution across groups
+  - Basic group properties and configuration
+
+inputs:
+  project_path:
+    type: string
+    required: true
+    description: "Path to the project to analyze"
+
+agents:
+  analyzer:
+    description: "Analyzes code structure and quality"
+    tools: [Read, Grep, Glob]
+    permissions:
+      mode: "default"
+
+  documenter:
+    description: "Generates documentation"
+    tools: [Read, Write]
+    permissions:
+      mode: "acceptEdits"
+
+task_groups:
+  # Simple sequential group - tasks run one after another
+  analysis_pipeline:
+    description: "Run analysis tasks in sequence"
+    execution_mode: "sequential"
+    tasks:
+      - scan_files
+      - check_syntax
+      - analyze_complexity
+
+    on_error: "stop"  # Stop execution on first error
+    timeout: 300      # 5 minute timeout
+
+  # Simple parallel group - tasks run concurrently
+  documentation_generation:
+    description: "Generate documentation in parallel"
+    execution_mode: "parallel"
+    tasks:
+      - generate_readme
+      - generate_api_docs
+      - generate_changelog
+
+    depends_on: [analysis_pipeline]  # Run after analysis completes
+    on_error: "continue"             # Continue even if some tasks fail
+    max_concurrency: 3               # Limit to 3 concurrent tasks
+
+tasks:
+  # Analysis pipeline tasks (run sequentially)
+  scan_files:
+    description: "Scan files in ${workflow.project_path}"
+    agent: "analyzer"
+    group: "analysis_pipeline"
+    outputs:
+      file_count:
+        source:
+          type: state
+          key: "scan.file_count"
+
+  check_syntax:
+    description: "Check syntax of scanned files"
+    agent: "analyzer"
+    group: "analysis_pipeline"
+    depends_on: [scan_files]  # Explicitly depends on scan_files
+
+  analyze_complexity:
+    description: "Analyze code complexity"
+    agent: "analyzer"
+    group: "analysis_pipeline"
+    depends_on: [check_syntax]  # Depends on check_syntax
+    outputs:
+      complexity_score:
+        source:
+          type: state
+          key: "analysis.complexity"
+
+  # Documentation tasks (run in parallel)
+  generate_readme:
+    description: "Generate README.md"
+    agent: "documenter"
+    group: "documentation_generation"
+    inputs:
+      file_count: "${task.scan_files.file_count}"
+
+  generate_api_docs:
+    description: "Generate API documentation"
+    agent: "documenter"
+    group: "documentation_generation"
+
+  generate_changelog:
+    description: "Generate CHANGELOG.md from git history"
+    agent: "documenter"
+    group: "documentation_generation"

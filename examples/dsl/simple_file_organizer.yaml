@@ -1,0 +1,41 @@
+# Simple File Organizer Workflow
+# This workflow organizes files in a directory by type and date
+
+name: "File Organizer"
+version: "1.0.0"
+
+agents:
+  organizer:
+    description: "Organize files by type and date"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - Bash
+      - Glob
+    permissions:
+      mode: "acceptEdits"
+
+tasks:
+  organize_downloads:
+    description: "Sort files in Downloads folder"
+    agent: "organizer"
+
+    subtasks:
+      - scan_files:
+          description: "List all files in Downloads"
+          agent: "organizer"
+
+      - categorize:
+          description: "Group files by type"
+          agent: "organizer"
+          depends_on:
+            - scan_files
+
+      - move_files:
+          description: "Move files to categorized folders"
+          agent: "organizer"
+          depends_on:
+            - categorize
+
+    on_complete:
+      notify: "File organization complete"

@@ -1,0 +1,175 @@
+# Portfolio Analysis - Investment portfolio optimization
+name: "portfolio_analysis"
+version: "1.0"
+
+agents:
+  data_agent:
+    description: "Collects portfolio and market data"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/portfolio/data"]
+    max_turns: 15
+
+  performance_agent:
+    description: "Analyzes portfolio performance"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/portfolio/performance"]
+    max_turns: 15
+
+  optimization_agent:
+    description: "Optimizes portfolio allocation"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/portfolio/optimization"]
+    max_turns: 20
+
+  rebalancing_agent:
+    description: "Generates rebalancing recommendations"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/portfolio/rebalancing"]
+    max_turns: 12
+
+  reporting_agent:
+    description: "Creates portfolio reports"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/portfolio/reports"]
+    max_turns: 10
+
+tasks:
+  fetch_holdings:
+    description: "Fetch current portfolio holdings"
+    agent: "data_agent"
+    priority: 1
+    output: "holdings.log"
+
+  fetch_prices:
+    description: "Fetch current market prices"
+    agent: "data_agent"
+    depends_on: ["fetch_holdings"]
+    output: "prices.log"
+
+  calculate_returns:
+    description: "Calculate historical returns"
+    agent: "performance_agent"
+    depends_on: ["fetch_prices"]
+    output: "returns.log"
+
+  analyze_performance:
+    description: "Analyze portfolio performance metrics"
+    agent: "performance_agent"
+    depends_on: ["calculate_returns"]
+    output: "performance.log"
+
+  calculate_correlation:
+    description: "Calculate asset correlation matrix"
+    agent: "optimization_agent"
+    depends_on: ["calculate_returns"]
+    parallel_with: ["analyze_performance"]
+    output: "correlation.log"
+
+  optimize_allocation:
+    description: "Optimize portfolio allocation"
+    agent: "optimization_agent"
+    depends_on: ["calculate_correlation", "analyze_performance"]
+    output: "optimization.log"
+
+  run_monte_carlo:
+    description: "Run Monte Carlo simulations"
+    agent: "optimization_agent"
+    depends_on: ["optimize_allocation"]
+    output: "monte_carlo.log"
+
+  generate_rebalancing_plan:
+    description: "Generate rebalancing recommendations"
+    agent: "rebalancing_agent"
+    depends_on: ["optimize_allocation"]
+    parallel_with: ["run_monte_carlo"]
+    output: "rebalancing.log"
+
+  calculate_tax_impact:
+    description: "Calculate tax impact of rebalancing"
+    agent: "rebalancing_agent"
+    depends_on: ["generate_rebalancing_plan"]
+    output: "tax_impact.log"
+
+  create_report:
+    description: "Create comprehensive portfolio report"
+    agent: "reporting_agent"
+    depends_on: ["run_monte_carlo", "calculate_tax_impact"]
+    output: "portfolio_report.html"
+
+workflows:
+  analyze_portfolio:
+    description: "Portfolio optimization with complex dependencies"
+    steps:
+      - stage: "data_collection"
+        agents: ["data_agent"]
+        tasks:
+          - fetch_holdings:
+              description: "Fetch current portfolio holdings"
+          - fetch_prices:
+              description: "Fetch current market prices"
+        mode: sequential
+
+      - stage: "analysis"
+        agents: ["performance_agent", "optimization_agent"]
+        tasks:
+          - calculate_returns:
+              description: "Calculate historical returns"
+          - analyze_performance:
+              description: "Analyze portfolio performance metrics"
+          - calculate_correlation:
+              description: "Calculate asset correlation matrix"
+        mode: sequential
+        depends_on: ["data_collection"]
+
+      - stage: "optimization"
+        agents: ["optimization_agent", "rebalancing_agent"]
+        tasks:
+          - optimize_allocation:
+              description: "Optimize portfolio allocation"
+          - run_monte_carlo:
+              description: "Run Monte Carlo simulations"
+          - generate_rebalancing_plan:
+              description: "Generate rebalancing recommendations"
+        mode: sequential
+        depends_on: ["analysis"]
+
+      - stage: "planning"
+        agents: ["rebalancing_agent"]
+        tasks:
+          - calculate_tax_impact:
+              description: "Calculate tax impact of rebalancing"
+        mode: sequential
+        depends_on: ["optimization"]
+
+      - stage: "reporting"
+        agents: ["reporting_agent"]
+        tasks:
+          - create_report:
+              description: "Create comprehensive portfolio report"
+        mode: sequential
+        depends_on: ["planning"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting portfolio analysis'"
+
+      post_workflow:
+        - "echo 'Portfolio analysis complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

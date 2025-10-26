@@ -1,0 +1,198 @@
+# Security Audit - Comprehensive security assessment
+name: "security_audit"
+version: "1.0"
+
+agents:
+  scanning_agent:
+    description: "Performs security scans"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/security/scans"]
+    max_turns: 20
+
+  code_analysis_agent:
+    description: "Analyzes code for vulnerabilities"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/security/code"]
+    max_turns: 20
+
+  config_agent:
+    description: "Audits security configurations"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/security/config"]
+    max_turns: 15
+
+  fallback_scanning_agent:
+    description: "Fallback security scanning agent"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/security/scans"]
+    max_turns: 20
+
+  compliance_agent:
+    description: "Checks compliance requirements"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/security/compliance"]
+    max_turns: 15
+
+  reporting_agent:
+    description: "Generates security reports"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/security/reports"]
+    max_turns: 12
+
+tasks:
+  vulnerability_scan:
+    description: "Scan for known vulnerabilities"
+    agent: "scanning_agent"
+    priority: 1
+    output: "vulnerability_scan.log"
+    on_error:
+      retry: 2
+      retry_delay_secs: 15
+      fallback_agent: "fallback_scanning_agent"
+
+  dependency_check:
+    description: "Check dependencies for vulnerabilities"
+    agent: "scanning_agent"
+    priority: 1
+    parallel_with: ["vulnerability_scan"]
+    output: "dependency_check.log"
+
+  static_code_analysis:
+    description: "Perform static code analysis"
+    agent: "code_analysis_agent"
+    depends_on: ["vulnerability_scan"]
+    output: "static_analysis.log"
+
+  secret_detection:
+    description: "Detect hardcoded secrets"
+    agent: "code_analysis_agent"
+    depends_on: ["static_code_analysis"]
+    output: "secret_detection.log"
+
+  audit_authentication:
+    description: "Audit authentication mechanisms"
+    agent: "config_agent"
+    depends_on: ["vulnerability_scan"]
+    parallel_with: ["secret_detection"]
+    output: "authentication_audit.log"
+
+  audit_authorization:
+    description: "Audit authorization controls"
+    agent: "config_agent"
+    depends_on: ["audit_authentication"]
+    output: "authorization_audit.log"
+
+  audit_encryption:
+    description: "Audit encryption implementation"
+    agent: "config_agent"
+    depends_on: ["audit_authorization"]
+    output: "encryption_audit.log"
+
+  check_owasp_top10:
+    description: "Check OWASP Top 10 vulnerabilities"
+    agent: "scanning_agent"
+    depends_on: ["secret_detection", "audit_encryption"]
+    output: "owasp_check.log"
+
+  check_compliance:
+    description: "Check security compliance standards"
+    agent: "compliance_agent"
+    depends_on: ["check_owasp_top10"]
+    output: "compliance_check.log"
+
+  generate_findings:
+    description: "Generate security findings report"
+    agent: "reporting_agent"
+    depends_on: ["check_compliance"]
+    output: "security_findings.html"
+
+workflows:
+  audit_security:
+    description: "Comprehensive security audit with tool constraints"
+    steps:
+      - stage: "scanning"
+        agents: ["scanning_agent", "fallback_scanning_agent"]
+        tasks:
+          - vulnerability_scan:
+              description: "Scan for known vulnerabilities"
+          - dependency_check:
+              description: "Check dependencies for vulnerabilities"
+        mode: parallel
+
+      - stage: "code_analysis"
+        agents: ["code_analysis_agent"]
+        tasks:
+          - static_code_analysis:
+              description: "Perform static code analysis"
+          - secret_detection:
+              description: "Detect hardcoded secrets"
+        mode: sequential
+        depends_on: ["scanning"]
+
+      - stage: "configuration_audit"
+        agents: ["config_agent"]
+        tasks:
+          - audit_authentication:
+              description: "Audit authentication mechanisms"
+          - audit_authorization:
+              description: "Audit authorization controls"
+          - audit_encryption:
+              description: "Audit encryption implementation"
+        mode: sequential
+        depends_on: ["scanning"]
+
+      - stage: "vulnerability_check"
+        agents: ["scanning_agent"]
+        tasks:
+          - check_owasp_top10:
+              description: "Check OWASP Top 10 vulnerabilities"
+        mode: sequential
+        depends_on: ["code_analysis", "configuration_audit"]
+
+      - stage: "compliance"
+        agents: ["compliance_agent", "reporting_agent"]
+        tasks:
+          - check_compliance:
+              description: "Check security compliance standards"
+          - generate_findings:
+              description: "Generate security findings report"
+        mode: sequential
+        depends_on: ["vulnerability_check"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting comprehensive security audit'"
+        - command: "mkdir -p /security/scans /security/code /security/config /security/compliance /security/reports"
+          description: "Create security audit directories"
+
+      post_workflow:
+        - "echo 'Security audit complete'"
+
+      on_error:
+        - "echo 'Security audit error at: $WORKFLOW_STAGE'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]
+  disallowed: []
+  constraints:
+    Bash:
+      timeout: 300000
+      allowed_commands: ["nmap", "nikto", "sqlmap", "burp", "zap", "semgrep", "bandit", "trivy", "echo", "mkdir"]

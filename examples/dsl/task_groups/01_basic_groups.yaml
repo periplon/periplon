@@ -1,0 +1,114 @@
+name: "Basic Task Groups Example"
+version: "1.0.0"
+description: |
+  Demonstrates basic task group features:
+  - Simple sequential groups
+  - Parallel execution groups
+  - Basic group properties
+
+inputs:
+  project_path:
+    type: string
+    required: true
+    description: "Path to the project to analyze"
+
+agents:
+  analyzer:
+    description: "Analyzes code quality and structure"
+    tools: [Read, Grep, Glob]
+    permissions:
+      mode: "default"
+
+  documenter:
+    description: "Generates documentation"
+    tools: [Read, Write]
+    permissions:
+      mode: "acceptEdits"
+
+task_groups:
+  # Sequential group - tasks run one after another
+  sequential_analysis:
+    description: "Run analysis tasks in sequence"
+    execution_mode: "sequential"
+    tasks:
+      - check_syntax
+      - check_structure
+      - check_complexity
+
+    # Group-level configuration
+    on_error: "stop"  # Stop on first error
+    timeout: 300      # 5 minute timeout for entire group
+
+  # Parallel group - tasks run concurrently
+  parallel_docs:
+    description: "Generate documentation in parallel"
+    execution_mode: "parallel"
+    tasks:
+      - gen_api_docs
+      - gen_user_guide
+      - gen_changelog
+
+    on_error: "continue"  # Continue even if some tasks fail
+    max_concurrency: 3    # Run up to 3 tasks at once
+
+  # Mixed mode group
+  mixed_workflow:
+    description: "Mix of sequential and parallel execution"
+    execution_mode: "auto"  # Auto-determine based on dependencies
+    tasks:
+      - prepare_environment
+      - run_tests
+      - generate_report
+
+tasks:
+  # Sequential analysis tasks
+  check_syntax:
+    description: "Check syntax errors in ${workflow.project_path}"
+    agent: "analyzer"
+    group: "sequential_analysis"
+
+  check_structure:
+    description: "Analyze code structure"
+    agent: "analyzer"
+    group: "sequential_analysis"
+    depends_on: [check_syntax]
+
+  check_complexity:
+    description: "Calculate code complexity metrics"
+    agent: "analyzer"
+    group: "sequential_analysis"
+    depends_on: [check_structure]
+
+  # Parallel documentation tasks
+  gen_api_docs:
+    description: "Generate API documentation"
+    agent: "documenter"
+    group: "parallel_docs"
+
+  gen_user_guide:
+    description: "Generate user guide"
+    agent: "documenter"
+    group: "parallel_docs"
+
+  gen_changelog:
+    description: "Generate changelog from git history"
+    agent: "documenter"
+    group: "parallel_docs"
+
+  # Mixed workflow tasks
+  prepare_environment:
+    description: "Set up test environment"
+    agent: "analyzer"
+    group: "mixed_workflow"
+
+  run_tests:
+    description: "Run test suite"
+    agent: "analyzer"
+    group: "mixed_workflow"
+    depends_on: [prepare_environment]
+
+  generate_report:
+    description: "Generate final report"
+    agent: "documenter"
+    group: "mixed_workflow"
+    depends_on: [run_tests]

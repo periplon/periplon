@@ -1,0 +1,127 @@
+# Progressive Web App - PWA build and optimization
+name: "pwa_build"
+version: "1.0"
+
+agents:
+  build_agent:
+    description: "Builds the PWA application"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/pwa"]
+    max_turns: 15
+
+  optimization_agent:
+    description: "Optimizes assets and performance"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/pwa/dist"]
+    max_turns: 12
+
+  manifest_agent:
+    description: "Generates PWA manifest and service worker"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/pwa"]
+    max_turns: 8
+
+  validation_agent:
+    description: "Validates PWA requirements"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/pwa/dist"]
+    max_turns: 10
+
+tasks:
+  build_app:
+    description: "Build the PWA application"
+    agent: "build_agent"
+    priority: 1
+    output: "build.log"
+
+  generate_manifest:
+    description: "Create web app manifest"
+    agent: "manifest_agent"
+    depends_on: ["build_app"]
+    output: "manifest.json"
+
+  generate_service_worker:
+    description: "Create service worker for offline support"
+    agent: "manifest_agent"
+    depends_on: ["build_app"]
+    output: "sw.js"
+
+  optimize_images:
+    description: "Optimize and compress images"
+    agent: "optimization_agent"
+    depends_on: ["build_app"]
+    output: "image_optimization.log"
+
+  optimize_assets:
+    description: "Minify CSS, JS, and other assets"
+    agent: "optimization_agent"
+    depends_on: ["build_app"]
+    parallel_with: ["optimize_images"]
+    output: "asset_optimization.log"
+
+  validate_pwa:
+    description: "Run Lighthouse audit and PWA validation"
+    agent: "validation_agent"
+    depends_on: ["generate_manifest", "generate_service_worker", "optimize_assets"]
+    output: "lighthouse_report.html"
+
+workflows:
+  pwa_deployment:
+    description: "Build and optimize Progressive Web App"
+    steps:
+      - stage: "build"
+        agents: ["build_agent"]
+        tasks:
+          - build_app:
+              description: "Build the PWA application"
+        mode: sequential
+
+      - stage: "pwa_features"
+        agents: ["manifest_agent"]
+        tasks:
+          - generate_manifest:
+              description: "Create web app manifest"
+          - generate_service_worker:
+              description: "Create service worker for offline support"
+        mode: sequential
+        depends_on: ["build"]
+
+      - stage: "optimization"
+        agents: ["optimization_agent"]
+        tasks:
+          - optimize_images:
+              description: "Optimize and compress images"
+          - optimize_assets:
+              description: "Minify CSS, JS, and other assets"
+        mode: parallel
+        depends_on: ["build"]
+
+      - stage: "validation"
+        agents: ["validation_agent"]
+        tasks:
+          - validate_pwa:
+              description: "Run Lighthouse audit and PWA validation"
+        mode: sequential
+        depends_on: ["pwa_features", "optimization"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Building Progressive Web App'"
+
+      post_workflow:
+        - "echo 'PWA build and optimization complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

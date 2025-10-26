@@ -1,0 +1,42 @@
+# Cross-compilation configuration
+
+[target.aarch64-unknown-linux-gnu]
+linker = "aarch64-linux-gnu-gcc"
+
+[target.x86_64-unknown-linux-musl]
+linker = "x86_64-linux-musl-gcc"
+
+[target.aarch64-unknown-linux-musl]
+linker = "aarch64-linux-musl-gcc"
+
+# Build optimization
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+# Fast compile for development
+[profile.dev]
+opt-level = 0
+debug = true
+
+# Profile for CI builds
+[profile.ci]
+inherits = "release"
+strip = false
+debug = true
+
+# Aliases for common build commands
+[alias]
+build-tui = "build --release --bin dsl-tui --features tui"
+build-executor = "build --release --bin dsl-executor"
+build-all = "build --release --all-features"
+test-all = "test --all-features"
+
+# Cross-compilation targets
+build-linux-x86 = "build --release --bin dsl-tui --features tui --target x86_64-unknown-linux-gnu"
+build-linux-arm = "build --release --bin dsl-tui --features tui --target aarch64-unknown-linux-gnu"
+build-macos-x86 = "build --release --bin dsl-tui --features tui --target x86_64-apple-darwin"
+build-macos-arm = "build --release --bin dsl-tui --features tui --target aarch64-apple-darwin"
+build-windows = "build --release --bin dsl-tui --features tui --target x86_64-pc-windows-msvc"

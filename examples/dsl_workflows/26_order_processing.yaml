@@ -1,0 +1,191 @@
+# Order Processing - Order fulfillment workflow
+name: "order_processing"
+version: "1.0"
+
+agents:
+  validation_agent:
+    description: "Validates orders"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/orders/validation"]
+    max_turns: 10
+
+  inventory_agent:
+    description: "Manages inventory"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/orders/inventory"]
+    max_turns: 12
+
+  payment_agent:
+    description: "Processes payments"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/orders/payments"]
+    max_turns: 12
+
+  fulfillment_agent:
+    description: "Handles order fulfillment"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/orders/fulfillment"]
+    max_turns: 15
+
+  shipping_agent:
+    description: "Manages shipping"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/orders/shipping"]
+    max_turns: 12
+
+  notification_agent:
+    description: "Sends customer notifications"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/orders/notifications"]
+    max_turns: 8
+
+tasks:
+  validate_order:
+    description: "Validate order details"
+    agent: "validation_agent"
+    priority: 1
+    output: "order_validation.log"
+
+  check_inventory:
+    description: "Check inventory availability"
+    agent: "inventory_agent"
+    depends_on: ["validate_order"]
+    parallel_with: ["process_payment"]
+    output: "inventory_check.log"
+
+  process_payment:
+    description: "Process customer payment"
+    agent: "payment_agent"
+    depends_on: ["validate_order"]
+    parallel_with: ["check_inventory"]
+    output: "payment_processing.log"
+
+  reserve_inventory:
+    description: "Reserve items from inventory"
+    agent: "inventory_agent"
+    depends_on: ["check_inventory", "process_payment"]
+    output: "inventory_reservation.log"
+
+  pick_items:
+    description: "Pick items from warehouse"
+    agent: "fulfillment_agent"
+    depends_on: ["reserve_inventory"]
+    output: "picking.log"
+
+  pack_order:
+    description: "Pack order for shipping"
+    agent: "fulfillment_agent"
+    depends_on: ["pick_items"]
+    output: "packing.log"
+
+  generate_label:
+    description: "Generate shipping label"
+    agent: "shipping_agent"
+    depends_on: ["pack_order"]
+    output: "shipping_label.log"
+
+  ship_order:
+    description: "Ship order to customer"
+    agent: "shipping_agent"
+    depends_on: ["generate_label"]
+    output: "shipment.log"
+
+  send_confirmation:
+    description: "Send shipping confirmation email"
+    agent: "notification_agent"
+    depends_on: ["ship_order"]
+    output: "confirmation.log"
+
+  update_inventory:
+    description: "Update inventory levels"
+    agent: "inventory_agent"
+    depends_on: ["ship_order"]
+    parallel_with: ["send_confirmation"]
+    output: "inventory_update.log"
+
+workflows:
+  process_order:
+    description: "Complete order processing with parallel execution"
+    steps:
+      - stage: "validation"
+        agents: ["validation_agent"]
+        tasks:
+          - validate_order:
+              description: "Validate order details"
+        mode: sequential
+
+      - stage: "verification"
+        agents: ["inventory_agent", "payment_agent"]
+        tasks:
+          - check_inventory:
+              description: "Check inventory availability"
+          - process_payment:
+              description: "Process customer payment"
+        mode: parallel
+        depends_on: ["validation"]
+
+      - stage: "reservation"
+        agents: ["inventory_agent"]
+        tasks:
+          - reserve_inventory:
+              description: "Reserve items from inventory"
+        mode: sequential
+        depends_on: ["verification"]
+
+      - stage: "fulfillment"
+        agents: ["fulfillment_agent"]
+        tasks:
+          - pick_items:
+              description: "Pick items from warehouse"
+          - pack_order:
+              description: "Pack order for shipping"
+        mode: sequential
+        depends_on: ["reservation"]
+
+      - stage: "shipping"
+        agents: ["shipping_agent"]
+        tasks:
+          - generate_label:
+              description: "Generate shipping label"
+          - ship_order:
+              description: "Ship order to customer"
+        mode: sequential
+        depends_on: ["fulfillment"]
+
+      - stage: "completion"
+        agents: ["notification_agent", "inventory_agent"]
+        tasks:
+          - send_confirmation:
+              description: "Send shipping confirmation email"
+          - update_inventory:
+              description: "Update inventory levels"
+        mode: parallel
+        depends_on: ["shipping"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting order processing'"
+
+      post_workflow:
+        - "echo 'Order processing complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

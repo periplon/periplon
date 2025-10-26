@@ -1,0 +1,180 @@
+# Social Media Management - Multi-platform social media
+name: "social_media_management"
+version: "1.0"
+
+agents:
+  content_agent:
+    description: "Creates social media content"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/social/content"]
+    max_turns: 15
+
+  image_agent:
+    description: "Creates social media images"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/social/images"]
+    max_turns: 12
+
+  scheduling_agent:
+    description: "Schedules posts"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/social/schedule"]
+    max_turns: 10
+
+  publishing_agent:
+    description: "Publishes to platforms"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/social/published"]
+    max_turns: 15
+
+  analytics_agent:
+    description: "Tracks engagement analytics"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/social/analytics"]
+    max_turns: 12
+
+tasks:
+  create_content_calendar:
+    description: "Create monthly content calendar"
+    agent: "content_agent"
+    priority: 1
+    output: "content_calendar.md"
+
+  write_posts:
+    description: "Write social media posts"
+    agent: "content_agent"
+    depends_on: ["create_content_calendar"]
+    output: "posts.log"
+
+  create_graphics:
+    description: "Create visual content for posts"
+    agent: "image_agent"
+    depends_on: ["write_posts"]
+    output: "graphics.log"
+
+  optimize_hashtags:
+    description: "Research and optimize hashtags"
+    agent: "content_agent"
+    depends_on: ["write_posts"]
+    parallel_with: ["create_graphics"]
+    output: "hashtags.log"
+
+  schedule_twitter:
+    description: "Schedule Twitter posts"
+    agent: "scheduling_agent"
+    depends_on: ["create_graphics", "optimize_hashtags"]
+    parallel_with: ["schedule_facebook", "schedule_instagram"]
+    output: "twitter_schedule.log"
+
+  schedule_facebook:
+    description: "Schedule Facebook posts"
+    agent: "scheduling_agent"
+    depends_on: ["create_graphics", "optimize_hashtags"]
+    parallel_with: ["schedule_twitter", "schedule_instagram"]
+    output: "facebook_schedule.log"
+
+  schedule_instagram:
+    description: "Schedule Instagram posts"
+    agent: "scheduling_agent"
+    depends_on: ["create_graphics", "optimize_hashtags"]
+    parallel_with: ["schedule_twitter", "schedule_facebook"]
+    output: "instagram_schedule.log"
+
+  publish_posts:
+    description: "Publish scheduled posts"
+    agent: "publishing_agent"
+    depends_on: ["schedule_twitter", "schedule_facebook", "schedule_instagram"]
+    output: "publication.log"
+
+  track_engagement:
+    description: "Track post engagement metrics"
+    agent: "analytics_agent"
+    depends_on: ["publish_posts"]
+    output: "engagement.log"
+
+  generate_report:
+    description: "Generate analytics report"
+    agent: "analytics_agent"
+    depends_on: ["track_engagement"]
+    output: "analytics_report.html"
+
+workflows:
+  manage_social_media:
+    description: "Multi-platform social media management"
+    steps:
+      - stage: "planning"
+        agents: ["content_agent"]
+        tasks:
+          - create_content_calendar:
+              description: "Create monthly content calendar"
+        mode: sequential
+
+      - stage: "content_creation"
+        agents: ["content_agent", "image_agent"]
+        tasks:
+          - write_posts:
+              description: "Write social media posts"
+          - create_graphics:
+              description: "Create visual content for posts"
+          - optimize_hashtags:
+              description: "Research and optimize hashtags"
+        mode: sequential
+        depends_on: ["planning"]
+
+      - stage: "scheduling"
+        agents: ["scheduling_agent"]
+        tasks:
+          - schedule_twitter:
+              description: "Schedule Twitter posts"
+          - schedule_facebook:
+              description: "Schedule Facebook posts"
+          - schedule_instagram:
+              description: "Schedule Instagram posts"
+        mode: parallel
+        depends_on: ["content_creation"]
+
+      - stage: "publication"
+        agents: ["publishing_agent"]
+        tasks:
+          - publish_posts:
+              description: "Publish scheduled posts"
+        mode: sequential
+        depends_on: ["scheduling"]
+
+      - stage: "analytics"
+        agents: ["analytics_agent"]
+        tasks:
+          - track_engagement:
+              description: "Track post engagement metrics"
+          - generate_report:
+              description: "Generate analytics report"
+        mode: sequential
+        depends_on: ["publication"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting social media management'"
+
+      post_workflow:
+        - "echo 'Social media posts published and tracked'"
+
+      on_stage_complete:
+        - "echo 'Completed stage: $WORKFLOW_STAGE'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

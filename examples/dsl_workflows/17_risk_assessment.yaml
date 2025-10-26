@@ -1,0 +1,174 @@
+# Risk Assessment - Financial risk analysis
+name: "risk_assessment"
+version: "1.0"
+
+agents:
+  data_collection_agent:
+    description: "Collects financial data"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/risk/data"]
+    max_turns: 15
+
+  market_risk_agent:
+    description: "Analyzes market risk"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/risk/market"]
+    max_turns: 15
+
+  credit_risk_agent:
+    description: "Analyzes credit risk"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/risk/credit"]
+    max_turns: 15
+
+  operational_risk_agent:
+    description: "Analyzes operational risk"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/risk/operational"]
+    max_turns: 12
+
+  reporting_agent:
+    description: "Generates risk reports"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/risk/reports"]
+    max_turns: 10
+
+tasks:
+  collect_portfolio_data:
+    description: "Collect portfolio holdings data"
+    agent: "data_collection_agent"
+    priority: 1
+    output: "portfolio_data.log"
+
+  collect_market_data:
+    description: "Collect market prices and volatility"
+    agent: "data_collection_agent"
+    priority: 1
+    parallel_with: ["collect_portfolio_data"]
+    output: "market_data.log"
+
+  calculate_var:
+    description: "Calculate Value at Risk (VaR)"
+    agent: "market_risk_agent"
+    depends_on: ["collect_portfolio_data", "collect_market_data"]
+    output: "var_calculation.log"
+
+  stress_testing:
+    description: "Perform stress testing scenarios"
+    agent: "market_risk_agent"
+    depends_on: ["calculate_var"]
+    output: "stress_tests.log"
+
+  assess_credit_exposure:
+    description: "Assess counterparty credit exposure"
+    agent: "credit_risk_agent"
+    depends_on: ["collect_portfolio_data"]
+    output: "credit_exposure.log"
+
+  calculate_credit_metrics:
+    description: "Calculate credit risk metrics"
+    agent: "credit_risk_agent"
+    depends_on: ["assess_credit_exposure"]
+    output: "credit_metrics.log"
+
+  analyze_operational_risks:
+    description: "Analyze operational risk factors"
+    agent: "operational_risk_agent"
+    depends_on: ["collect_portfolio_data"]
+    output: "operational_analysis.log"
+
+  calculate_risk_adjusted_returns:
+    description: "Calculate Sharpe and Sortino ratios"
+    agent: "market_risk_agent"
+    depends_on: ["stress_testing"]
+    output: "risk_adjusted_returns.log"
+
+  aggregate_risks:
+    description: "Aggregate all risk categories"
+    agent: "reporting_agent"
+    depends_on: ["calculate_risk_adjusted_returns", "calculate_credit_metrics", "analyze_operational_risks"]
+    output: "risk_aggregation.log"
+
+  generate_risk_report:
+    description: "Generate comprehensive risk report"
+    agent: "reporting_agent"
+    depends_on: ["aggregate_risks"]
+    output: "risk_report.html"
+
+workflows:
+  assess_portfolio_risk:
+    description: "Comprehensive portfolio risk assessment"
+    steps:
+      - stage: "data_collection"
+        agents: ["data_collection_agent"]
+        tasks:
+          - collect_portfolio_data:
+              description: "Collect portfolio holdings data"
+          - collect_market_data:
+              description: "Collect market prices and volatility"
+        mode: parallel
+
+      - stage: "market_risk"
+        agents: ["market_risk_agent"]
+        tasks:
+          - calculate_var:
+              description: "Calculate Value at Risk (VaR)"
+          - stress_testing:
+              description: "Perform stress testing scenarios"
+          - calculate_risk_adjusted_returns:
+              description: "Calculate Sharpe and Sortino ratios"
+        mode: sequential
+        depends_on: ["data_collection"]
+
+      - stage: "credit_risk"
+        agents: ["credit_risk_agent"]
+        tasks:
+          - assess_credit_exposure:
+              description: "Assess counterparty credit exposure"
+          - calculate_credit_metrics:
+              description: "Calculate credit risk metrics"
+        mode: sequential
+        depends_on: ["data_collection"]
+
+      - stage: "operational_risk"
+        agents: ["operational_risk_agent"]
+        tasks:
+          - analyze_operational_risks:
+              description: "Analyze operational risk factors"
+        mode: sequential
+        depends_on: ["data_collection"]
+
+      - stage: "reporting"
+        agents: ["reporting_agent"]
+        tasks:
+          - aggregate_risks:
+              description: "Aggregate all risk categories"
+          - generate_risk_report:
+              description: "Generate comprehensive risk report"
+        mode: sequential
+        depends_on: ["market_risk", "credit_risk", "operational_risk"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting risk assessment'"
+
+      post_workflow:
+        - "echo 'Risk assessment complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

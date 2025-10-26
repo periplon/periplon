@@ -1,0 +1,56 @@
+# Research Pipeline Workflow
+# This workflow conducts research and creates comprehensive documentation
+
+name: "Research Pipeline"
+version: "1.0.0"
+
+agents:
+  researcher:
+    description: "Conduct research on topics"
+    model: "claude-sonnet-4-5"
+    tools:
+      - WebSearch
+      - Read
+      - Write
+    permissions:
+      mode: "acceptEdits"
+    max_turns: 15
+
+  writer:
+    description: "Write comprehensive documentation"
+    model: "claude-opus-4"
+    tools:
+      - Read
+      - Write
+      - Edit
+    permissions:
+      mode: "acceptEdits"
+
+tasks:
+  create_documentation:
+    description: "Research and document a technology"
+
+    subtasks:
+      - gather_info:
+          description: "Collect information from multiple sources"
+          agent: "researcher"
+          output: "research_notes.md"
+
+      - write_guide:
+          description: "Create comprehensive guide"
+          agent: "writer"
+          depends_on:
+            - gather_info
+          output: "user_guide.md"
+
+      - write_api_reference:
+          description: "Document API endpoints"
+          agent: "writer"
+          depends_on:
+            - gather_info
+          output: "api_reference.md"
+          parallel_with:
+            - write_guide
+
+    on_complete:
+      notify: "Documentation creation complete"

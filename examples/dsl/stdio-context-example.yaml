@@ -1,0 +1,200 @@
+# Stdio and Context Management Example Workflow
+#
+# This workflow demonstrates the new stdio and context management features:
+# - Output capture with truncation
+# - Smart context injection based on dependencies
+# - Configurable cleanup strategies
+# - Task-level overrides
+
+name: "Stdio Context Management Demo"
+version: "1.0.0"
+dsl_version: "1.0.0"
+
+# Workflow-level limits apply to all tasks unless overridden
+limits:
+  # Output capture limits
+  max_stdout_bytes: 524288        # 512KB - prevents unbounded output
+  max_stderr_bytes: 131072        # 128KB
+  max_combined_bytes: 655360      # 640KB total
+  truncation_strategy: tail       # Keep last N bytes (most recent output)
+
+  # Context injection limits
+  max_context_bytes: 102400       # 100KB - limits context size
+  max_context_tasks: 10           # Maximum 10 tasks in context
+
+  # External storage (for very large outputs)
+  external_storage_threshold: 5242880  # 5MB - store larger outputs externally
+  external_storage_dir: ".workflow_outputs"
+  compress_external: true
+
+  # Cleanup strategy - keep most relevant outputs
+  cleanup_strategy:
+    type: highest_relevance
+    keep_count: 15
+
+# Define agents with specific capabilities
+agents:
+  data_fetcher:
+    description: "Fetches large datasets from external sources"
+    model: "claude-sonnet-4-5"
+    tools: [WebSearch, WebFetch, Read, Write]
+
+  data_processor:
+    description: "Processes and transforms data"
+    model: "claude-sonnet-4-5"
+    tools: [Read, Write, Bash]
+
+  analyzer:
+    description: "Analyzes processed data and generates insights"
+    model: "claude-sonnet-4-5"
+    tools: [Read, Write]
+
+  reporter:
+    description: "Creates final reports"
+    model: "claude-sonnet-4-5"
+    tools: [Read, Write]
+
+tasks:
+  # Task 1: Fetch data (may produce large output)
+  fetch_data:
+    description: "Fetch dataset from external API"
+    agent: "data_fetcher"
+    output: "raw_data.json"
+
+    # Override workflow limits for this verbose task
+    limits:
+      max_stdout_bytes: 2097152    # 2MB - this task produces more output
+      truncation_strategy: both     # Keep first and last portions
+
+    script:
+      language: bash
+      content: |
+        # Simulate fetching large dataset
+        echo "Fetching data from API..."
+        curl -s https://api.example.com/large-dataset > raw_data.json
+        echo "Downloaded $(wc -l < raw_data.json) records"
+
+  # Task 2: Clean and validate data
+  clean_data:
+    description: "Clean and validate the fetched data"
+    agent: "data_processor"
+    depends_on: [fetch_data]
+    output: "clean_data.json"
+
+    # Automatic context mode - only includes 'fetch_data' output (direct dependency)
+    context:
+      mode: automatic
+      min_relevance: 0.8    # Only very relevant context (direct dependencies)
+      max_bytes: 50000      # Limit context to 50KB
+
+    script:
+      language: bash
+      content: |
+        # Clean and validate data
+        python3 scripts/clean_data.py raw_data.json clean_data.json
+        echo "Cleaned data: $(jq length clean_data.json) valid records"
+
+  # Task 3: Transform data
+  transform_data:
+    description: "Transform data into analysis-ready format"
+    agent: "data_processor"
+    depends_on: [clean_data]
+    output: "transformed_data.json"
+
+    # Manual context control - explicitly include only what we need
+    context:
+      mode: manual
+      include_tasks: [clean_data]    # Only include clean_data output
+      exclude_tasks: [fetch_data]    # Explicitly exclude raw fetch data
+      max_bytes: 30000
+
+    script:
+      language: bash
+      content: |
+        python3 scripts/transform.py clean_data.json transformed_data.json
+        echo "Transformed $(jq length transformed_data.json) records"
+
+  # Task 4: Statistical analysis
+  analyze_stats:
+    description: "Perform statistical analysis on the transformed data"
+    agent: "analyzer"
+    depends_on: [transform_data]
+    output: "statistics.json"
+
+    # Default automatic context - gets transform_data (relevance=1.0)
+    # and clean_data (relevance=0.8/depth=0.4) due to transitive dependency
+
+    script:
+      language: bash
+      content: |
+        python3 scripts/analyze.py transformed_data.json statistics.json
+        cat statistics.json
+
+  # Task 5: Pattern detection (parallel with stats)
+  detect_patterns:
+    description: "Detect patterns and anomalies in the data"
+    agent: "analyzer"
+    depends_on: [transform_data]
+    parallel_with: [analyze_stats]
+    output: "patterns.json"
+
+    script:
+      language: bash
+      content: |
+        python3 scripts/detect_patterns.py transformed_data.json patterns.json
+        echo "Found $(jq '.patterns | length' patterns.json) patterns"
+
+  # Task 6: Generate insights (depends on both analysis tasks)
+  generate_insights:
+    description: "Generate insights from statistical analysis and patterns"
+    agent: "analyzer"
+    depends_on: [analyze_stats, detect_patterns]
+    output: "insights.md"
+
+    # Automatic context includes both direct dependencies
+    context:
+      mode: automatic
+      min_relevance: 0.5
+      max_tasks: 5
+
+  # Task 7: Create final report
+  create_report:
+    description: "Create comprehensive final report"
+    agent: "reporter"
+    depends_on: [generate_insights]
+    output: "final_report.md"
+
+    # No context needed - only uses the insights file
+    context:
+      mode: none
+
+    limits:
+      max_stdout_bytes: 1048576    # 1MB for report generation
+      truncation_strategy: summary  # Use AI summarization if output is large
+
+  # Task 8: Verify output (runs after report)
+  verify_output:
+    description: "Verify all outputs were generated correctly"
+    agent: "data_processor"
+    depends_on: [create_report]
+
+    script:
+      language: bash
+      content: |
+        # Verify all expected files exist
+        for file in raw_data.json clean_data.json transformed_data.json statistics.json patterns.json insights.md final_report.md; do
+          if [ -f "$file" ]; then
+            echo "✓ $file exists ($(du -h $file | cut -f1))"
+          else
+            echo "✗ $file missing"
+            exit 1
+          fi
+        done
+        echo "All outputs verified successfully"
+
+# Workflow orchestration
+workflows:
+  main:
+    description: "Main data processing workflow"
+    tasks: [fetch_data, clean_data, transform_data, analyze_stats, detect_patterns, generate_insights, create_report, verify_output]
+    execution_mode: sequential

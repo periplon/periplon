@@ -1,0 +1,180 @@
+# Infrastructure Provisioning - Cloud infrastructure setup
+name: "infrastructure_provisioning"
+version: "1.0"
+
+agents:
+  planning_agent:
+    description: "Plans infrastructure architecture"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/infra/plans"]
+    max_turns: 12
+
+  terraform_agent:
+    description: "Manages Terraform configurations"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/infra/terraform"]
+    max_turns: 20
+
+  network_agent:
+    description: "Configures networking"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/infra/network"]
+    max_turns: 15
+
+  security_agent:
+    description: "Configures security groups and policies"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/infra/security"]
+    max_turns: 15
+
+  validation_agent:
+    description: "Validates infrastructure"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/infra"]
+    max_turns: 10
+
+tasks:
+  design_architecture:
+    description: "Design cloud infrastructure architecture"
+    agent: "planning_agent"
+    priority: 1
+    output: "architecture.yaml"
+
+  create_terraform_config:
+    description: "Create Terraform configuration files"
+    agent: "terraform_agent"
+    depends_on: ["design_architecture"]
+    output: "terraform_config.log"
+
+  terraform_init:
+    description: "Initialize Terraform workspace"
+    agent: "terraform_agent"
+    depends_on: ["create_terraform_config"]
+    output: "terraform_init.log"
+
+  terraform_plan:
+    description: "Generate Terraform execution plan"
+    agent: "terraform_agent"
+    depends_on: ["terraform_init"]
+    output: "terraform_plan.log"
+
+  provision_network:
+    description: "Provision VPC and subnets"
+    agent: "network_agent"
+    depends_on: ["terraform_plan"]
+    output: "network.log"
+
+  configure_security_groups:
+    description: "Set up security groups and rules"
+    agent: "security_agent"
+    depends_on: ["provision_network"]
+    output: "security_groups.log"
+
+  provision_compute:
+    description: "Provision compute instances"
+    agent: "terraform_agent"
+    depends_on: ["configure_security_groups"]
+    output: "compute.log"
+
+  provision_storage:
+    description: "Provision storage resources"
+    agent: "terraform_agent"
+    depends_on: ["configure_security_groups"]
+    parallel_with: ["provision_compute"]
+    output: "storage.log"
+
+  configure_load_balancers:
+    description: "Set up load balancers"
+    agent: "network_agent"
+    depends_on: ["provision_compute"]
+    output: "load_balancers.log"
+
+  validate_infrastructure:
+    description: "Validate infrastructure deployment"
+    agent: "validation_agent"
+    depends_on: ["configure_load_balancers", "provision_storage"]
+    output: "validation.log"
+
+workflows:
+  provision_infrastructure:
+    description: "Multi-stage infrastructure provisioning with Terraform"
+    steps:
+      - stage: "planning"
+        agents: ["planning_agent"]
+        tasks:
+          - design_architecture:
+              description: "Design cloud infrastructure architecture"
+        mode: sequential
+
+      - stage: "terraform_setup"
+        agents: ["terraform_agent"]
+        tasks:
+          - create_terraform_config:
+              description: "Create Terraform configuration files"
+          - terraform_init:
+              description: "Initialize Terraform workspace"
+          - terraform_plan:
+              description: "Generate Terraform execution plan"
+        mode: sequential
+        depends_on: ["planning"]
+
+      - stage: "network"
+        agents: ["network_agent", "security_agent"]
+        tasks:
+          - provision_network:
+              description: "Provision VPC and subnets"
+          - configure_security_groups:
+              description: "Set up security groups and rules"
+        mode: sequential
+        depends_on: ["terraform_setup"]
+
+      - stage: "resources"
+        agents: ["terraform_agent"]
+        tasks:
+          - provision_compute:
+              description: "Provision compute instances"
+          - provision_storage:
+              description: "Provision storage resources"
+        mode: parallel
+        depends_on: ["network"]
+
+      - stage: "load_balancing"
+        agents: ["network_agent"]
+        tasks:
+          - configure_load_balancers:
+              description: "Set up load balancers"
+        mode: sequential
+        depends_on: ["resources"]
+
+      - stage: "validation"
+        agents: ["validation_agent"]
+        tasks:
+          - validate_infrastructure:
+              description: "Validate infrastructure deployment"
+        mode: sequential
+        depends_on: ["load_balancing"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting infrastructure provisioning'"
+
+      post_workflow:
+        - "echo 'Infrastructure provisioning complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

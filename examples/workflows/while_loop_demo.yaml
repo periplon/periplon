@@ -1,0 +1,48 @@
+name: "While Loop Demo"
+version: "1.0.0"
+description: "Demonstrates While loop with condition-based execution"
+
+agents:
+  counter_agent:
+    description: "Agent that counts and checks conditions"
+    tools: []
+    permissions:
+      mode: "default"
+
+  monitor_agent:
+    description: "Agent that monitors resources"
+    tools: []
+    permissions:
+      mode: "default"
+
+tasks:
+  count_while_less_than_five:
+    description: "Iteration {{iteration}}: Count while less than 5"
+    agent: "counter_agent"
+    loop:
+      type: while
+      condition:
+        type: state_equals
+        key: "counter"
+        value: false  # In real scenario, this would check actual state
+      max_iterations: 10
+      iteration_variable: "count"
+      delay_between_secs: 1
+    loop_control:
+      collect_results: true
+      result_key: "counting_results"
+
+  monitor_resource:
+    description: "Monitor resource availability (iteration {{iteration}})"
+    agent: "monitor_agent"
+    loop:
+      type: while
+      condition:
+        type: state_equals
+        key: "resource_available"
+        value: true
+      max_iterations: 5
+      iteration_variable: "check_num"
+      delay_between_secs: 2
+    loop_control:
+      collect_results: true

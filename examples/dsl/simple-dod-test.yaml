@@ -1,0 +1,34 @@
+name: "Simple DoD Permission Hints Test"
+version: "1.0.0"
+description: |
+  A minimal test workflow to demonstrate Definition of Done (DoD) permission hints.
+  The agent will be asked to create a file, and the DoD will verify it exists.
+  If the agent fails to create it, permission hints should guide it to retry.
+
+agents:
+  file_creator:
+    description: "Agent responsible for creating test files"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - Write
+      - Bash
+    permissions:
+      mode: default  # Restrictive permissions initially
+    max_turns: 5
+
+tasks:
+  create_test_file:
+    description: |
+      Create a test file at /tmp/dod-simple-test.txt with some content.
+      The DoD will check if the file exists. If you don't create it initially,
+      permission hints should appear to guide you.
+    agent: file_creator
+    definition_of_done:
+      criteria:
+        - type: file_exists
+          path: /tmp/dod-simple-test.txt
+          description: "Test file should exist at /tmp/dod-simple-test.txt"
+      max_retries: 3
+      fail_on_unmet: true
+      auto_elevate_permissions: false  # Start without auto-elevation to see hints

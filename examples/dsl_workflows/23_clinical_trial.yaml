@@ -1,0 +1,206 @@
+# Clinical Trial Management - Research trial coordination
+name: "clinical_trial_management"
+version: "1.0"
+
+agents:
+  recruitment_agent:
+    description: "Manages patient recruitment"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/trial/recruitment"]
+    max_turns: 15
+
+  enrollment_agent:
+    description: "Handles patient enrollment"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/trial/enrollment"]
+    max_turns: 12
+
+  data_collection_agent:
+    description: "Collects trial data"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/trial/data"]
+    max_turns: 20
+
+  monitoring_agent:
+    description: "Monitors patient safety"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/trial/monitoring"]
+    max_turns: 15
+
+  analysis_agent:
+    description: "Analyzes trial results"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/trial/analysis"]
+    max_turns: 20
+
+  reporting_agent:
+    description: "Generates trial reports"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/trial/reports"]
+    max_turns: 12
+
+tasks:
+  screen_candidates:
+    description: "Screen potential trial participants"
+    agent: "recruitment_agent"
+    priority: 1
+    output: "screening.log"
+
+  obtain_consent:
+    description: "Obtain informed consent"
+    agent: "enrollment_agent"
+    depends_on: ["screen_candidates"]
+    output: "consent.log"
+
+  randomize_participants:
+    description: "Randomize to treatment groups"
+    agent: "enrollment_agent"
+    depends_on: ["obtain_consent"]
+    output: "randomization.log"
+
+  collect_baseline_data:
+    description: "Collect baseline patient data"
+    agent: "data_collection_agent"
+    depends_on: ["randomize_participants"]
+    output: "baseline.log"
+
+  administer_intervention:
+    description: "Administer trial intervention"
+    agent: "monitoring_agent"
+    depends_on: ["collect_baseline_data"]
+    output: "intervention.log"
+
+  monitor_adverse_events:
+    description: "Monitor for adverse events"
+    agent: "monitoring_agent"
+    depends_on: ["administer_intervention"]
+    output: "adverse_events.log"
+
+  collect_outcome_data:
+    description: "Collect outcome measurements"
+    agent: "data_collection_agent"
+    depends_on: ["monitor_adverse_events"]
+    output: "outcomes.log"
+
+  validate_data:
+    description: "Validate collected data"
+    agent: "data_collection_agent"
+    depends_on: ["collect_outcome_data"]
+    output: "validation.log"
+
+  analyze_efficacy:
+    description: "Analyze treatment efficacy"
+    agent: "analysis_agent"
+    depends_on: ["validate_data"]
+    output: "efficacy_analysis.log"
+
+  analyze_safety:
+    description: "Analyze safety profile"
+    agent: "analysis_agent"
+    depends_on: ["validate_data"]
+    parallel_with: ["analyze_efficacy"]
+    output: "safety_analysis.log"
+
+  generate_final_report:
+    description: "Generate final trial report"
+    agent: "reporting_agent"
+    depends_on: ["analyze_efficacy", "analyze_safety"]
+    output: "trial_report.html"
+
+workflows:
+  manage_clinical_trial:
+    description: "Multi-stage clinical trial management"
+    steps:
+      - stage: "recruitment"
+        agents: ["recruitment_agent"]
+        tasks:
+          - screen_candidates:
+              description: "Screen potential trial participants"
+        mode: sequential
+
+      - stage: "enrollment"
+        agents: ["enrollment_agent"]
+        tasks:
+          - obtain_consent:
+              description: "Obtain informed consent"
+          - randomize_participants:
+              description: "Randomize to treatment groups"
+        mode: sequential
+        depends_on: ["recruitment"]
+
+      - stage: "baseline"
+        agents: ["data_collection_agent"]
+        tasks:
+          - collect_baseline_data:
+              description: "Collect baseline patient data"
+        mode: sequential
+        depends_on: ["enrollment"]
+
+      - stage: "intervention"
+        agents: ["monitoring_agent"]
+        tasks:
+          - administer_intervention:
+              description: "Administer trial intervention"
+          - monitor_adverse_events:
+              description: "Monitor for adverse events"
+        mode: sequential
+        depends_on: ["baseline"]
+
+      - stage: "data_collection"
+        agents: ["data_collection_agent"]
+        tasks:
+          - collect_outcome_data:
+              description: "Collect outcome measurements"
+          - validate_data:
+              description: "Validate collected data"
+        mode: sequential
+        depends_on: ["intervention"]
+
+      - stage: "analysis"
+        agents: ["analysis_agent"]
+        tasks:
+          - analyze_efficacy:
+              description: "Analyze treatment efficacy"
+          - analyze_safety:
+              description: "Analyze safety profile"
+        mode: parallel
+        depends_on: ["data_collection"]
+
+      - stage: "reporting"
+        agents: ["reporting_agent"]
+        tasks:
+          - generate_final_report:
+              description: "Generate final trial report"
+        mode: sequential
+        depends_on: ["analysis"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting clinical trial management'"
+
+      post_workflow:
+        - "echo 'Clinical trial complete'"
+
+      on_stage_complete:
+        - "echo 'Completed trial stage: $WORKFLOW_STAGE'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

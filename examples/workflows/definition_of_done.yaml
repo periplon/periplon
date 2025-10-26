@@ -1,0 +1,183 @@
+name: "Definition of Done Demo"
+version: "1.0.0"
+dsl_version: "1.0.0"
+
+# This workflow demonstrates the Definition of Done feature with automatic retries
+
+agents:
+  coder:
+    description: "Writes code and implements features"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - Write
+      - Edit
+    permissions:
+      mode: "acceptEdits"
+
+  tester:
+    description: "Writes and runs tests"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - Write
+      - Bash
+    permissions:
+      mode: "acceptEdits"
+
+  builder:
+    description: "Builds the project and verifies outputs"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Bash
+      - Read
+    permissions:
+      mode: "default"
+
+tasks:
+  # Task with file existence check
+  implement_feature:
+    description: "Implement the user authentication feature"
+    agent: "coder"
+    definition_of_done:
+      max_retries: 3
+      fail_on_unmet: true
+      criteria:
+        - type: "file_exists"
+          path: "src/auth.rs"
+          description: "Authentication module file must exist"
+        - type: "file_contains"
+          path: "src/auth.rs"
+          pattern: "pub fn authenticate"
+          description: "Must contain public authenticate function"
+        - type: "file_not_contains"
+          path: "src/auth.rs"
+          pattern: "TODO"
+          description: "No TODO comments should remain"
+
+  # Task with test requirements
+  write_tests:
+    description: "Write comprehensive tests for the authentication module"
+    agent: "tester"
+    depends_on:
+      - "implement_feature"
+    definition_of_done:
+      max_retries: 2
+      fail_on_unmet: true
+      criteria:
+        - type: "file_exists"
+          path: "tests/auth_tests.rs"
+          description: "Test file must exist"
+        - type: "tests_passed"
+          command: "cargo"
+          args: ["test", "--lib"]
+          description: "All tests must pass"
+        - type: "file_contains"
+          path: "tests/auth_tests.rs"
+          pattern: "test_successful_login"
+          description: "Must test successful login scenario"
+        - type: "file_contains"
+          path: "tests/auth_tests.rs"
+          pattern: "test_failed_login"
+          description: "Must test failed login scenario"
+
+  # Task with build verification
+  build_project:
+    description: "Build the project and verify output"
+    agent: "builder"
+    depends_on:
+      - "write_tests"
+    definition_of_done:
+      max_retries: 3
+      fail_on_unmet: true
+      criteria:
+        - type: "command_succeeds"
+          command: "cargo"
+          args: ["build", "--release"]
+          description: "Release build must succeed"
+        - type: "directory_exists"
+          path: "target/release"
+          description: "Release directory must exist"
+        - type: "file_exists"
+          path: "target/release/myapp"
+          description: "Binary executable must be created"
+
+  # Task with output verification
+  generate_documentation:
+    description: "Generate API documentation"
+    agent: "coder"
+    depends_on:
+      - "implement_feature"
+    definition_of_done:
+      max_retries: 2
+      fail_on_unmet: false  # Allow completion even if criteria not met
+      criteria:
+        - type: "command_succeeds"
+          command: "cargo"
+          args: ["doc", "--no-deps"]
+          description: "Documentation generation must succeed"
+        - type: "directory_exists"
+          path: "target/doc"
+          description: "Documentation directory must exist"
+        - type: "file_contains"
+          path: "target/doc/myapp/index.html"
+          pattern: "Authentication"
+          description: "Docs must include authentication module"
+
+  # Task with flexible criteria (won't fail if unmet)
+  add_examples:
+    description: "Add usage examples to the repository"
+    agent: "coder"
+    definition_of_done:
+      max_retries: 1
+      fail_on_unmet: false  # Optional task - won't fail workflow
+      criteria:
+        - type: "directory_exists"
+          path: "examples"
+          description: "Examples directory should exist"
+        - type: "file_exists"
+          path: "examples/basic_auth.rs"
+          description: "Basic authentication example should exist"
+        - type: "file_exists"
+          path: "examples/README.md"
+          description: "Examples README should exist"
+
+workflows:
+  complete_feature:
+    description: "Complete feature implementation with quality checks"
+    steps:
+      - stage: "implementation"
+        agents:
+          - "coder"
+        tasks:
+          - implement_feature:
+              description: "Implement authentication"
+              agent: "coder"
+
+      - stage: "testing"
+        depends_on:
+          - "implementation"
+        agents:
+          - "tester"
+        tasks:
+          - write_tests:
+              description: "Write tests"
+              agent: "tester"
+
+      - stage: "build_and_docs"
+        depends_on:
+          - "testing"
+        agents:
+          - "builder"
+          - "coder"
+        mode: "parallel"
+        tasks:
+          - build_project:
+              description: "Build project"
+              agent: "builder"
+          - generate_documentation:
+              description: "Generate docs"
+              agent: "coder"
+          - add_examples:
+              description: "Add examples"
+              agent: "coder"

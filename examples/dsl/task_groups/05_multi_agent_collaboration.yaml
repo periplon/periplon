@@ -1,0 +1,351 @@
+name: "Multi-Agent Collaboration Patterns"
+version: "1.0.0"
+description: |
+  Demonstrates advanced multi-agent collaboration:
+  - Specialized agents working in parallel
+  - Agent handoffs and context passing
+  - Collaborative problem-solving
+  - Expert consultation patterns
+
+inputs:
+  codebase_path:
+    type: string
+    required: true
+    description: "Path to codebase to refactor"
+
+  target_language:
+    type: string
+    required: true
+    description: "Target programming language"
+
+agents:
+  architect:
+    description: "System architect specializing in design patterns"
+    model: "claude-sonnet-4-5"
+    tools: [Read, Grep, Glob]
+    permissions:
+      mode: "default"
+      max_turns: 15
+
+  security_expert:
+    description: "Security specialist focused on vulnerabilities"
+    model: "claude-sonnet-4-5"
+    tools: [Read, Grep, WebSearch]
+    permissions:
+      mode: "default"
+      max_turns: 10
+
+  performance_expert:
+    description: "Performance optimization specialist"
+    model: "claude-sonnet-4-5"
+    tools: [Read, Grep, Bash]
+    permissions:
+      mode: "default"
+      max_turns: 10
+
+  code_writer:
+    description: "Implements code changes and refactoring"
+    model: "claude-sonnet-4-5"
+    tools: [Read, Write, Edit]
+    permissions:
+      mode: "acceptEdits"
+      max_turns: 20
+
+  reviewer:
+    description: "Reviews code changes for quality"
+    model: "claude-sonnet-4-5"
+    tools: [Read, Grep]
+    permissions:
+      mode: "default"
+      max_turns: 10
+
+  documenter:
+    description: "Creates documentation and comments"
+    model: "claude-sonnet-4-5"
+    tools: [Read, Write]
+    permissions:
+      mode: "acceptEdits"
+      max_turns: 15
+
+task_groups:
+  # Phase 1: Parallel expert analysis
+  expert_analysis:
+    description: "Parallel expert analysis of codebase"
+    execution_mode: "parallel"
+    tasks:
+      - architecture_review
+      - security_audit
+      - performance_analysis
+
+    max_concurrency: 3
+    on_error: "continue"  # Collect all expert opinions
+
+    outputs:
+      architecture_issues:
+        source:
+          type: file
+          path: "./analysis/architecture.json"
+      security_issues:
+        source:
+          type: file
+          path: "./analysis/security.json"
+      performance_issues:
+        source:
+          type: file
+          path: "./analysis/performance.json"
+
+  # Phase 2: Synthesize findings
+  synthesis:
+    description: "Synthesize expert findings into action plan"
+    execution_mode: "sequential"
+    tasks:
+      - merge_findings
+      - prioritize_issues
+      - create_plan
+
+    depends_on: [expert_analysis]
+
+    inputs:
+      arch_issues: "${group.expert_analysis.architecture_issues}"
+      sec_issues: "${group.expert_analysis.security_issues}"
+      perf_issues: "${group.expert_analysis.performance_issues}"
+
+    outputs:
+      action_plan:
+        source:
+          type: file
+          path: "./plan/refactoring_plan.yaml"
+
+  # Phase 3: Parallel implementation by category
+  implementation:
+    description: "Implement changes by category"
+    execution_mode: "parallel"
+    groups:
+      - security_fixes
+      - performance_improvements
+      - architecture_refactoring
+
+    depends_on: [synthesis]
+
+    inputs:
+      plan: "${group.synthesis.action_plan}"
+
+    max_concurrency: 3
+
+  # Sub-group: Security fixes
+  security_fixes:
+    description: "Implement security fixes"
+    parent: "implementation"
+    execution_mode: "sequential"
+    tasks:
+      - fix_vulnerabilities
+      - add_input_validation
+      - update_crypto
+
+  # Sub-group: Performance improvements
+  performance_improvements:
+    description: "Implement performance improvements"
+    parent: "implementation"
+    execution_mode: "sequential"
+    tasks:
+      - optimize_algorithms
+      - add_caching
+      - reduce_allocations
+
+  # Sub-group: Architecture refactoring
+  architecture_refactoring:
+    description: "Refactor architecture"
+    parent: "implementation"
+    execution_mode: "sequential"
+    tasks:
+      - extract_interfaces
+      - apply_patterns
+      - improve_modularity
+
+  # Phase 4: Cross-review
+  peer_review:
+    description: "Peer review of all changes"
+    execution_mode: "parallel"
+    tasks:
+      - review_security_changes
+      - review_performance_changes
+      - review_architecture_changes
+
+    depends_on: [implementation]
+
+    max_concurrency: 3
+
+    outputs:
+      review_report:
+        source:
+          type: file
+          path: "./reviews/consolidated_review.md"
+
+  # Phase 5: Documentation
+  documentation:
+    description: "Create comprehensive documentation"
+    execution_mode: "parallel"
+    tasks:
+      - document_changes
+      - update_api_docs
+      - create_migration_guide
+
+    depends_on: [peer_review]
+
+    inputs:
+      review: "${group.peer_review.review_report}"
+
+    max_concurrency: 3
+
+tasks:
+  # Expert analysis tasks
+  architecture_review:
+    description: "Review architecture and design patterns"
+    agent: "architect"
+    group: "expert_analysis"
+    outputs:
+      findings:
+        source:
+          type: file
+          path: "./analysis/architecture.json"
+
+  security_audit:
+    description: "Audit security vulnerabilities"
+    agent: "security_expert"
+    group: "expert_analysis"
+    outputs:
+      findings:
+        source:
+          type: file
+          path: "./analysis/security.json"
+
+  performance_analysis:
+    description: "Analyze performance bottlenecks"
+    agent: "performance_expert"
+    group: "expert_analysis"
+    outputs:
+      findings:
+        source:
+          type: file
+          path: "./analysis/performance.json"
+
+  # Synthesis tasks
+  merge_findings:
+    description: "Merge findings from all experts"
+    agent: "architect"
+    group: "synthesis"
+    inputs:
+      arch: "${task.architecture_review.findings}"
+      sec: "${task.security_audit.findings}"
+      perf: "${task.performance_analysis.findings}"
+
+  prioritize_issues:
+    description: "Prioritize issues by severity and impact"
+    agent: "architect"
+    group: "synthesis"
+    depends_on: [merge_findings]
+
+  create_plan:
+    description: "Create detailed refactoring plan"
+    agent: "architect"
+    group: "synthesis"
+    depends_on: [prioritize_issues]
+    outputs:
+      plan:
+        source:
+          type: file
+          path: "./plan/refactoring_plan.yaml"
+
+  # Security fixes tasks
+  fix_vulnerabilities:
+    description: "Fix identified security vulnerabilities"
+    agent: "code_writer"
+    group: "security_fixes"
+    inputs:
+      plan: "${group.synthesis.action_plan}"
+
+  add_input_validation:
+    description: "Add input validation"
+    agent: "code_writer"
+    group: "security_fixes"
+    depends_on: [fix_vulnerabilities]
+
+  update_crypto:
+    description: "Update cryptographic implementations"
+    agent: "code_writer"
+    group: "security_fixes"
+    depends_on: [add_input_validation]
+
+  # Performance improvements tasks
+  optimize_algorithms:
+    description: "Optimize critical algorithms"
+    agent: "code_writer"
+    group: "performance_improvements"
+    inputs:
+      plan: "${group.synthesis.action_plan}"
+
+  add_caching:
+    description: "Add caching layer"
+    agent: "code_writer"
+    group: "performance_improvements"
+    depends_on: [optimize_algorithms]
+
+  reduce_allocations:
+    description: "Reduce memory allocations"
+    agent: "code_writer"
+    group: "performance_improvements"
+    depends_on: [add_caching]
+
+  # Architecture refactoring tasks
+  extract_interfaces:
+    description: "Extract interfaces and abstractions"
+    agent: "code_writer"
+    group: "architecture_refactoring"
+    inputs:
+      plan: "${group.synthesis.action_plan}"
+
+  apply_patterns:
+    description: "Apply design patterns"
+    agent: "code_writer"
+    group: "architecture_refactoring"
+    depends_on: [extract_interfaces]
+
+  improve_modularity:
+    description: "Improve code modularity"
+    agent: "code_writer"
+    group: "architecture_refactoring"
+    depends_on: [apply_patterns]
+
+  # Peer review tasks
+  review_security_changes:
+    description: "Review security fixes"
+    agent: "security_expert"
+    group: "peer_review"
+
+  review_performance_changes:
+    description: "Review performance improvements"
+    agent: "performance_expert"
+    group: "peer_review"
+
+  review_architecture_changes:
+    description: "Review architecture changes"
+    agent: "architect"
+    group: "peer_review"
+
+  # Documentation tasks
+  document_changes:
+    description: "Document all changes"
+    agent: "documenter"
+    group: "documentation"
+    inputs:
+      review: "${group.peer_review.review_report}"
+
+  update_api_docs:
+    description: "Update API documentation"
+    agent: "documenter"
+    group: "documentation"
+
+  create_migration_guide:
+    description: "Create migration guide"
+    agent: "documenter"
+    group: "documentation"

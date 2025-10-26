@@ -1,0 +1,169 @@
+# ML Model Training - End-to-end model training workflow
+name: "ml_training"
+version: "1.0"
+
+agents:
+  data_prep_agent:
+    description: "Prepares and preprocesses training data"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/ml/data"]
+    max_turns: 15
+
+  training_agent:
+    description: "Trains machine learning models"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/ml/models"]
+    max_turns: 25
+
+  fallback_training_agent:
+    description: "Fallback agent for training with alternative parameters"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/ml/models"]
+    max_turns: 25
+
+  evaluation_agent:
+    description: "Evaluates model performance"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/ml/results"]
+    max_turns: 12
+
+  deployment_agent:
+    description: "Deploys trained model"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/ml/production"]
+    max_turns: 10
+
+tasks:
+  load_dataset:
+    description: "Load and explore training dataset"
+    agent: "data_prep_agent"
+    priority: 1
+    output: "dataset_info.log"
+
+  preprocess_data:
+    description: "Clean and preprocess data"
+    agent: "data_prep_agent"
+    depends_on: ["load_dataset"]
+    output: "preprocessing.log"
+
+  feature_engineering:
+    description: "Create and select features"
+    agent: "data_prep_agent"
+    depends_on: ["preprocess_data"]
+    output: "features.log"
+
+  split_dataset:
+    description: "Split into train/validation/test sets"
+    agent: "data_prep_agent"
+    depends_on: ["feature_engineering"]
+    output: "dataset_split.log"
+
+  train_model:
+    description: "Train machine learning model"
+    agent: "training_agent"
+    depends_on: ["split_dataset"]
+    output: "training.log"
+    on_error:
+      retry: 2
+      retry_delay_secs: 30
+      fallback_agent: "fallback_training_agent"
+
+  hyperparameter_tuning:
+    description: "Optimize model hyperparameters"
+    agent: "training_agent"
+    depends_on: ["train_model"]
+    output: "tuning.log"
+
+  evaluate_model:
+    description: "Evaluate model on test set"
+    agent: "evaluation_agent"
+    depends_on: ["hyperparameter_tuning"]
+    output: "evaluation.log"
+
+  generate_metrics:
+    description: "Generate performance metrics and visualizations"
+    agent: "evaluation_agent"
+    depends_on: ["evaluate_model"]
+    output: "metrics.log"
+
+  deploy_model:
+    description: "Deploy model to production"
+    agent: "deployment_agent"
+    depends_on: ["generate_metrics"]
+    output: "deployment.log"
+
+workflows:
+  train_model:
+    description: "Complete ML model training workflow with fallback agents"
+    steps:
+      - stage: "data_preparation"
+        agents: ["data_prep_agent"]
+        tasks:
+          - load_dataset:
+              description: "Load and explore training dataset"
+          - preprocess_data:
+              description: "Clean and preprocess data"
+          - feature_engineering:
+              description: "Create and select features"
+          - split_dataset:
+              description: "Split into train/validation/test sets"
+        mode: sequential
+
+      - stage: "training"
+        agents: ["training_agent", "fallback_training_agent"]
+        tasks:
+          - train_model:
+              description: "Train machine learning model"
+          - hyperparameter_tuning:
+              description: "Optimize model hyperparameters"
+        mode: sequential
+        depends_on: ["data_preparation"]
+
+      - stage: "evaluation"
+        agents: ["evaluation_agent"]
+        tasks:
+          - evaluate_model:
+              description: "Evaluate model on test set"
+          - generate_metrics:
+              description: "Generate performance metrics and visualizations"
+        mode: sequential
+        depends_on: ["training"]
+
+      - stage: "deployment"
+        agents: ["deployment_agent"]
+        tasks:
+          - deploy_model:
+              description: "Deploy model to production"
+        mode: sequential
+        depends_on: ["evaluation"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting ML training pipeline'"
+
+      post_workflow:
+        - "echo 'Model training and deployment complete'"
+
+      on_stage_complete:
+        - "echo 'Completed training stage: $WORKFLOW_STAGE'"
+
+      on_error:
+        - "echo 'Training failed at stage: $WORKFLOW_STAGE'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

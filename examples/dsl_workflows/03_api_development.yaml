@@ -1,0 +1,127 @@
+# API Development - RESTful API development with testing
+name: "api_development"
+version: "1.0"
+
+agents:
+  design_agent:
+    description: "Designs API endpoints and schemas"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/api/docs"]
+    max_turns: 10
+
+  implementation_agent:
+    description: "Implements API endpoints"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/api/src"]
+    max_turns: 20
+
+  test_agent:
+    description: "Creates and runs API tests"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/api/tests"]
+    max_turns: 15
+
+  documentation_agent:
+    description: "Generates API documentation"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/api/docs"]
+    max_turns: 8
+
+tasks:
+  design_endpoints:
+    description: "Design REST API endpoints and data schemas"
+    agent: "design_agent"
+    priority: 1
+    output: "api_design.yaml"
+
+  implement_routes:
+    description: "Implement API routes and handlers"
+    agent: "implementation_agent"
+    depends_on: ["design_endpoints"]
+    output: "routes.log"
+
+  implement_middleware:
+    description: "Implement authentication and validation middleware"
+    agent: "implementation_agent"
+    depends_on: ["design_endpoints"]
+    parallel_with: ["implement_routes"]
+    output: "middleware.log"
+
+  create_tests:
+    description: "Create unit and integration tests"
+    agent: "test_agent"
+    depends_on: ["implement_routes", "implement_middleware"]
+    output: "test_creation.log"
+
+  run_tests:
+    description: "Execute API test suite"
+    agent: "test_agent"
+    depends_on: ["create_tests"]
+    output: "test_results.log"
+
+  generate_docs:
+    description: "Generate OpenAPI documentation"
+    agent: "documentation_agent"
+    depends_on: ["run_tests"]
+    output: "api_docs.html"
+
+workflows:
+  api_lifecycle:
+    description: "Complete API development lifecycle"
+    steps:
+      - stage: "design"
+        agents: ["design_agent"]
+        tasks:
+          - design_endpoints:
+              description: "Design REST API endpoints and data schemas"
+        mode: sequential
+
+      - stage: "implementation"
+        agents: ["implementation_agent"]
+        tasks:
+          - implement_routes:
+              description: "Implement API routes and handlers"
+          - implement_middleware:
+              description: "Implement authentication and validation middleware"
+        mode: parallel
+        depends_on: ["design"]
+
+      - stage: "testing"
+        agents: ["test_agent"]
+        tasks:
+          - create_tests:
+              description: "Create unit and integration tests"
+          - run_tests:
+              description: "Execute API test suite"
+        mode: sequential
+        depends_on: ["implementation"]
+
+      - stage: "documentation"
+        agents: ["documentation_agent"]
+        tasks:
+          - generate_docs:
+              description: "Generate OpenAPI documentation"
+        mode: sequential
+        depends_on: ["testing"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting API development workflow'"
+
+      post_workflow:
+        - "echo 'API development complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

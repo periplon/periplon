@@ -1,0 +1,274 @@
+name: "DoD Permission Hints Test Workflow"
+version: "1.0.0"
+description: |
+  Test workflow to validate Definition of Done (DoD) permission hints and auto-elevation features.
+  This workflow intentionally creates scenarios where DoD criteria fail due to permission issues,
+  then validates that intelligent hints are provided and auto-elevation works correctly.
+
+agents:
+  file_creator:
+    description: "Agent that creates files to satisfy DoD criteria"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - Write
+      - Bash
+    permissions:
+      mode: default
+    max_turns: 5
+
+  test_runner:
+    description: "Agent that runs tests to satisfy DoD test criteria"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - Bash
+    permissions:
+      mode: default
+    max_turns: 5
+
+  file_checker:
+    description: "Agent that checks file existence and content"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - Bash
+    permissions:
+      mode: default
+    max_turns: 3
+
+tasks:
+  # Test 1: FileExists criterion with permission hints
+  test_file_exists_hint:
+    description: |
+      Create a test file. The DoD will check if the file exists.
+      If the agent doesn't create it, permission hints should appear.
+    agent: file_creator
+    output: /tmp/dod-test-output.txt
+    definition_of_done:
+      criteria:
+        - type: file_exists
+          path: /tmp/dod-test-file-1.txt
+          description: "Test file should exist at /tmp/dod-test-file-1.txt"
+      max_retries: 3
+      fail_on_unmet: false
+      auto_elevate_permissions: false
+
+  # Test 2: FileContains criterion with permission hints
+  test_file_contains_hint:
+    description: |
+      Create a file with specific content. The DoD will check if the file contains
+      the required pattern. Permission hints should guide the agent.
+    agent: file_creator
+    depends_on:
+      - test_file_exists_hint
+    definition_of_done:
+      criteria:
+        - type: file_contains
+          path: /tmp/dod-test-file-2.txt
+          pattern: "SUCCESS_MARKER"
+          description: "File should contain the success marker"
+        - type: file_exists
+          path: /tmp/dod-test-file-2.txt
+          description: "Test file 2 must exist"
+      max_retries: 3
+      fail_on_unmet: false
+      auto_elevate_permissions: false
+
+  # Test 3: Auto-elevation enabled - should request enhanced permissions
+  test_auto_elevation:
+    description: |
+      Create multiple files with auto-elevation enabled.
+      The agent should be automatically granted bypassPermissions on retry.
+    agent: file_creator
+    depends_on:
+      - test_file_contains_hint
+    definition_of_done:
+      criteria:
+        - type: file_exists
+          path: /tmp/dod-auto-elevate-1.txt
+          description: "First auto-elevate test file"
+        - type: file_exists
+          path: /tmp/dod-auto-elevate-2.txt
+          description: "Second auto-elevate test file"
+        - type: file_contains
+          path: /tmp/dod-auto-elevate-1.txt
+          pattern: "auto-elevation test"
+          description: "File should contain auto-elevation marker"
+      max_retries: 3
+      fail_on_unmet: false
+      auto_elevate_permissions: true
+
+  # Test 4: FileNotContains criterion
+  test_file_not_contains:
+    description: |
+      Create a file that must NOT contain specific patterns.
+      This tests the inverse permission hint logic.
+    agent: file_creator
+    depends_on:
+      - test_auto_elevation
+    definition_of_done:
+      criteria:
+        - type: file_exists
+          path: /tmp/dod-test-not-contains.txt
+          description: "Test file for NOT contains check"
+        - type: file_not_contains
+          path: /tmp/dod-test-not-contains.txt
+          pattern: "ERROR"
+          description: "File should not contain ERROR marker"
+        - type: file_contains
+          path: /tmp/dod-test-not-contains.txt
+          pattern: "VALID_CONTENT"
+          description: "File should contain valid content"
+      max_retries: 2
+      fail_on_unmet: false
+      auto_elevate_permissions: true
+
+  # Test 5: CommandSucceeds criterion
+  test_command_succeeds:
+    description: |
+      Execute commands that must succeed for DoD criteria.
+      Tests permission hints for command execution failures.
+    agent: test_runner
+    depends_on:
+      - test_file_not_contains
+    definition_of_done:
+      criteria:
+        - type: command_succeeds
+          command: echo
+          args:
+            - "Hello from DoD test"
+          description: "Echo command should succeed"
+        - type: command_succeeds
+          command: touch
+          args:
+            - /tmp/dod-command-test.txt
+          description: "Touch command should create file"
+      max_retries: 2
+      fail_on_unmet: false
+      auto_elevate_permissions: false
+
+  # Test 6: TestsPassed criterion with auto-elevation
+  test_tests_passed:
+    description: |
+      Run a test script that must pass. This validates test execution
+      with permission hints when tests fail initially.
+    agent: test_runner
+    depends_on:
+      - test_command_succeeds
+    definition_of_done:
+      criteria:
+        - type: tests_passed
+          command: sh
+          args:
+            - -c
+            - echo "Running tests..." && exit 0
+          description: "Test script should pass"
+      max_retries: 2
+      fail_on_unmet: false
+      auto_elevate_permissions: true
+
+  # Test 7: DirectoryExists criterion
+  test_directory_exists:
+    description: |
+      Create a directory structure to satisfy DoD criteria.
+      Tests directory creation permission hints.
+    agent: file_creator
+    depends_on:
+      - test_tests_passed
+    definition_of_done:
+      criteria:
+        - type: directory_exists
+          path: /tmp/dod-test-dir
+          description: "Test directory should exist"
+        - type: file_exists
+          path: /tmp/dod-test-dir/nested-file.txt
+          description: "Nested file should exist in directory"
+      max_retries: 3
+      fail_on_unmet: false
+      auto_elevate_permissions: true
+
+  # Test 8: OutputMatches criterion with task output
+  test_output_matches:
+    description: |
+      Test output matching from task results.
+      This validates the output source detection logic.
+    agent: file_checker
+    depends_on:
+      - test_directory_exists
+    output: /tmp/dod-output-match-test.txt
+    definition_of_done:
+      criteria:
+        - type: output_matches
+          source:
+            task_output: null
+          pattern: "success|complete|done"
+          description: "Task output should indicate success"
+      max_retries: 2
+      fail_on_unmet: false
+      auto_elevate_permissions: false
+
+  # Test 9: Multiple criteria with mixed success/failure
+  test_multiple_criteria:
+    description: |
+      Test multiple criteria where some pass and some fail initially.
+      This validates the feedback aggregation and permission hint logic.
+    agent: file_creator
+    depends_on:
+      - test_output_matches
+    definition_of_done:
+      criteria:
+        - type: file_exists
+          path: /tmp/dod-multi-1.txt
+          description: "First multi-criteria file"
+        - type: file_exists
+          path: /tmp/dod-multi-2.txt
+          description: "Second multi-criteria file"
+        - type: file_contains
+          path: /tmp/dod-multi-1.txt
+          pattern: "criteria-1"
+          description: "First file should contain marker"
+        - type: file_contains
+          path: /tmp/dod-multi-2.txt
+          pattern: "criteria-2"
+          description: "Second file should contain marker"
+        - type: directory_exists
+          path: /tmp/dod-multi-dir
+          description: "Multi-criteria directory"
+      max_retries: 3
+      fail_on_unmet: true
+      auto_elevate_permissions: true
+
+  # Test 10: Validation summary task
+  validate_all_tests:
+    description: |
+      Final validation task that checks all previous test artifacts exist
+      and generates a comprehensive test report.
+    agent: file_checker
+    depends_on:
+      - test_file_exists_hint
+      - test_file_contains_hint
+      - test_auto_elevation
+      - test_file_not_contains
+      - test_command_succeeds
+      - test_tests_passed
+      - test_directory_exists
+      - test_output_matches
+      - test_multiple_criteria
+    output: /tmp/dod-test-report.md
+    definition_of_done:
+      criteria:
+        - type: file_exists
+          path: /tmp/dod-test-report.md
+          description: "Test report should be generated"
+        - type: file_contains
+          path: /tmp/dod-test-report.md
+          pattern: "Permission Hints Test: COMPLETE"
+          description: "Report should confirm test completion"
+        - type: file_contains
+          path: /tmp/dod-test-report.md
+          pattern: "auto_elevate_permissions"
+          description: "Report should mention auto-elevation feature"
+      max_retries: 2
+      fail_on_unmet: true
+      auto_elevate_permissions: true

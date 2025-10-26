@@ -1,0 +1,64 @@
+apiVersion: "task/v1"
+kind: "PredefinedTask"
+metadata:
+  name: "google-drive-upload"
+  version: "1.2.0"
+  author: "community/google-integrations"
+  description: "Upload files to Google Drive"
+  license: "MIT"
+  repository: "https://github.com/example/google-integrations"
+  tags: ["google", "storage", "upload", "drive"]
+
+spec:
+  agent_template:
+    description: "Upload ${input.file_path} to Google Drive folder ${input.folder_id}"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Bash
+      - WebFetch
+      - Read
+    permissions:
+      mode: "acceptEdits"
+    max_turns: 10
+
+  inputs:
+    file_path:
+      type: string
+      required: true
+      description: "Local file path to upload"
+      validation:
+        pattern: "^[^<>:\"|?*]+$"
+
+    folder_id:
+      type: string
+      required: false
+      default: "root"
+      description: "Google Drive folder ID (default: root)"
+
+    credentials:
+      type: secret
+      required: true
+      description: "Google OAuth credentials"
+      source: "${env.GOOGLE_CREDENTIALS}"
+
+  outputs:
+    file_id:
+      type: string
+      description: "Uploaded file ID in Google Drive"
+      source:
+        type: state
+        key: "drive_file_id"
+
+    share_url:
+      type: string
+      description: "Shareable link to the uploaded file"
+      source:
+        type: state
+        key: "share_link"
+
+  examples:
+    - name: "Upload PDF report"
+      description: "Upload a PDF to a specific folder"
+      inputs:
+        file_path: "./report.pdf"
+        folder_id: "abc123xyz"

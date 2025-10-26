@@ -1,0 +1,184 @@
+# CI/CD Pipeline - Continuous integration and deployment
+name: "cicd_pipeline"
+version: "1.0"
+
+agents:
+  build_agent:
+    description: "Compiles and builds application"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/ci/build"]
+    max_turns: 15
+
+  test_agent:
+    description: "Runs automated tests"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/ci/tests"]
+    max_turns: 20
+
+  security_agent:
+    description: "Performs security scans"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/ci/security"]
+    max_turns: 12
+
+  deploy_agent:
+    description: "Deploys to environments"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/ci/deploy"]
+    max_turns: 15
+
+tasks:
+  checkout_code:
+    description: "Checkout source code from repository"
+    agent: "build_agent"
+    priority: 1
+    output: "checkout.log"
+    on_error:
+      retry: 3
+      retry_delay_secs: 5
+      exponential_backoff: true
+
+  install_dependencies:
+    description: "Install project dependencies"
+    agent: "build_agent"
+    depends_on: ["checkout_code"]
+    output: "dependencies.log"
+
+  compile_code:
+    description: "Compile application code"
+    agent: "build_agent"
+    depends_on: ["install_dependencies"]
+    output: "compile.log"
+
+  run_unit_tests:
+    description: "Execute unit tests"
+    agent: "test_agent"
+    depends_on: ["compile_code"]
+    parallel_with: ["security_scan"]
+    output: "unit_tests.log"
+
+  run_integration_tests:
+    description: "Execute integration tests"
+    agent: "test_agent"
+    depends_on: ["compile_code"]
+    parallel_with: ["security_scan"]
+    output: "integration_tests.log"
+
+  security_scan:
+    description: "Run security vulnerability scan"
+    agent: "security_agent"
+    depends_on: ["compile_code"]
+    parallel_with: ["run_unit_tests", "run_integration_tests"]
+    output: "security.log"
+
+  build_artifacts:
+    description: "Build deployment artifacts"
+    agent: "build_agent"
+    depends_on: ["run_unit_tests", "run_integration_tests", "security_scan"]
+    output: "artifacts.log"
+
+  deploy_staging:
+    description: "Deploy to staging environment"
+    agent: "deploy_agent"
+    depends_on: ["build_artifacts"]
+    output: "staging_deploy.log"
+
+  smoke_tests:
+    description: "Run smoke tests on staging"
+    agent: "test_agent"
+    depends_on: ["deploy_staging"]
+    output: "smoke_tests.log"
+
+  deploy_production:
+    description: "Deploy to production environment"
+    agent: "deploy_agent"
+    depends_on: ["smoke_tests"]
+    output: "production_deploy.log"
+
+workflows:
+  ci_cd:
+    description: "Complete CI/CD pipeline with tool constraints"
+    steps:
+      - stage: "build"
+        agents: ["build_agent"]
+        tasks:
+          - checkout_code:
+              description: "Checkout source code from repository"
+          - install_dependencies:
+              description: "Install project dependencies"
+          - compile_code:
+              description: "Compile application code"
+        mode: sequential
+
+      - stage: "test_and_scan"
+        agents: ["test_agent", "security_agent"]
+        tasks:
+          - run_unit_tests:
+              description: "Execute unit tests"
+          - run_integration_tests:
+              description: "Execute integration tests"
+          - security_scan:
+              description: "Run security vulnerability scan"
+        mode: parallel
+        depends_on: ["build"]
+
+      - stage: "package"
+        agents: ["build_agent"]
+        tasks:
+          - build_artifacts:
+              description: "Build deployment artifacts"
+        mode: sequential
+        depends_on: ["test_and_scan"]
+
+      - stage: "staging"
+        agents: ["deploy_agent", "test_agent"]
+        tasks:
+          - deploy_staging:
+              description: "Deploy to staging environment"
+          - smoke_tests:
+              description: "Run smoke tests on staging"
+        mode: sequential
+        depends_on: ["package"]
+
+      - stage: "production"
+        agents: ["deploy_agent"]
+        tasks:
+          - deploy_production:
+              description: "Deploy to production environment"
+        mode: sequential
+        depends_on: ["staging"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting CI/CD pipeline'"
+        - command: "mkdir -p /ci/build /ci/tests /ci/security /ci/deploy"
+          description: "Create CI directories"
+
+      post_workflow:
+        - "echo 'CI/CD pipeline complete'"
+
+      on_stage_complete:
+        - "echo 'Completed CI/CD stage: $WORKFLOW_STAGE'"
+
+      on_error:
+        - "echo 'CI/CD failed at stage: $WORKFLOW_STAGE'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]
+  disallowed: []
+  constraints:
+    Bash:
+      timeout: 300000
+      allowed_commands: ["git", "npm", "cargo", "docker", "kubectl", "echo", "mkdir", "cp", "mv"]

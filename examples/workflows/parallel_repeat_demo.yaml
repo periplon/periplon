@@ -1,0 +1,42 @@
+name: "Parallel Repeat Demo"
+version: "1.0.0"
+description: "Demonstrates parallel Repeat loop execution with concurrency limiting"
+
+agents:
+  parallel_worker:
+    description: "Agent that executes tasks in parallel"
+    tools: []
+    permissions:
+      mode: "default"
+
+  concurrent_processor:
+    description: "Agent for concurrent processing"
+    tools: []
+    permissions:
+      mode: "default"
+
+tasks:
+  parallel_iterations:
+    description: "Task {{index}}: Execute in parallel"
+    agent: "parallel_worker"
+    loop:
+      type: repeat
+      count: 8
+      iterator: "index"
+      parallel: true
+      max_parallel: 4  # Run up to 4 iterations concurrently
+    loop_control:
+      collect_results: true
+      result_key: "iteration_results"
+
+  concurrent_tasks:
+    description: "Concurrent task {{i}}"
+    agent: "concurrent_processor"
+    loop:
+      type: repeat
+      count: 12
+      iterator: "i"
+      parallel: true
+      max_parallel: 6  # Run up to 6 at once
+    loop_control:
+      collect_results: true

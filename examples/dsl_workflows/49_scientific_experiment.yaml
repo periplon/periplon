@@ -1,0 +1,222 @@
+# Scientific Experiment - Experimental research workflow
+name: "scientific_experiment"
+version: "1.0"
+
+agents:
+  design_agent:
+    description: "Designs experimental protocols"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/experiment/design"]
+    max_turns: 15
+
+  setup_agent:
+    description: "Sets up experimental apparatus"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/experiment/setup"]
+    max_turns: 12
+
+  execution_agent:
+    description: "Executes experiments"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/experiment/execution"]
+    max_turns: 20
+
+  data_collection_agent:
+    description: "Collects experimental data"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/experiment/data"]
+    max_turns: 15
+
+  analysis_agent:
+    description: "Analyzes experimental results"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/experiment/analysis"]
+    max_turns: 20
+
+  reporting_agent:
+    description: "Prepares research papers"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/experiment/papers"]
+    max_turns: 20
+
+tasks:
+  formulate_hypothesis:
+    description: "Formulate research hypothesis"
+    agent: "design_agent"
+    priority: 1
+    output: "hypothesis.md"
+
+  design_experiment:
+    description: "Design experimental methodology"
+    agent: "design_agent"
+    depends_on: ["formulate_hypothesis"]
+    output: "experimental_design.md"
+
+  calculate_sample_size:
+    description: "Calculate required sample size"
+    agent: "design_agent"
+    depends_on: ["design_experiment"]
+    output: "sample_size.log"
+
+  prepare_materials:
+    description: "Prepare experimental materials"
+    agent: "setup_agent"
+    depends_on: ["calculate_sample_size"]
+    output: "materials.log"
+
+  calibrate_equipment:
+    description: "Calibrate measurement equipment"
+    agent: "setup_agent"
+    depends_on: ["prepare_materials"]
+    output: "calibration.log"
+
+  run_pilot_study:
+    description: "Run pilot study"
+    agent: "execution_agent"
+    depends_on: ["calibrate_equipment"]
+    output: "pilot_study.log"
+
+  refine_protocol:
+    description: "Refine experimental protocol"
+    agent: "design_agent"
+    depends_on: ["run_pilot_study"]
+    output: "protocol_refinement.log"
+
+  conduct_experiments:
+    description: "Conduct main experiments"
+    agent: "execution_agent"
+    depends_on: ["refine_protocol"]
+    output: "experimental_runs.log"
+
+  collect_measurements:
+    description: "Collect experimental measurements"
+    agent: "data_collection_agent"
+    depends_on: ["conduct_experiments"]
+    output: "measurements.log"
+
+  validate_data:
+    description: "Validate data quality"
+    agent: "data_collection_agent"
+    depends_on: ["collect_measurements"]
+    output: "data_validation.log"
+
+  perform_statistical_analysis:
+    description: "Perform statistical analysis"
+    agent: "analysis_agent"
+    depends_on: ["validate_data"]
+    output: "statistical_analysis.log"
+
+  test_hypothesis:
+    description: "Test research hypothesis"
+    agent: "analysis_agent"
+    depends_on: ["perform_statistical_analysis"]
+    output: "hypothesis_test.log"
+
+  interpret_results:
+    description: "Interpret experimental results"
+    agent: "analysis_agent"
+    depends_on: ["test_hypothesis"]
+    output: "interpretation.log"
+
+  write_paper:
+    description: "Write research paper"
+    agent: "reporting_agent"
+    depends_on: ["interpret_results"]
+    output: "research_paper.md"
+
+workflows:
+  conduct_experiment:
+    description: "Scientific experimental research workflow"
+    steps:
+      - stage: "design"
+        agents: ["design_agent"]
+        tasks:
+          - formulate_hypothesis:
+              description: "Formulate research hypothesis"
+          - design_experiment:
+              description: "Design experimental methodology"
+          - calculate_sample_size:
+              description: "Calculate required sample size"
+        mode: sequential
+
+      - stage: "preparation"
+        agents: ["setup_agent"]
+        tasks:
+          - prepare_materials:
+              description: "Prepare experimental materials"
+          - calibrate_equipment:
+              description: "Calibrate measurement equipment"
+        mode: sequential
+        depends_on: ["design"]
+
+      - stage: "pilot"
+        agents: ["execution_agent", "design_agent"]
+        tasks:
+          - run_pilot_study:
+              description: "Run pilot study"
+          - refine_protocol:
+              description: "Refine experimental protocol"
+        mode: sequential
+        depends_on: ["preparation"]
+
+      - stage: "execution"
+        agents: ["execution_agent", "data_collection_agent"]
+        tasks:
+          - conduct_experiments:
+              description: "Conduct main experiments"
+          - collect_measurements:
+              description: "Collect experimental measurements"
+          - validate_data:
+              description: "Validate data quality"
+        mode: sequential
+        depends_on: ["pilot"]
+
+      - stage: "analysis"
+        agents: ["analysis_agent"]
+        tasks:
+          - perform_statistical_analysis:
+              description: "Perform statistical analysis"
+          - test_hypothesis:
+              description: "Test research hypothesis"
+          - interpret_results:
+              description: "Interpret experimental results"
+        mode: sequential
+        depends_on: ["execution"]
+
+      - stage: "publication"
+        agents: ["reporting_agent"]
+        tasks:
+          - write_paper:
+              description: "Write research paper"
+        mode: sequential
+        depends_on: ["analysis"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting scientific experiment'"
+        - command: "mkdir -p /experiment/design /experiment/setup /experiment/execution /experiment/data /experiment/analysis /experiment/papers"
+          description: "Create experiment directories"
+
+      post_workflow:
+        - "echo 'Experimental research complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

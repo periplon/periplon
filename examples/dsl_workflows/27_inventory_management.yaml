@@ -1,0 +1,180 @@
+# Inventory Management - Stock management system
+name: "inventory_management"
+version: "1.0"
+
+agents:
+  tracking_agent:
+    description: "Tracks inventory levels"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/inventory/tracking"]
+    max_turns: 15
+
+  forecasting_agent:
+    description: "Forecasts demand"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/inventory/forecasting"]
+    max_turns: 20
+
+  ordering_agent:
+    description: "Manages purchase orders"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/inventory/ordering"]
+    max_turns: 12
+
+  optimization_agent:
+    description: "Optimizes stock levels"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/inventory/optimization"]
+    max_turns: 15
+
+  reporting_agent:
+    description: "Generates inventory reports"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/inventory/reports"]
+    max_turns: 10
+
+tasks:
+  sync_inventory:
+    description: "Sync current inventory levels"
+    agent: "tracking_agent"
+    priority: 1
+    output: "inventory_sync.log"
+
+  analyze_sales_trends:
+    description: "Analyze historical sales trends"
+    agent: "forecasting_agent"
+    depends_on: ["sync_inventory"]
+    output: "sales_trends.log"
+
+  forecast_demand:
+    description: "Forecast future demand"
+    agent: "forecasting_agent"
+    depends_on: ["analyze_sales_trends"]
+    output: "demand_forecast.log"
+
+  identify_low_stock:
+    description: "Identify low stock items"
+    agent: "tracking_agent"
+    depends_on: ["sync_inventory"]
+    parallel_with: ["forecast_demand"]
+    output: "low_stock.log"
+
+  calculate_reorder_points:
+    description: "Calculate optimal reorder points"
+    agent: "optimization_agent"
+    depends_on: ["forecast_demand", "identify_low_stock"]
+    output: "reorder_points.log"
+
+  determine_order_quantities:
+    description: "Determine economic order quantities"
+    agent: "optimization_agent"
+    depends_on: ["calculate_reorder_points"]
+    output: "order_quantities.log"
+
+  generate_purchase_orders:
+    description: "Generate purchase orders"
+    agent: "ordering_agent"
+    depends_on: ["determine_order_quantities"]
+    output: "purchase_orders.log"
+
+  track_incoming_shipments:
+    description: "Track incoming inventory shipments"
+    agent: "tracking_agent"
+    depends_on: ["generate_purchase_orders"]
+    output: "incoming_shipments.log"
+
+  update_inventory_records:
+    description: "Update inventory records"
+    agent: "tracking_agent"
+    depends_on: ["track_incoming_shipments"]
+    output: "inventory_update.log"
+
+  generate_report:
+    description: "Generate inventory management report"
+    agent: "reporting_agent"
+    depends_on: ["update_inventory_records"]
+    output: "inventory_report.html"
+
+workflows:
+  manage_inventory:
+    description: "Inventory management with demand forecasting"
+    steps:
+      - stage: "tracking"
+        agents: ["tracking_agent"]
+        tasks:
+          - sync_inventory:
+              description: "Sync current inventory levels"
+        mode: sequential
+
+      - stage: "analysis"
+        agents: ["forecasting_agent", "tracking_agent"]
+        tasks:
+          - analyze_sales_trends:
+              description: "Analyze historical sales trends"
+          - forecast_demand:
+              description: "Forecast future demand"
+          - identify_low_stock:
+              description: "Identify low stock items"
+        mode: sequential
+        depends_on: ["tracking"]
+
+      - stage: "optimization"
+        agents: ["optimization_agent"]
+        tasks:
+          - calculate_reorder_points:
+              description: "Calculate optimal reorder points"
+          - determine_order_quantities:
+              description: "Determine economic order quantities"
+        mode: sequential
+        depends_on: ["analysis"]
+
+      - stage: "ordering"
+        agents: ["ordering_agent"]
+        tasks:
+          - generate_purchase_orders:
+              description: "Generate purchase orders"
+        mode: sequential
+        depends_on: ["optimization"]
+
+      - stage: "receiving"
+        agents: ["tracking_agent"]
+        tasks:
+          - track_incoming_shipments:
+              description: "Track incoming inventory shipments"
+          - update_inventory_records:
+              description: "Update inventory records"
+        mode: sequential
+        depends_on: ["ordering"]
+
+      - stage: "reporting"
+        agents: ["reporting_agent"]
+        tasks:
+          - generate_report:
+              description: "Generate inventory management report"
+        mode: sequential
+        depends_on: ["receiving"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting inventory management cycle'"
+
+      post_workflow:
+        - "echo 'Inventory management complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

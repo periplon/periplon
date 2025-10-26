@@ -1,0 +1,181 @@
+name: "Conditional Task Execution Demo"
+version: "1.0.0"
+dsl_version: "1.0.0"
+
+# This workflow demonstrates various conditional task execution patterns
+
+agents:
+  analyzer:
+    description: "Analyzes code and determines build requirements"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - Grep
+    permissions:
+      mode: "default"
+
+  builder:
+    description: "Builds the project"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Bash
+    permissions:
+      mode: "acceptEdits"
+
+  tester:
+    description: "Runs tests"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Bash
+    permissions:
+      mode: "default"
+
+  deployer:
+    description: "Deploys to production"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Bash
+    permissions:
+      mode: "plan"
+
+tasks:
+  # Always runs
+  analyze_code:
+    description: "Analyze code structure and dependencies"
+    agent: "analyzer"
+    priority: 0
+
+  # Runs only if analyze_code completed successfully
+  build_project:
+    description: "Build the project"
+    agent: "builder"
+    depends_on:
+      - "analyze_code"
+    condition:
+      type: "task_status"
+      task: "analyze_code"
+      status: "completed"
+
+  # Runs only if build_project completed successfully
+  run_tests:
+    description: "Run test suite"
+    agent: "tester"
+    depends_on:
+      - "build_project"
+    condition:
+      type: "task_status"
+      task: "build_project"
+      status: "completed"
+
+  # Runs only if run_tests failed (emergency fix workflow)
+  debug_tests:
+    description: "Debug failing tests and apply fixes"
+    agent: "tester"
+    depends_on:
+      - "run_tests"
+    condition:
+      type: "task_status"
+      task: "run_tests"
+      status: "failed"
+    on_complete:
+      notify: "Test debugging completed - review fixes"
+
+  # Runs only if run_tests succeeded AND environment is production
+  deploy_production:
+    description: "Deploy to production environment"
+    agent: "deployer"
+    depends_on:
+      - "run_tests"
+    condition:
+      and:
+        - type: "task_status"
+          task: "run_tests"
+          status: "completed"
+        - type: "state_equals"
+          key: "environment"
+          value: "production"
+    on_complete:
+      notify: "Production deployment completed"
+
+  # Runs only if run_tests succeeded AND environment is NOT production
+  deploy_staging:
+    description: "Deploy to staging environment"
+    agent: "deployer"
+    depends_on:
+      - "run_tests"
+    condition:
+      and:
+        - type: "task_status"
+          task: "run_tests"
+          status: "completed"
+        - not:
+            type: "state_equals"
+            key: "environment"
+            value: "production"
+    on_complete:
+      notify: "Staging deployment completed"
+
+  # Skipped task example - demonstrates a task that never runs
+  experimental_feature:
+    description: "Experimental feature - currently disabled"
+    agent: "builder"
+    condition:
+      type: "never"
+
+  # Complex conditional: runs if EITHER build failed OR tests failed
+  send_failure_notification:
+    description: "Send notification about build/test failures"
+    agent: "deployer"
+    depends_on:
+      - "build_project"
+      - "run_tests"
+    condition:
+      or:
+        - type: "task_status"
+          task: "build_project"
+          status: "failed"
+        - type: "task_status"
+          task: "run_tests"
+          status: "failed"
+    on_complete:
+      notify: "Failure notification sent to team"
+
+workflows:
+  ci_cd_pipeline:
+    description: "CI/CD pipeline with conditional deployment"
+    steps:
+      - stage: "analysis"
+        agents:
+          - "analyzer"
+        tasks:
+          - analyze_code:
+              description: "Analyze code structure"
+              agent: "analyzer"
+
+      - stage: "build_and_test"
+        depends_on:
+          - "analysis"
+        agents:
+          - "builder"
+          - "tester"
+        tasks:
+          - build_project:
+              description: "Build the project"
+              agent: "builder"
+          - run_tests:
+              description: "Run tests"
+              agent: "tester"
+
+      - stage: "deploy"
+        depends_on:
+          - "build_and_test"
+        agents:
+          - "deployer"
+        mode: "parallel"
+        tasks:
+          - deploy_production:
+              description: "Deploy to production"
+              agent: "deployer"
+          - deploy_staging:
+              description: "Deploy to staging"
+              agent: "deployer"

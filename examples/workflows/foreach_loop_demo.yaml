@@ -1,0 +1,59 @@
+name: "ForEach Loop Demo"
+version: "1.0.0"
+description: "Demonstrates ForEach loop patterns with inline collections, ranges, and files"
+
+agents:
+  processor:
+    description: "Processes individual items in a collection"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - Write
+    permissions:
+      mode: "acceptEdits"
+
+tasks:
+  # Example 1: ForEach with inline collection
+  process_inline_items:
+    description: "Process item: {{item}}"
+    agent: "processor"
+    loop:
+      type: for_each
+      collection:
+        source: inline
+        items: ["apple", "banana", "cherry", "date"]
+      iterator: "item"
+    loop_control:
+      collect_results: true
+      result_key: "processed_items"
+
+  # Example 2: ForEach with range
+  process_range:
+    description: "Process number {{num}} (iteration {{iteration}})"
+    agent: "processor"
+    depends_on: ["process_inline_items"]
+    loop:
+      type: for_each
+      collection:
+        source: range
+        start: 1
+        end: 6
+        step: 1
+      iterator: "num"
+    loop_control:
+      collect_results: true
+
+  # Example 3: ForEach with file input (JSON array)
+  process_file_data:
+    description: "Process data entry: {{entry}}"
+    agent: "processor"
+    depends_on: ["process_range"]
+    condition:
+      type: always  # Skip if file doesn't exist
+    loop:
+      type: for_each
+      collection:
+        source: file
+        path: "/tmp/demo_data.json"
+        format: json
+      iterator: "entry"

@@ -1,0 +1,31 @@
+name: "DoD Permission Hints Demo"
+version: "1.0.0"
+description: |
+  Demo workflow designed to trigger DoD permission hints.
+  The agent is given a vague task and limited tools initially,
+  making it more likely to fail the DoD check and display permission hints.
+
+agents:
+  minimal_agent:
+    description: "Agent with minimal capabilities to demonstrate permission hints"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read  # Only read access initially
+      - Bash
+    permissions:
+      mode: default  # Will require approval for writes
+    max_turns: 3
+
+tasks:
+  demonstrate_hints:
+    description: |
+      Analyze the system. Don't create any files yet - just report what you find.
+    agent: minimal_agent
+    definition_of_done:
+      criteria:
+        - type: file_exists
+          path: /tmp/dod-test-file-1.txt
+          description: "Test file should exist at /tmp/dod-test-file-1.txt"
+      max_retries: 3
+      fail_on_unmet: false  # Don't fail, just show hints
+      auto_elevate_permissions: false  # We want to see hints, not auto-elevation

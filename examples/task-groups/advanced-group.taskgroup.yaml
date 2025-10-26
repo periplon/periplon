@@ -1,0 +1,329 @@
+name: "Advanced Task Group Features"
+version: "1.0.0"
+description: |
+  Advanced example demonstrating complex task group features:
+  - Hierarchical group organization (nested groups)
+  - Cross-group dependencies and data flow
+  - Variable interpolation and context sharing
+  - Conditional group execution
+  - Multi-agent collaboration patterns
+  - Error handling strategies
+
+inputs:
+  repo_url:
+    type: string
+    required: true
+    description: "Repository URL to process"
+
+  environment:
+    type: string
+    required: true
+    description: "Target environment (dev, staging, prod)"
+
+  quality_threshold:
+    type: number
+    required: false
+    default: 0.85
+    description: "Minimum quality score to proceed (0.0-1.0)"
+
+agents:
+  fetcher:
+    description: "Fetches and prepares data"
+    tools: [Bash, Read, Write]
+    permissions:
+      mode: "acceptEdits"
+
+  analyzer:
+    description: "Analyzes code quality and security"
+    model: "claude-sonnet-4-5"
+    tools: [Read, Grep, WebSearch]
+    permissions:
+      mode: "default"
+
+  security_expert:
+    description: "Security specialist"
+    model: "claude-sonnet-4-5"
+    tools: [Read, Grep, WebSearch]
+    permissions:
+      mode: "default"
+
+  builder:
+    description: "Builds and packages code"
+    tools: [Bash, Read, Write]
+    permissions:
+      mode: "acceptEdits"
+
+  deployer:
+    description: "Handles deployment operations"
+    tools: [Bash, Read, Write]
+    permissions:
+      mode: "acceptEdits"
+
+task_groups:
+  # Root group - orchestrates entire workflow
+  full_pipeline:
+    description: "Complete CI/CD pipeline for ${workflow.repo_url}"
+    execution_mode: "sequential"
+    groups:
+      - data_acquisition
+      - quality_analysis
+      - build_and_deploy
+
+    on_error: "stop"
+    timeout: 1800  # 30 minutes
+
+  # Level 1 - Data acquisition phase
+  data_acquisition:
+    description: "Acquire and prepare data"
+    parent: "full_pipeline"
+    execution_mode: "parallel"
+    tasks:
+      - clone_repository
+      - fetch_dependencies
+      - download_config
+
+    max_concurrency: 3
+    timeout: 300
+
+    outputs:
+      repo_path:
+        source:
+          type: state
+          key: "repo.path"
+      commit_hash:
+        source:
+          type: state
+          key: "repo.commit"
+
+  # Level 1 - Quality analysis phase
+  quality_analysis:
+    description: "Multi-expert code analysis"
+    parent: "full_pipeline"
+    execution_mode: "sequential"
+    groups:
+      - parallel_analysis
+      - synthesis
+
+    depends_on: [data_acquisition]
+    timeout: 900
+
+  # Level 2 - Parallel expert analysis
+  parallel_analysis:
+    description: "Run parallel expert analysis"
+    parent: "quality_analysis"
+    execution_mode: "parallel"
+    tasks:
+      - code_quality_check
+      - security_audit
+      - performance_analysis
+
+    max_concurrency: 3
+
+    inputs:
+      repo: "${group.data_acquisition.repo_path}"
+
+    outputs:
+      quality_score:
+        source:
+          type: state
+          key: "analysis.quality_score"
+      security_issues:
+        source:
+          type: file
+          path: "./security_report.json"
+
+  # Level 2 - Synthesis of findings
+  synthesis:
+    description: "Synthesize analysis findings"
+    parent: "quality_analysis"
+    execution_mode: "sequential"
+    tasks:
+      - merge_findings
+      - calculate_score
+
+    depends_on: [parallel_analysis]
+
+    outputs:
+      final_score:
+        source:
+          type: state
+          key: "synthesis.final_score"
+
+  # Level 1 - Build and deploy (conditional)
+  build_and_deploy:
+    description: "Build and deploy to ${workflow.environment}"
+    parent: "full_pipeline"
+    execution_mode: "sequential"
+    groups:
+      - build_phase
+      - deployment_phase
+
+    depends_on: [quality_analysis]
+    # Only proceed if quality score meets threshold
+    condition: "${group.synthesis.final_score} >= ${workflow.quality_threshold}"
+    timeout: 600
+
+  # Level 2 - Build phase
+  build_phase:
+    description: "Build application"
+    parent: "build_and_deploy"
+    execution_mode: "sequential"
+    tasks:
+      - compile_code
+      - run_tests
+      - create_artifacts
+
+    on_error: "stop"
+
+    outputs:
+      artifact_path:
+        source:
+          type: state
+          key: "build.artifact_path"
+
+  # Level 2 - Deployment phase
+  deployment_phase:
+    description: "Deploy to ${workflow.environment}"
+    parent: "build_and_deploy"
+    execution_mode: "sequential"
+    tasks:
+      - backup_current
+      - deploy_new
+      - verify_deployment
+
+    depends_on: [build_phase]
+
+    inputs:
+      artifact: "${group.build_phase.artifact_path}"
+
+    on_error: "rollback"  # Custom rollback on error
+
+tasks:
+  # Data acquisition tasks
+  clone_repository:
+    description: "Clone ${workflow.repo_url}"
+    agent: "fetcher"
+    group: "data_acquisition"
+    outputs:
+      path:
+        source:
+          type: state
+          key: "repo.path"
+      commit:
+        source:
+          type: state
+          key: "repo.commit"
+
+  fetch_dependencies:
+    description: "Fetch project dependencies"
+    agent: "fetcher"
+    group: "data_acquisition"
+
+  download_config:
+    description: "Download configuration files for ${workflow.environment}"
+    agent: "fetcher"
+    group: "data_acquisition"
+
+  # Parallel analysis tasks
+  code_quality_check:
+    description: "Analyze code quality"
+    agent: "analyzer"
+    group: "parallel_analysis"
+    inputs:
+      repo_path: "${group.data_acquisition.repo_path}"
+    outputs:
+      quality:
+        source:
+          type: state
+          key: "quality.score"
+
+  security_audit:
+    description: "Perform security audit"
+    agent: "security_expert"
+    group: "parallel_analysis"
+    inputs:
+      repo_path: "${group.data_acquisition.repo_path}"
+    outputs:
+      issues:
+        source:
+          type: file
+          path: "./security_report.json"
+
+  performance_analysis:
+    description: "Analyze performance characteristics"
+    agent: "analyzer"
+    group: "parallel_analysis"
+    inputs:
+      repo_path: "${group.data_acquisition.repo_path}"
+
+  # Synthesis tasks
+  merge_findings:
+    description: "Merge findings from all experts"
+    agent: "analyzer"
+    group: "synthesis"
+    inputs:
+      quality: "${task.code_quality_check.quality}"
+      security: "${task.security_audit.issues}"
+
+  calculate_score:
+    description: "Calculate final quality score"
+    agent: "analyzer"
+    group: "synthesis"
+    depends_on: [merge_findings]
+    outputs:
+      score:
+        source:
+          type: state
+          key: "synthesis.final_score"
+
+  # Build phase tasks
+  compile_code:
+    description: "Compile source code"
+    agent: "builder"
+    group: "build_phase"
+    inputs:
+      repo: "${group.data_acquisition.repo_path}"
+
+  run_tests:
+    description: "Run test suite"
+    agent: "builder"
+    group: "build_phase"
+    depends_on: [compile_code]
+
+  create_artifacts:
+    description: "Create deployment artifacts"
+    agent: "builder"
+    group: "build_phase"
+    depends_on: [run_tests]
+    outputs:
+      artifact:
+        source:
+          type: state
+          key: "build.artifact_path"
+
+  # Deployment phase tasks
+  backup_current:
+    description: "Backup current ${workflow.environment} deployment"
+    agent: "deployer"
+    group: "deployment_phase"
+    outputs:
+      backup_id:
+        source:
+          type: state
+          key: "backup.id"
+
+  deploy_new:
+    description: "Deploy new version to ${workflow.environment}"
+    agent: "deployer"
+    group: "deployment_phase"
+    depends_on: [backup_current]
+    inputs:
+      artifact: "${group.build_phase.artifact_path}"
+
+  verify_deployment:
+    description: "Verify deployment in ${workflow.environment}"
+    agent: "deployer"
+    group: "deployment_phase"
+    depends_on: [deploy_new]
+    inputs:
+      backup: "${task.backup_current.backup_id}"

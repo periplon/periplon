@@ -1,0 +1,86 @@
+name: "Advanced Loop Features Demo"
+version: "1.0.0"
+description: "Demonstrates break, continue, and timeout loop features"
+
+agents:
+  processor_agent:
+    description: "Agent that processes items with advanced loop control"
+    tools: []
+    permissions:
+      mode: "default"
+
+  timeout_agent:
+    description: "Agent with timeout constraints"
+    tools: []
+    permissions:
+      mode: "default"
+
+tasks:
+  process_with_break:
+    description: "Process item {{item}} - will break on condition"
+    agent: "processor_agent"
+    loop:
+      type: for_each
+      collection:
+        source: inline
+        items: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+      iterator: "item"
+    loop_control:
+      break_condition:
+        type: state_equals
+        key: "stop_processing"
+        value: true
+      collect_results: true
+      result_key: "break_results"
+
+  process_with_continue:
+    description: "Process number {{num}} - skips odd numbers"
+    agent: "processor_agent"
+    loop:
+      type: for_each
+      collection:
+        source: range
+        start: 0
+        end: 10
+        step: 1
+      iterator: "num"
+    loop_control:
+      continue_condition:
+        type: state_equals
+        key: "skip_item"
+        value: true
+      collect_results: true
+      result_key: "continue_results"
+
+  process_with_timeout:
+    description: "Iteration {{i}} with timeout"
+    agent: "timeout_agent"
+    loop:
+      type: repeat
+      count: 100
+      iterator: "i"
+    loop_control:
+      timeout_secs: 30  # Loop will timeout after 30 seconds
+      collect_results: true
+
+  combined_features:
+    description: "Item {{item}} with break, continue, and timeout"
+    agent: "processor_agent"
+    loop:
+      type: for_each
+      collection:
+        source: inline
+        items: ["a", "b", "c", "d", "e", "f"]
+      iterator: "item"
+    loop_control:
+      break_condition:
+        type: state_equals
+        key: "critical_error"
+        value: true
+      continue_condition:
+        type: state_equals
+        key: "skip_this"
+        value: true
+      timeout_secs: 60
+      collect_results: true
+      result_key: "combined_results"

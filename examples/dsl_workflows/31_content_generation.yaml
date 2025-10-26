@@ -1,0 +1,183 @@
+# Content Generation - Automated content creation
+name: "content_generation"
+version: "1.0"
+
+agents:
+  research_agent:
+    description: "Researches content topics"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/content/research"]
+    max_turns: 15
+
+  writing_agent:
+    description: "Generates written content"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/content/drafts"]
+    max_turns: 20
+
+  seo_agent:
+    description: "Optimizes for SEO"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/content/seo"]
+    max_turns: 12
+
+  editing_agent:
+    description: "Edits and proofreads content"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/content/edited"]
+    max_turns: 15
+
+  image_agent:
+    description: "Creates visual content"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/content/images"]
+    max_turns: 12
+
+  publishing_agent:
+    description: "Publishes content"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/content/published"]
+    max_turns: 10
+
+tasks:
+  research_topic:
+    description: "Research content topic and gather sources"
+    agent: "research_agent"
+    priority: 1
+    output: "research.log"
+
+  create_outline:
+    description: "Create content outline"
+    agent: "writing_agent"
+    depends_on: ["research_topic"]
+    output: "outline.md"
+
+  research_keywords:
+    description: "Research SEO keywords"
+    agent: "seo_agent"
+    depends_on: ["research_topic"]
+    parallel_with: ["create_outline"]
+    output: "keywords.log"
+
+  write_draft:
+    description: "Write content draft"
+    agent: "writing_agent"
+    depends_on: ["create_outline", "research_keywords"]
+    output: "draft.md"
+
+  optimize_seo:
+    description: "Optimize content for SEO"
+    agent: "seo_agent"
+    depends_on: ["write_draft"]
+    output: "seo_optimization.log"
+
+  edit_content:
+    description: "Edit and proofread content"
+    agent: "editing_agent"
+    depends_on: ["optimize_seo"]
+    output: "edited_content.md"
+
+  create_images:
+    description: "Create featured images and graphics"
+    agent: "image_agent"
+    depends_on: ["edit_content"]
+    parallel_with: ["format_content"]
+    output: "images.log"
+
+  format_content:
+    description: "Format content for publication"
+    agent: "publishing_agent"
+    depends_on: ["edit_content"]
+    parallel_with: ["create_images"]
+    output: "formatted_content.html"
+
+  publish_content:
+    description: "Publish content to CMS"
+    agent: "publishing_agent"
+    depends_on: ["create_images", "format_content"]
+    output: "publication.log"
+
+workflows:
+  generate_content:
+    description: "Automated content generation with SEO optimization"
+    steps:
+      - stage: "research"
+        agents: ["research_agent"]
+        tasks:
+          - research_topic:
+              description: "Research content topic and gather sources"
+        mode: sequential
+
+      - stage: "planning"
+        agents: ["writing_agent", "seo_agent"]
+        tasks:
+          - create_outline:
+              description: "Create content outline"
+          - research_keywords:
+              description: "Research SEO keywords"
+        mode: parallel
+        depends_on: ["research"]
+
+      - stage: "writing"
+        agents: ["writing_agent"]
+        tasks:
+          - write_draft:
+              description: "Write content draft"
+        mode: sequential
+        depends_on: ["planning"]
+
+      - stage: "optimization"
+        agents: ["seo_agent", "editing_agent"]
+        tasks:
+          - optimize_seo:
+              description: "Optimize content for SEO"
+          - edit_content:
+              description: "Edit and proofread content"
+        mode: sequential
+        depends_on: ["writing"]
+
+      - stage: "production"
+        agents: ["image_agent", "publishing_agent"]
+        tasks:
+          - create_images:
+              description: "Create featured images and graphics"
+          - format_content:
+              description: "Format content for publication"
+        mode: parallel
+        depends_on: ["optimization"]
+
+      - stage: "publication"
+        agents: ["publishing_agent"]
+        tasks:
+          - publish_content:
+              description: "Publish content to CMS"
+        mode: sequential
+        depends_on: ["production"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting content generation workflow'"
+
+      post_workflow:
+        - "echo 'Content published successfully'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

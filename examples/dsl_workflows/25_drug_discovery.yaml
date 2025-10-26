@@ -1,0 +1,188 @@
+# Drug Discovery - Pharmaceutical research pipeline
+name: "drug_discovery"
+version: "1.0"
+
+agents:
+  screening_agent:
+    description: "Performs virtual screening"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/drug/screening"]
+    max_turns: 20
+
+  docking_agent:
+    description: "Performs molecular docking"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/drug/docking"]
+    max_turns: 25
+
+  optimization_agent:
+    description: "Optimizes lead compounds"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/drug/optimization"]
+    max_turns: 20
+
+  toxicity_agent:
+    description: "Predicts toxicity"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/drug/toxicity"]
+    max_turns: 15
+
+  synthesis_agent:
+    description: "Plans synthesis routes"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/drug/synthesis"]
+    max_turns: 15
+
+  reporting_agent:
+    description: "Generates research reports"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/drug/reports"]
+    max_turns: 10
+
+tasks:
+  identify_target:
+    description: "Identify drug target protein"
+    agent: "screening_agent"
+    priority: 1
+    output: "target_identification.log"
+
+  screen_compounds:
+    description: "Screen compound libraries"
+    agent: "screening_agent"
+    depends_on: ["identify_target"]
+    output: "compound_screening.log"
+
+  perform_docking:
+    description: "Perform molecular docking simulations"
+    agent: "docking_agent"
+    depends_on: ["screen_compounds"]
+    output: "docking.log"
+
+  rank_candidates:
+    description: "Rank candidate compounds"
+    agent: "docking_agent"
+    depends_on: ["perform_docking"]
+    output: "ranking.log"
+
+  optimize_leads:
+    description: "Optimize lead compounds"
+    agent: "optimization_agent"
+    depends_on: ["rank_candidates"]
+    output: "optimization.log"
+
+  predict_adme:
+    description: "Predict ADME properties"
+    agent: "optimization_agent"
+    depends_on: ["optimize_leads"]
+    output: "adme_prediction.log"
+
+  assess_toxicity:
+    description: "Assess toxicity risks"
+    agent: "toxicity_agent"
+    depends_on: ["predict_adme"]
+    output: "toxicity_assessment.log"
+
+  plan_synthesis:
+    description: "Plan synthesis pathways"
+    agent: "synthesis_agent"
+    depends_on: ["assess_toxicity"]
+    output: "synthesis_plan.log"
+
+  estimate_costs:
+    description: "Estimate synthesis costs"
+    agent: "synthesis_agent"
+    depends_on: ["plan_synthesis"]
+    output: "cost_estimation.log"
+
+  generate_report:
+    description: "Generate drug discovery report"
+    agent: "reporting_agent"
+    depends_on: ["estimate_costs"]
+    output: "discovery_report.html"
+
+workflows:
+  discover_drug:
+    description: "End-to-end drug discovery pipeline"
+    steps:
+      - stage: "target_identification"
+        agents: ["screening_agent"]
+        tasks:
+          - identify_target:
+              description: "Identify drug target protein"
+        mode: sequential
+
+      - stage: "screening"
+        agents: ["screening_agent", "docking_agent"]
+        tasks:
+          - screen_compounds:
+              description: "Screen compound libraries"
+          - perform_docking:
+              description: "Perform molecular docking simulations"
+          - rank_candidates:
+              description: "Rank candidate compounds"
+        mode: sequential
+        depends_on: ["target_identification"]
+
+      - stage: "optimization"
+        agents: ["optimization_agent"]
+        tasks:
+          - optimize_leads:
+              description: "Optimize lead compounds"
+          - predict_adme:
+              description: "Predict ADME properties"
+        mode: sequential
+        depends_on: ["screening"]
+
+      - stage: "safety"
+        agents: ["toxicity_agent"]
+        tasks:
+          - assess_toxicity:
+              description: "Assess toxicity risks"
+        mode: sequential
+        depends_on: ["optimization"]
+
+      - stage: "synthesis_planning"
+        agents: ["synthesis_agent"]
+        tasks:
+          - plan_synthesis:
+              description: "Plan synthesis pathways"
+          - estimate_costs:
+              description: "Estimate synthesis costs"
+        mode: sequential
+        depends_on: ["safety"]
+
+      - stage: "reporting"
+        agents: ["reporting_agent"]
+        tasks:
+          - generate_report:
+              description: "Generate drug discovery report"
+        mode: sequential
+        depends_on: ["synthesis_planning"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting drug discovery pipeline'"
+
+      post_workflow:
+        - "echo 'Drug discovery pipeline complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

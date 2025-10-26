@@ -1,0 +1,165 @@
+# Container Orchestration - Docker/Kubernetes workflow
+name: "container_orchestration"
+version: "1.0"
+
+agents:
+  docker_agent:
+    description: "Builds and manages Docker containers"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/containers"]
+    max_turns: 15
+
+  kubernetes_agent:
+    description: "Manages Kubernetes resources"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/k8s"]
+    max_turns: 20
+
+  registry_agent:
+    description: "Manages container registry"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/registry"]
+    max_turns: 10
+
+  monitoring_agent:
+    description: "Sets up monitoring and observability"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/monitoring"]
+    max_turns: 12
+
+tasks:
+  create_dockerfile:
+    description: "Create optimized Dockerfile"
+    agent: "docker_agent"
+    priority: 1
+    output: "dockerfile.log"
+
+  build_images:
+    description: "Build Docker images"
+    agent: "docker_agent"
+    depends_on: ["create_dockerfile"]
+    output: "build_images.log"
+
+  scan_images:
+    description: "Scan images for vulnerabilities"
+    agent: "docker_agent"
+    depends_on: ["build_images"]
+    output: "image_scan.log"
+
+  push_to_registry:
+    description: "Push images to container registry"
+    agent: "registry_agent"
+    depends_on: ["scan_images"]
+    output: "registry_push.log"
+
+  create_k8s_manifests:
+    description: "Create Kubernetes deployment manifests"
+    agent: "kubernetes_agent"
+    depends_on: ["push_to_registry"]
+    output: "k8s_manifests.log"
+
+  create_services:
+    description: "Create Kubernetes services"
+    agent: "kubernetes_agent"
+    depends_on: ["create_k8s_manifests"]
+    output: "k8s_services.log"
+
+  create_ingress:
+    description: "Configure ingress controllers"
+    agent: "kubernetes_agent"
+    depends_on: ["create_services"]
+    output: "k8s_ingress.log"
+
+  deploy_to_k8s:
+    description: "Deploy to Kubernetes cluster"
+    agent: "kubernetes_agent"
+    depends_on: ["create_ingress"]
+    output: "k8s_deploy.log"
+
+  configure_autoscaling:
+    description: "Configure horizontal pod autoscaling"
+    agent: "kubernetes_agent"
+    depends_on: ["deploy_to_k8s"]
+    output: "autoscaling.log"
+
+  setup_monitoring:
+    description: "Deploy monitoring stack (Prometheus/Grafana)"
+    agent: "monitoring_agent"
+    depends_on: ["deploy_to_k8s"]
+    parallel_with: ["configure_autoscaling"]
+    output: "monitoring.log"
+
+workflows:
+  orchestrate_containers:
+    description: "Complete container orchestration workflow"
+    steps:
+      - stage: "build"
+        agents: ["docker_agent"]
+        tasks:
+          - create_dockerfile:
+              description: "Create optimized Dockerfile"
+          - build_images:
+              description: "Build Docker images"
+          - scan_images:
+              description: "Scan images for vulnerabilities"
+        mode: sequential
+
+      - stage: "registry"
+        agents: ["registry_agent"]
+        tasks:
+          - push_to_registry:
+              description: "Push images to container registry"
+        mode: sequential
+        depends_on: ["build"]
+
+      - stage: "kubernetes_config"
+        agents: ["kubernetes_agent"]
+        tasks:
+          - create_k8s_manifests:
+              description: "Create Kubernetes deployment manifests"
+          - create_services:
+              description: "Create Kubernetes services"
+          - create_ingress:
+              description: "Configure ingress controllers"
+        mode: sequential
+        depends_on: ["registry"]
+
+      - stage: "deployment"
+        agents: ["kubernetes_agent"]
+        tasks:
+          - deploy_to_k8s:
+              description: "Deploy to Kubernetes cluster"
+        mode: sequential
+        depends_on: ["kubernetes_config"]
+
+      - stage: "operations"
+        agents: ["kubernetes_agent", "monitoring_agent"]
+        tasks:
+          - configure_autoscaling:
+              description: "Configure horizontal pod autoscaling"
+          - setup_monitoring:
+              description: "Deploy monitoring stack (Prometheus/Grafana)"
+        mode: parallel
+        depends_on: ["deployment"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting container orchestration'"
+
+      post_workflow:
+        - "echo 'Container orchestration complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

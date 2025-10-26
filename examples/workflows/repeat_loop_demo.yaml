@@ -1,0 +1,55 @@
+name: "Repeat Loop Demo"
+version: "1.0.0"
+description: "Demonstrates Repeat loop patterns for count-based iteration"
+
+agents:
+  generator:
+    description: "Generates reports and performs batch operations"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Write
+      - Bash
+    permissions:
+      mode: "acceptEdits"
+
+tasks:
+  # Example 1: Simple repeat without iterator variable
+  generate_reports:
+    description: "Generate report (iteration {{iteration}})"
+    agent: "generator"
+    loop:
+      type: repeat
+      count: 3
+    loop_control:
+      collect_results: true
+      result_key: "generated_reports"
+
+  # Example 2: Repeat with iterator variable
+  create_files:
+    description: "Create file_{{index}}.txt with iteration {{iteration}} data"
+    agent: "generator"
+    depends_on: ["generate_reports"]
+    loop:
+      type: repeat
+      count: 5
+      iterator: "index"
+    loop_control:
+      collect_results: true
+
+  # Example 3: Repeat with definition of done
+  batch_operation:
+    description: "Perform batch operation {{batch_num}}"
+    agent: "generator"
+    depends_on: ["create_files"]
+    loop:
+      type: repeat
+      count: 3
+      iterator: "batch_num"
+    definition_of_done:
+      criteria:
+        - type: command_succeeds
+          command: "echo"
+          args: ["Batch {{batch_num}} complete"]
+          description: "Command must succeed"
+      max_retries: 2
+      fail_on_unmet: false

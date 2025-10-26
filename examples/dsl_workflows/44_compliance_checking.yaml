@@ -1,0 +1,200 @@
+# Compliance Checking - Regulatory compliance audit
+name: "compliance_checking"
+version: "1.0"
+
+agents:
+  inventory_agent:
+    description: "Inventories assets and controls"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/compliance/inventory"]
+    max_turns: 15
+
+  policy_agent:
+    description: "Checks policy compliance"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/compliance/policies"]
+    max_turns: 20
+
+  technical_agent:
+    description: "Performs technical compliance checks"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/compliance/technical"]
+    max_turns: 20
+
+  documentation_agent:
+    description: "Reviews compliance documentation"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/compliance/docs"]
+    max_turns: 15
+
+  gap_analysis_agent:
+    description: "Performs gap analysis"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/compliance/gaps"]
+    max_turns: 15
+
+  reporting_agent:
+    description: "Generates compliance reports"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/compliance/reports"]
+    max_turns: 12
+
+tasks:
+  inventory_assets:
+    description: "Inventory IT assets and systems"
+    agent: "inventory_agent"
+    priority: 1
+    output: "asset_inventory.log"
+
+  map_controls:
+    description: "Map security controls to requirements"
+    agent: "inventory_agent"
+    depends_on: ["inventory_assets"]
+    output: "control_mapping.log"
+
+  check_access_controls:
+    description: "Check access control policies"
+    agent: "policy_agent"
+    depends_on: ["map_controls"]
+    output: "access_controls.log"
+
+  check_data_protection:
+    description: "Check data protection measures"
+    agent: "policy_agent"
+    depends_on: ["check_access_controls"]
+    output: "data_protection.log"
+
+  check_encryption:
+    description: "Verify encryption implementation"
+    agent: "technical_agent"
+    depends_on: ["check_data_protection"]
+    output: "encryption_check.log"
+
+  check_logging:
+    description: "Verify audit logging requirements"
+    agent: "technical_agent"
+    depends_on: ["check_encryption"]
+    parallel_with: ["review_documentation"]
+    output: "logging_check.log"
+
+  review_documentation:
+    description: "Review compliance documentation"
+    agent: "documentation_agent"
+    depends_on: ["check_data_protection"]
+    parallel_with: ["check_logging"]
+    output: "documentation_review.log"
+
+  check_incident_response:
+    description: "Check incident response procedures"
+    agent: "policy_agent"
+    depends_on: ["review_documentation"]
+    output: "incident_response_check.log"
+
+  identify_gaps:
+    description: "Identify compliance gaps"
+    agent: "gap_analysis_agent"
+    depends_on: ["check_logging", "check_incident_response"]
+    output: "gap_identification.log"
+
+  prioritize_remediation:
+    description: "Prioritize remediation actions"
+    agent: "gap_analysis_agent"
+    depends_on: ["identify_gaps"]
+    output: "remediation_priorities.log"
+
+  generate_report:
+    description: "Generate compliance audit report"
+    agent: "reporting_agent"
+    depends_on: ["prioritize_remediation"]
+    output: "compliance_report.html"
+
+workflows:
+  check_compliance:
+    description: "Regulatory compliance checking with tool constraints"
+    steps:
+      - stage: "inventory"
+        agents: ["inventory_agent"]
+        tasks:
+          - inventory_assets:
+              description: "Inventory IT assets and systems"
+          - map_controls:
+              description: "Map security controls to requirements"
+        mode: sequential
+
+      - stage: "policy_review"
+        agents: ["policy_agent"]
+        tasks:
+          - check_access_controls:
+              description: "Check access control policies"
+          - check_data_protection:
+              description: "Check data protection measures"
+        mode: sequential
+        depends_on: ["inventory"]
+
+      - stage: "technical_checks"
+        agents: ["technical_agent", "documentation_agent"]
+        tasks:
+          - check_encryption:
+              description: "Verify encryption implementation"
+          - check_logging:
+              description: "Verify audit logging requirements"
+          - review_documentation:
+              description: "Review compliance documentation"
+        mode: sequential
+        depends_on: ["policy_review"]
+
+      - stage: "procedures"
+        agents: ["policy_agent"]
+        tasks:
+          - check_incident_response:
+              description: "Check incident response procedures"
+        mode: sequential
+        depends_on: ["technical_checks"]
+
+      - stage: "gap_analysis"
+        agents: ["gap_analysis_agent", "reporting_agent"]
+        tasks:
+          - identify_gaps:
+              description: "Identify compliance gaps"
+          - prioritize_remediation:
+              description: "Prioritize remediation actions"
+          - generate_report:
+              description: "Generate compliance audit report"
+        mode: sequential
+        depends_on: ["procedures"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting compliance audit'"
+
+      post_workflow:
+        - "echo 'Compliance audit complete'"
+
+      on_stage_complete:
+        - "echo 'Completed compliance stage: $WORKFLOW_STAGE'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]
+  disallowed: []
+  constraints:
+    Bash:
+      timeout: 180000
+      allowed_commands: ["openscap", "lynis", "inspec", "chef", "ansible", "echo", "mkdir"]

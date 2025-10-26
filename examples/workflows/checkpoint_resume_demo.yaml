@@ -1,0 +1,65 @@
+name: "Checkpoint Resume Demo"
+version: "1.0.0"
+description: "Demonstrates checkpoint and resume capabilities for interrupted loops"
+
+agents:
+  batch_processor:
+    description: "Agent that processes large batches with checkpointing"
+    tools: []
+    permissions:
+      mode: "default"
+
+  long_runner:
+    description: "Agent for long-running tasks with resume capability"
+    tools: []
+    permissions:
+      mode: "default"
+
+tasks:
+  process_large_batch:
+    description: "Processing item {{item}} of large batch"
+    agent: "batch_processor"
+    loop:
+      type: for_each
+      collection:
+        source: range
+        start: 0
+        end: 100
+        step: 1
+      iterator: "item"
+    loop_control:
+      checkpoint_interval: 10  # Save state every 10 iterations
+      collect_results: true
+      result_key: "batch_results"
+
+  long_running_computation:
+    description: "Computation step {{step}}"
+    agent: "long_runner"
+    loop:
+      type: repeat
+      count: 50
+      iterator: "step"
+    loop_control:
+      checkpoint_interval: 5   # Checkpoint every 5 iterations
+      timeout_secs: 300        # 5 minute timeout
+      collect_results: true
+
+  resumable_with_break:
+    description: "Process {{num}} with resume and break capability"
+    agent: "batch_processor"
+    loop:
+      type: for_each
+      collection:
+        source: range
+        start: 0
+        end: 200
+        step: 1
+      iterator: "num"
+    loop_control:
+      checkpoint_interval: 20  # Checkpoint every 20 iterations
+      break_condition:
+        type: state_equals
+        key: "critical_error"
+        value: true
+      collect_results: true
+      result_key: "resumable_results"

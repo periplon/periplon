@@ -1,0 +1,563 @@
+name: "Multi-Channel Notification System Demo"
+version: "1.0.0"
+description: |
+  Comprehensive demonstration of multiple notification channels with error handling
+  and fallback strategies. This example showcases:
+  - Ntfy.sh notifications using MCP integration
+  - Slack webhook notifications
+  - Email notifications (SMTP configuration)
+  - Discord webhook notifications
+  - Telegram bot notifications
+  - File-based logging as fallback
+  - Console notifications for debugging
+  - Per-channel error handling
+  - Fallback channel chains
+  - Priority-based channel selection
+
+# Secrets for secure credential management
+secrets:
+  slack_webhook:
+    source:
+      type: env
+      var: SLACK_WEBHOOK_URL
+    description: "Slack incoming webhook URL"
+
+  ntfy_auth_token:
+    source:
+      type: env
+      var: NTFY_AUTH_TOKEN
+    description: "Ntfy.sh authentication token (optional)"
+
+  smtp_password:
+    source:
+      type: env
+      var: SMTP_PASSWORD
+    description: "SMTP server password"
+
+  telegram_bot_token:
+    source:
+      type: env
+      var: TELEGRAM_BOT_TOKEN
+    description: "Telegram bot API token"
+
+  discord_webhook:
+    source:
+      type: env
+      var: DISCORD_WEBHOOK_URL
+    description: "Discord webhook URL"
+
+  webhook_token:
+    source:
+      type: env
+      var: WEBHOOK_AUTH_TOKEN
+    description: "Generic webhook authentication token"
+
+# Workflow inputs
+inputs:
+  project_name:
+    type: string
+    required: true
+    default: "Multi-Channel Demo"
+    description: "Project name for notifications"
+
+  environment:
+    type: string
+    required: false
+    default: "production"
+    description: "Target environment"
+
+  notification_level:
+    type: string
+    required: false
+    default: "all"
+    description: "Notification level: minimal, standard, all"
+
+# MCP server configuration for Ntfy.sh integration
+mcp_servers:
+  ntfy:
+    type: stdio
+    command: "npx"
+    args: ["-y", "@jmca/ntfy-mcp-server"]
+    env:
+      NTFY_DEFAULT_SERVER: "https://ntfy.sh"
+      NTFY_DEFAULT_TOPIC: "multi-channel-demo"
+
+# Default notification settings
+notifications:
+  notify_on_start: true
+  notify_on_completion: true
+  notify_on_failure: true
+  default_channels:
+    # Primary: Console for immediate feedback
+    - type: console
+      colored: true
+      timestamp: true
+    # Secondary: File for audit trail
+    - type: file
+      path: "/tmp/workflow-notifications.log"
+      append: true
+      timestamp: true
+      format: json
+
+agents:
+  notification_agent:
+    description: "Agent for testing notification systems"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - Write
+      - Bash
+    permissions:
+      mode: acceptEdits
+    max_turns: 5
+
+tasks:
+  # Task 1: Ntfy.sh notification via native channel
+  test_ntfy_native:
+    description: |
+      Send notifications using Ntfy.sh via native channel configuration.
+      This demonstrates the direct Ntfy.sh integration.
+    agent: notification_agent
+    on_complete:
+      notify:
+        message: |
+          **Ntfy.sh Native Test Complete**
+
+          Project: ${workflow.project_name}
+          Environment: ${workflow.environment}
+          Status: ✅ SUCCESS
+
+          Native channel integration working properly.
+        title: "Native Notification Test"
+        priority: normal
+        channels:
+          - type: ntfy
+            server: "https://ntfy.sh"
+            topic: "multi-channel-demo"
+            title: "Native Test"
+            priority: 4
+            tags: ["white_check_mark", "zap", "computer"]
+            markdown: true
+            auth_token: "${secret.ntfy_auth_token}"
+
+  # Task 2: Ntfy.sh notification via MCP tool
+  test_ntfy_mcp:
+    description: |
+      Send notifications using Ntfy.sh via MCP server integration.
+      This demonstrates the MCP tool invocation approach.
+    depends_on:
+      - test_ntfy_native
+    mcp_tool:
+      server: "ntfy"
+      tool: "notify_ntfy"
+      parameters:
+        topic: "multi-channel-demo"
+        message: "Testing Ntfy.sh via MCP - Direct tool invocation"
+        title: "MCP Integration Test"
+        priority: "4"
+        tags: ["test", "mcp"]
+
+  # Task 3: Slack webhook notification
+  test_slack_webhook:
+    description: |
+      Send notification to Slack using webhook integration.
+      Demonstrates Slack-specific formatting and attachments.
+    agent: notification_agent
+    depends_on:
+      - test_ntfy_mcp
+    on_complete:
+      notify:
+        message: |
+          Slack notification test completed for ${workflow.project_name}.
+          Environment: ${workflow.environment}
+        title: "Slack Integration Test"
+        priority: high
+        channels:
+          - type: slack
+            credential: "${secret.slack_webhook}"
+            channel: "#notifications"
+            method: webhook
+            attachments:
+              - text: "Build completed successfully"
+                color: "good"
+                fields:
+                  - title: "Project"
+                    value: "${workflow.project_name}"
+                    short: true
+                  - title: "Environment"
+                    value: "${workflow.environment}"
+                    short: true
+                  - title: "Status"
+                    value: "Success ✅"
+                    short: true
+    on_error:
+      retry: 2
+      retry_delay_secs: 5
+
+  # Task 4: Email notification via SMTP
+  test_email_notification:
+    description: |
+      Send email notification using SMTP configuration.
+      Demonstrates email-specific features like CC, BCC, and HTML formatting.
+    agent: notification_agent
+    depends_on:
+      - test_slack_webhook
+    on_complete:
+      notify:
+        message: |
+          Email notification test for ${workflow.project_name}.
+
+          This is a multi-line message that will be sent via SMTP.
+          Environment: ${workflow.environment}
+          Status: Completed successfully
+        title: "Email Notification Test"
+        priority: normal
+        channels:
+          - type: email
+            to: ["admin@example.com", "team@example.com"]
+            cc: ["manager@example.com"]
+            subject: "[${workflow.environment}] Workflow Notification: ${workflow.project_name}"
+            smtp:
+              host: "smtp.gmail.com"
+              port: 587
+              username: "notifications@example.com"
+              password: "${secret.smtp_password}"
+              from: "notifications@example.com"
+              use_tls: true
+    on_error:
+      retry: 1
+      retry_delay_secs: 10
+
+  # Task 5: Discord webhook notification
+  test_discord_webhook:
+    description: |
+      Send notification to Discord using webhook.
+      Demonstrates Discord embeds and rich formatting.
+    agent: notification_agent
+    depends_on:
+      - test_email_notification
+    on_complete:
+      notify:
+        message: "Discord integration test completed"
+        title: "Discord Test"
+        priority: normal
+        channels:
+          - type: discord
+            webhook_url: "${secret.discord_webhook}"
+            username: "Workflow Bot"
+            tts: false
+            embed:
+              title: "Workflow Notification"
+              description: |
+                **Project**: ${workflow.project_name}
+                **Environment**: ${workflow.environment}
+                **Status**: ✅ Success
+              color: 5763719
+              fields:
+                - name: "Task"
+                  value: "Discord Integration Test"
+                  inline: true
+                - name: "Priority"
+                  value: "Normal"
+                  inline: true
+              footer: "Multi-Channel Demo"
+              timestamp: "2025-01-20T12:00:00Z"
+
+  # Task 6: Telegram bot notification
+  test_telegram_notification:
+    description: |
+      Send notification via Telegram bot.
+      Demonstrates Telegram-specific features like parse modes.
+    agent: notification_agent
+    depends_on:
+      - test_discord_webhook
+    on_complete:
+      notify:
+        message: |
+          *Telegram Integration Test*
+
+          Project: `${workflow.project_name}`
+          Environment: `${workflow.environment}`
+          Status: ✅ *Success*
+
+          [View Dashboard](https://dashboard.example.com)
+        title: "Telegram Test"
+        priority: normal
+        channels:
+          - type: telegram
+            bot_token: "${secret.telegram_bot_token}"
+            chat_id: "@workflow_notifications"
+            parse_mode: Markdown
+            disable_preview: false
+            silent: false
+
+  # Task 7: Multi-channel broadcast with fallback
+  test_multi_channel_broadcast:
+    description: |
+      Broadcast the same message to multiple channels simultaneously.
+      Demonstrates parallel multi-channel delivery with fallback handling.
+    agent: notification_agent
+    depends_on:
+      - test_telegram_notification
+    on_complete:
+      notify:
+        message: |
+          **Multi-Channel Broadcast Test**
+
+          This message is being sent to all configured channels:
+          - Console (immediate feedback)
+          - Ntfy.sh (mobile push notifications)
+          - Slack (team communication)
+          - File log (audit trail)
+
+          Project: ${workflow.project_name}
+          Environment: ${workflow.environment}
+        title: "Multi-Channel Broadcast"
+        priority: high
+        channels:
+          # Primary channels
+          - type: console
+            colored: true
+            timestamp: true
+
+          - type: ntfy
+            server: "https://ntfy.sh"
+            topic: "multi-channel-demo"
+            title: "Broadcast Message"
+            priority: 5
+            tags: ["loudspeaker", "warning"]
+            markdown: true
+
+          - type: slack
+            credential: "${secret.slack_webhook}"
+            channel: "#notifications"
+            method: webhook
+            attachments:
+              - text: "Multi-channel broadcast test"
+                color: "#36a64f"
+
+          # Fallback channel (always succeeds)
+          - type: file
+            path: "/tmp/broadcast-notifications.log"
+            append: true
+            timestamp: true
+            format: text
+
+  # Task 8: Priority-based channel routing
+  test_priority_routing:
+    description: |
+      Demonstrate priority-based channel selection.
+      Critical messages go to more channels than normal messages.
+    agent: notification_agent
+    depends_on:
+      - test_multi_channel_broadcast
+    on_complete:
+      notify:
+        message: "Critical: System requires immediate attention for ${workflow.project_name}"
+        title: "Critical Alert"
+        priority: critical
+        channels:
+          # Critical priority: notify ALL channels
+          - type: console
+            colored: true
+            timestamp: true
+
+          - type: ntfy
+            server: "https://ntfy.sh"
+            topic: "multi-channel-demo"
+            title: "CRITICAL ALERT"
+            priority: 5
+            tags: ["rotating_light", "fire", "sos"]
+            markdown: false
+
+          - type: slack
+            credential: "${secret.slack_webhook}"
+            channel: "#alerts"
+            method: webhook
+            attachments:
+              - text: "CRITICAL: Immediate attention required"
+                color: "danger"
+
+          - type: file
+            path: "/tmp/critical-alerts.log"
+            append: true
+            timestamp: true
+            format: json
+
+  # Task 8: Conditional notification with channel filtering
+  test_conditional_notification:
+    description: |
+      Send notifications only if specific conditions are met.
+      Demonstrates conditional logic and channel filtering.
+    agent: notification_agent
+    depends_on:
+      - test_priority_routing
+    condition:
+      type: task_status
+      task: test_priority_routing
+      status: completed
+    on_complete:
+      notify:
+        message: "Conditional notification triggered for ${workflow.project_name}"
+        title: "Conditional Alert"
+        priority: normal
+        channels:
+          - type: ntfy
+            server: "https://ntfy.sh"
+            topic: "multi-channel-demo"
+            title: "Condition Met"
+            priority: 3
+            tags: ["white_check_mark", "gear"]
+            markdown: false
+
+  # Task 9: Error notification with comprehensive fallback
+  test_error_with_fallback:
+    description: |
+      Simulate an error scenario to test error notifications.
+      Demonstrates comprehensive fallback chain.
+    agent: notification_agent
+    depends_on:
+      - test_conditional_notification
+    on_error:
+      retry: 2
+      retry_delay_secs: 3
+      exponential_backoff: true
+    # This task will fail to demonstrate error notifications
+    definition_of_done:
+      criteria:
+        - type: file_exists
+          path: "/tmp/this-file-does-not-exist.txt"
+          description: "This file should not exist (intentional failure)"
+      max_retries: 1
+      fail_on_unmet: false
+
+  # Task 10: Summary with all channels
+  send_final_summary:
+    description: |
+      Send comprehensive summary to all channels.
+      Final demonstration of multi-channel capabilities.
+    agent: notification_agent
+    depends_on:
+      - test_error_with_fallback
+    on_complete:
+      notify:
+        message: |
+          **Multi-Channel Notification Demo Complete**
+
+          Project: ${workflow.project_name}
+          Environment: ${workflow.environment}
+
+          **Channels Tested:**
+          ✅ Ntfy.sh (MCP integration)
+          ✅ Slack (webhook)
+          ✅ Email (SMTP)
+          ✅ Discord (webhook)
+          ✅ Telegram (bot API)
+          ✅ Console (stdout)
+          ✅ File logging (JSON & text)
+
+          **Features Demonstrated:**
+          - Per-channel error handling
+          - Fallback chain mechanisms
+          - Priority-based routing
+          - Conditional notifications
+          - Variable interpolation
+          - Multi-channel broadcasting
+
+          All tests completed successfully!
+        title: "Demo Complete"
+        priority: high
+        channels:
+          # Send to ALL channels for final summary
+          - type: console
+            colored: true
+            timestamp: true
+
+          - type: ntfy
+            server: "https://ntfy.sh"
+            topic: "multi-channel-demo"
+            title: "Demo Summary"
+            priority: 4
+            tags: ["trophy", "tada", "sparkles"]
+            markdown: true
+
+          - type: slack
+            credential: "${secret.slack_webhook}"
+            channel: "#notifications"
+            method: webhook
+            attachments:
+              - text: "Multi-channel demo completed successfully"
+                color: "good"
+                fields:
+                  - title: "Status"
+                    value: "All tests passed ✅"
+                    short: true
+                  - title: "Channels"
+                    value: "7 channels tested"
+                    short: true
+
+          - type: file
+            path: "/tmp/demo-summary.log"
+            append: true
+            timestamp: true
+            format: text
+
+          - type: file
+            path: "/tmp/demo-summary.json"
+            append: false
+            timestamp: true
+            format: json
+
+  # Task 11: Webhook with custom retry configuration
+  test_webhook_with_retry:
+    description: |
+      Test generic webhook notification with custom retry logic.
+      Demonstrates webhook flexibility and error handling.
+    agent: notification_agent
+    depends_on:
+      - send_final_summary
+    on_complete:
+      notify:
+        message: "Webhook notification test for ${workflow.project_name}"
+        title: "Webhook Test"
+        priority: normal
+        channels:
+          - type: webhook
+            url: "https://webhook.example.com/notifications"
+            method: POST
+            headers:
+              Content-Type: "application/json"
+              X-Project: "${workflow.project_name}"
+              X-Environment: "${workflow.environment}"
+            auth:
+              type: bearer
+              token: "${secret.webhook_token}"
+            body_template: |
+              {
+                "project": "${workflow.project_name}",
+                "environment": "${workflow.environment}",
+                "message": "Webhook notification test",
+                "priority": "normal",
+                "timestamp": "{{timestamp}}"
+              }
+            timeout_secs: 30
+            retry:
+              max_attempts: 3
+              delay_secs: 5
+              exponential_backoff: true
+
+  # Task 12: Console-only notification for minimal overhead
+  test_minimal_notification:
+    description: |
+      Minimal notification using only console output.
+      Useful for debugging and development environments.
+    agent: notification_agent
+    depends_on:
+      - test_webhook_with_retry
+    on_complete:
+      notify:
+        message: "Minimal console notification: ${workflow.project_name} workflow complete"
+        channels:
+          - type: console
+            colored: true
+            timestamp: true

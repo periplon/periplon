@@ -1,0 +1,109 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+*.pdb
+
+# Cargo
+Cargo.lock
+
+# Benchmark reports
+/criterion/
+*.html
+*.profdata
+
+# Testing
+*.test
+/test-results/
+/tmp/
+*.tmp
+
+# Documentation
+/doc/
+/docs/_build/
+
+# IDE and editor files
+# VSCode
+.vscode/
+*.code-workspace
+
+# IntelliJ IDEA / RustRover
+.idea/
+*.iml
+*.ipr
+*.iws
+.idea_modules/
+
+# Vim
+*.swp
+*.swo
+*~
+.*.sw[a-z]
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Environment and configuration
+.env
+.env.*
+!.env.example
+*.local
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.cache
+
+# Coverage reports
+tarpaulin-report.html
+cobertura.xml
+*.profraw
+
+# Flamegraph
+flamegraph.svg
+perf.data
+perf.data.old
+
+# Workflow states
+.workflow_states/
+workflow-state/
+
+# Runtime data
+/data/
+
+# Test workspaces
+test-workspace/
+test_results/
+
+# Release build artifacts
+/dist/
+*.sha256
+SHA256SUMS

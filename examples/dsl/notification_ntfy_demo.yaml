@@ -1,0 +1,302 @@
+name: "Ntfy.sh Notification System Demo"
+version: "1.0.0"
+description: |
+  Comprehensive demonstration of Ntfy.sh integration for workflow notifications.
+  This example showcases:
+  - Workflow-level notification configuration with default channels
+  - Task-level notifications for success and failure scenarios
+  - Different priority levels (1=min, 3=default, 5=max)
+  - Tags and emojis for visual categorization
+  - Conditional notifications based on task status
+  - Variable interpolation in notification messages
+  - Markdown formatting support
+  - Click actions and attachments
+
+# Define workflow-level notification defaults
+notifications:
+  notify_on_start: true
+  notify_on_completion: true
+  notify_on_failure: true
+  default_channels:
+    - type: ntfy
+      server: "https://ntfy.sh"
+      topic: "workflow-demo"
+      priority: 3
+      tags: ["robot"]
+      markdown: true
+
+# Workflow inputs for variable interpolation
+inputs:
+  project_name:
+    type: string
+    required: true
+    default: "MyProject"
+    description: "Project name for notifications"
+  environment:
+    type: string
+    required: false
+    default: "development"
+    description: "Deployment environment"
+
+agents:
+  build_agent:
+    description: "Agent responsible for building the project"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - Write
+      - Bash
+    permissions:
+      mode: acceptEdits
+    max_turns: 5
+
+  test_agent:
+    description: "Agent responsible for running tests"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - Bash
+    permissions:
+      mode: default
+    max_turns: 5
+
+  deploy_agent:
+    description: "Agent responsible for deployment tasks"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - Bash
+    permissions:
+      mode: acceptEdits
+    max_turns: 5
+
+tasks:
+  # Task 1: Build with low priority notification
+  build_project:
+    description: |
+      Build the project and create a simple output file.
+      On success, send a low-priority notification.
+    agent: build_agent
+    on_complete:
+      notify:
+        message: "Build completed successfully for ${workflow.project_name}"
+        title: "Build Status"
+        priority: low
+        channels:
+          - type: ntfy
+            server: "https://ntfy.sh"
+            topic: "workflow-demo"
+            title: "Build Complete"
+            priority: 2
+            tags: ["white_check_mark", "package"]
+            markdown: true
+    on_error:
+      retry: 1
+      retry_delay_secs: 5
+      exponential_backoff: false
+
+  # Task 2: Run tests with default priority notification
+  run_tests:
+    description: |
+      Run project tests. On completion, send a default priority notification.
+    agent: test_agent
+    depends_on:
+      - build_project
+    on_complete:
+      notify:
+        message: |
+          **Tests Passed** for ${workflow.project_name}
+          Environment: ${workflow.environment}
+          All test suites executed successfully.
+        title: "Test Results"
+        priority: normal
+        channels:
+          - type: ntfy
+            server: "https://ntfy.sh"
+            topic: "workflow-demo"
+            title: "Tests Passed"
+            priority: 3
+            tags: ["heavy_check_mark", "test_tube"]
+            markdown: true
+    on_error:
+      retry: 2
+      retry_delay_secs: 3
+
+  # Task 3: Deploy with high priority notification and click action
+  deploy_to_staging:
+    description: |
+      Deploy the project to staging environment.
+      Send high-priority notification with click action.
+    agent: deploy_agent
+    depends_on:
+      - run_tests
+    condition:
+      type: task_status
+      task: run_tests
+      status: completed
+    on_complete:
+      notify:
+        message: |
+          **Deployment Successful**
+          Project: ${workflow.project_name}
+          Environment: ${workflow.environment}
+          Click to view deployment status.
+        title: "Deployment Complete"
+        priority: high
+        channels:
+          - type: ntfy
+            server: "https://ntfy.sh"
+            topic: "workflow-demo"
+            title: "Deployment to Staging"
+            priority: 4
+            tags: ["rocket", "sparkles"]
+            click_url: "https://staging.example.com/status"
+            markdown: true
+    on_error:
+      retry: 1
+      fallback_agent: build_agent
+
+  # Task 4: Critical notification example (simulated failure scenario)
+  health_check:
+    description: |
+      Perform health check after deployment.
+      On failure, send critical priority notification.
+    agent: deploy_agent
+    depends_on:
+      - deploy_to_staging
+    on_complete:
+      notify:
+        message: |
+          Health check passed for ${workflow.project_name}.
+          All services are operational.
+        channels:
+          - type: ntfy
+            server: "https://ntfy.sh"
+            topic: "workflow-demo"
+            title: "Health Check OK"
+            priority: 3
+            tags: ["green_heart", "stethoscope"]
+            markdown: false
+    definition_of_done:
+      criteria:
+        - type: command_succeeds
+          command: "echo"
+          args: ["Health check passed"]
+          description: "Health check command should succeed"
+      max_retries: 2
+      fail_on_unmet: false
+
+  # Task 5: Conditional notification based on previous task status
+  send_summary:
+    description: |
+      Send a workflow summary notification.
+      This demonstrates conditional notifications and variable interpolation.
+    agent: build_agent
+    depends_on:
+      - health_check
+    on_complete:
+      notify:
+        message: |
+          **Workflow Summary**
+
+          Project: **${workflow.project_name}**
+          Environment: **${workflow.environment}**
+
+          Status: All tasks completed successfully
+
+          - Build: ✅
+          - Tests: ✅
+          - Deploy: ✅
+          - Health Check: ✅
+        title: "Workflow Complete"
+        channels:
+          - type: ntfy
+            server: "https://ntfy.sh"
+            topic: "workflow-demo"
+            title: "Workflow Summary"
+            priority: 4
+            tags: ["trophy", "chart_with_upwards_trend"]
+            markdown: true
+
+  # Task 6: File notification for logging
+  log_notification:
+    description: |
+      Log all notifications to a file for audit purposes.
+      This demonstrates file-based notification channel.
+    agent: build_agent
+    depends_on:
+      - send_summary
+    on_complete:
+      notify:
+        message: "Workflow ${workflow.project_name} completed at $(date)"
+        channels:
+          - type: file
+            path: "/tmp/workflow-notifications.log"
+            append: true
+            timestamp: true
+            format: text
+
+  # Task 7: Multiple notification channels
+  multi_channel_notification:
+    description: |
+      Send notifications to multiple channels simultaneously.
+      Demonstrates console + ntfy + file notifications.
+    agent: build_agent
+    depends_on:
+      - log_notification
+    on_complete:
+      notify:
+        message: |
+          Multi-channel notification test for ${workflow.project_name}.
+          This message is sent to console, ntfy, and file simultaneously.
+        title: "Multi-Channel Demo"
+        priority: normal
+        channels:
+          - type: console
+            colored: true
+            timestamp: true
+          - type: ntfy
+            server: "https://ntfy.sh"
+            topic: "workflow-demo"
+            title: "Multi-Channel Test"
+            priority: 3
+            tags: ["mega", "signal_strength"]
+            markdown: true
+          - type: file
+            path: "/tmp/multi-channel.log"
+            append: true
+            timestamp: true
+            format: json
+
+  # Task 8: Notification with attachment URL
+  attachment_notification:
+    description: |
+      Send notification with an attachment URL.
+      Useful for sharing logs, reports, or artifacts.
+    agent: build_agent
+    depends_on:
+      - multi_channel_notification
+    on_complete:
+      notify:
+        message: "Build artifacts are ready for ${workflow.project_name}"
+        title: "Artifacts Available"
+        channels:
+          - type: ntfy
+            server: "https://ntfy.sh"
+            topic: "workflow-demo"
+            title: "Build Artifacts"
+            priority: 3
+            tags: ["package", "link"]
+            attach_url: "https://example.com/artifacts/build.zip"
+            markdown: false
+
+  # Task 9: Simple string notification (minimal syntax)
+  simple_notification:
+    description: |
+      Demonstrates the simplest notification syntax.
+      Uses workflow default channels.
+    agent: build_agent
+    depends_on:
+      - attachment_notification
+    on_complete:
+      notify: "Simple notification: ${workflow.project_name} workflow finished!"

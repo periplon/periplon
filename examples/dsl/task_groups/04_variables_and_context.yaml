@@ -1,0 +1,254 @@
+name: "Variable Interpolation and Context Sharing"
+version: "1.0.0"
+description: |
+  Demonstrates advanced variable usage:
+  - Group-level input/output variables
+  - Variable interpolation across groups
+  - Context sharing between groups
+  - Dynamic variable resolution
+
+inputs:
+  source_dir:
+    type: string
+    required: true
+    description: "Source directory to process"
+
+  output_format:
+    type: string
+    required: false
+    default: "json"
+    description: "Output format (json, yaml, xml)"
+
+  quality_threshold:
+    type: number
+    required: false
+    default: 0.8
+    description: "Minimum quality score (0.0-1.0)"
+
+agents:
+  analyzer:
+    description: "Analyzes code and generates metrics"
+    tools: [Read, Grep, Glob, Write]
+    permissions:
+      mode: "acceptEdits"
+
+  transformer:
+    description: "Transforms data between formats"
+    tools: [Read, Write, Edit]
+    permissions:
+      mode: "acceptEdits"
+
+  reporter:
+    description: "Generates reports and summaries"
+    tools: [Read, Write]
+    permissions:
+      mode: "acceptEdits"
+
+task_groups:
+  # Group 1: Analysis with outputs
+  code_analysis:
+    description: "Analyze code in ${workflow.source_dir}"
+    execution_mode: "parallel"
+    tasks:
+      - count_files
+      - analyze_complexity
+      - detect_issues
+
+    # Group-level outputs
+    outputs:
+      total_files:
+        source:
+          type: state
+          key: "analysis.total_files"
+      avg_complexity:
+        source:
+          type: state
+          key: "analysis.avg_complexity"
+      issue_count:
+        source:
+          type: state
+          key: "analysis.issue_count"
+      quality_score:
+        source:
+          type: state
+          key: "analysis.quality_score"
+
+  # Group 2: Processing with inputs from Group 1
+  data_processing:
+    description: "Process analysis data"
+    execution_mode: "sequential"
+    tasks:
+      - normalize_data
+      - apply_filters
+      - aggregate_metrics
+
+    depends_on: [code_analysis]
+
+    # Group-level inputs from previous group
+    inputs:
+      file_count: "${group.code_analysis.total_files}"
+      complexity: "${group.code_analysis.avg_complexity}"
+      issues: "${group.code_analysis.issue_count}"
+
+    # Group-level outputs
+    outputs:
+      processed_data:
+        source:
+          type: file
+          path: "./processed_data.${workflow.output_format}"
+
+  # Group 3: Conditional reporting
+  quality_reporting:
+    description: "Generate quality report"
+    execution_mode: "sequential"
+    tasks:
+      - generate_charts
+      - create_report
+      - export_results
+
+    depends_on: [data_processing]
+
+    # Conditional execution based on quality score
+    condition: "${group.code_analysis.quality_score} >= ${workflow.quality_threshold}"
+
+    inputs:
+      data_file: "${group.data_processing.processed_data}"
+
+  # Group 4: Parallel transformations
+  format_conversions:
+    description: "Convert to multiple formats"
+    execution_mode: "parallel"
+    tasks:
+      - to_json
+      - to_yaml
+      - to_html
+
+    depends_on: [quality_reporting]
+
+    inputs:
+      source_data: "${group.data_processing.processed_data}"
+
+    max_concurrency: 3
+
+tasks:
+  # Analysis tasks
+  count_files:
+    description: "Count files in ${workflow.source_dir}"
+    agent: "analyzer"
+    group: "code_analysis"
+    outputs:
+      count:
+        source:
+          type: state
+          key: "file_count"
+
+  analyze_complexity:
+    description: "Calculate complexity metrics"
+    agent: "analyzer"
+    group: "code_analysis"
+    outputs:
+      complexity:
+        source:
+          type: state
+          key: "complexity_score"
+
+  detect_issues:
+    description: "Detect code issues"
+    agent: "analyzer"
+    group: "code_analysis"
+    outputs:
+      issues:
+        source:
+          type: file
+          path: "./issues.json"
+
+  # Processing tasks
+  normalize_data:
+    description: "Normalize data from ${task.code_analysis.file_count} files"
+    agent: "transformer"
+    group: "data_processing"
+    inputs:
+      raw_files: "${group.code_analysis.total_files}"
+      raw_complexity: "${group.code_analysis.avg_complexity}"
+
+  apply_filters:
+    description: "Apply quality filters (threshold: ${workflow.quality_threshold})"
+    agent: "transformer"
+    group: "data_processing"
+    depends_on: [normalize_data]
+
+  aggregate_metrics:
+    description: "Aggregate all metrics"
+    agent: "transformer"
+    group: "data_processing"
+    depends_on: [apply_filters]
+    outputs:
+      summary:
+        source:
+          type: file
+          path: "./metrics_summary.json"
+
+  # Reporting tasks
+  generate_charts:
+    description: "Generate visualization charts"
+    agent: "reporter"
+    group: "quality_reporting"
+    inputs:
+      data: "${group.data_processing.processed_data}"
+
+  create_report:
+    description: "Create quality report"
+    agent: "reporter"
+    group: "quality_reporting"
+    depends_on: [generate_charts]
+    inputs:
+      metrics: "${task.aggregate_metrics.summary}"
+    outputs:
+      report:
+        source:
+          type: file
+          path: "./quality_report.md"
+
+  export_results:
+    description: "Export results to ${workflow.output_format}"
+    agent: "reporter"
+    group: "quality_reporting"
+    depends_on: [create_report]
+
+  # Format conversion tasks
+  to_json:
+    description: "Convert to JSON format"
+    agent: "transformer"
+    group: "format_conversions"
+    inputs:
+      source: "${group.data_processing.processed_data}"
+    outputs:
+      json_file:
+        source:
+          type: file
+          path: "./output.json"
+
+  to_yaml:
+    description: "Convert to YAML format"
+    agent: "transformer"
+    group: "format_conversions"
+    inputs:
+      source: "${group.data_processing.processed_data}"
+    outputs:
+      yaml_file:
+        source:
+          type: file
+          path: "./output.yaml"
+
+  to_html:
+    description: "Convert to HTML report"
+    agent: "transformer"
+    group: "format_conversions"
+    inputs:
+      source: "${group.data_processing.processed_data}"
+      report: "${task.create_report.report}"
+    outputs:
+      html_file:
+        source:
+          type: file
+          path: "./output.html"

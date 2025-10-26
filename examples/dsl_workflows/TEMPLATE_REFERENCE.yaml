@@ -1,0 +1,94 @@
+# DSL Workflow Template Reference
+# Use this as a reference for creating valid workflow YAML files
+
+name: "template_workflow"
+version: "1.0"
+
+# Working directory for all agents (optional)
+# Can be relative (e.g., "./workspace") or absolute (e.g., "/tmp/project")
+# Default: Current directory where the executor is run
+cwd: "/tmp/workspace"
+
+# Create working directory if it doesn't exist (optional)
+# Applies to all agents unless overridden at agent level
+# Default: false (for backwards compatibility)
+create_cwd: true
+
+agents:
+  example_agent:
+    description: "Example agent description"
+    model: "claude-sonnet-4-5"
+    # Working directory for this specific agent (optional)
+    # Overrides workflow-level cwd if specified
+    # Priority: agent cwd > workflow cwd > current directory
+    cwd: "./agent_workspace"
+    # Create this agent's working directory if it doesn't exist (optional)
+    # Overrides workflow-level create_cwd if specified
+    # Priority: agent create_cwd > workflow create_cwd > false
+    # Uses std::fs::create_dir_all, so creates parent directories too
+    create_cwd: true
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      # Allowed directories can be relative or absolute
+      # Relative paths are resolved from the agent's working directory
+      allowed_directories: ["./src", "/tmp"]
+    max_turns: 10
+
+tasks:
+  task_one:
+    description: "First task description"
+    agent: "example_agent"
+    priority: 1
+    output: "output.txt"
+
+  task_two:
+    description: "Second task description"
+    agent: "example_agent"
+    depends_on: ["task_one"]
+    parallel_with: []
+    on_error:
+      retry: 3
+      retry_delay_secs: 5
+      exponential_backoff: true
+      fallback_agent: "example_agent"
+    on_complete:
+      notify: "Task completed successfully"
+
+workflows:
+  example_workflow:
+    description: "Example workflow description"
+    steps:
+      - stage: "first_stage"
+        agents: ["example_agent"]
+        tasks:
+          - task_one:
+              description: "First task description"  # REQUIRED
+          - task_two:
+              description: "Second task description"  # REQUIRED
+        mode: sequential
+        depends_on: []
+
+    hooks:
+      # Hooks MUST be arrays (lists), not single strings
+      pre_workflow:
+        - "echo 'Starting workflow'"
+        - command: "mkdir -p /tmp/output"
+          description: "Create output directory"
+
+      post_workflow:
+        - "echo 'Workflow complete'"
+
+      on_stage_complete:
+        - "echo 'Stage complete: $WORKFLOW_STAGE'"
+
+      on_error:
+        - "echo 'Error in workflow: $WORKFLOW_ERROR'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]
+  disallowed: []
+  constraints:
+    Bash:
+      timeout: 60000
+      allowed_commands: ["echo", "ls", "mkdir"]

@@ -1,0 +1,121 @@
+# Full-Stack Deployment - Complete application deployment workflow
+name: "fullstack_deployment"
+version: "1.0"
+
+agents:
+  frontend_agent:
+    description: "Manages frontend deployment"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/app/frontend"]
+    max_turns: 12
+
+  backend_agent:
+    description: "Manages backend deployment"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/app/backend"]
+    max_turns: 12
+
+  database_agent:
+    description: "Manages database migrations"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/app/db"]
+    max_turns: 10
+
+  integration_agent:
+    description: "Runs integration tests"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/app"]
+    max_turns: 15
+
+tasks:
+  prepare_database:
+    description: "Run database migrations and seed data"
+    agent: "database_agent"
+    priority: 1
+    output: "db_migration.log"
+
+  deploy_backend:
+    description: "Deploy backend services"
+    agent: "backend_agent"
+    depends_on: ["prepare_database"]
+    output: "backend_deploy.log"
+
+  deploy_frontend:
+    description: "Deploy frontend application"
+    agent: "frontend_agent"
+    depends_on: ["deploy_backend"]
+    output: "frontend_deploy.log"
+
+  run_integration_tests:
+    description: "Execute integration test suite"
+    agent: "integration_agent"
+    depends_on: ["deploy_frontend"]
+    output: "integration_tests.log"
+
+  health_check:
+    description: "Verify all services are healthy"
+    agent: "integration_agent"
+    depends_on: ["run_integration_tests"]
+    output: "health_check.log"
+
+workflows:
+  full_deployment:
+    description: "Multi-stage full-stack application deployment"
+    steps:
+      - stage: "database"
+        agents: ["database_agent"]
+        tasks:
+          - prepare_database:
+              description: "Run database migrations and seed data"
+        mode: sequential
+
+      - stage: "backend"
+        agents: ["backend_agent"]
+        tasks:
+          - deploy_backend:
+              description: "Deploy backend services"
+        mode: sequential
+        depends_on: ["database"]
+
+      - stage: "frontend"
+        agents: ["frontend_agent"]
+        tasks:
+          - deploy_frontend:
+              description: "Deploy frontend application"
+        mode: sequential
+        depends_on: ["backend"]
+
+      - stage: "verification"
+        agents: ["integration_agent"]
+        tasks:
+          - run_integration_tests:
+              description: "Execute integration test suite"
+          - health_check:
+              description: "Verify all services are healthy"
+        mode: sequential
+        depends_on: ["frontend"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting full-stack deployment'"
+
+      post_workflow:
+        - "echo 'Deployment complete and verified'"
+
+      on_stage_complete:
+        - "echo 'Completed stage: $WORKFLOW_STAGE'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

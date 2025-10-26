@@ -1,0 +1,175 @@
+# Podcast Production - Audio content workflow
+name: "podcast_production"
+version: "1.0"
+
+agents:
+  recording_agent:
+    description: "Manages audio recording"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/podcast/raw"]
+    max_turns: 12
+
+  editing_agent:
+    description: "Edits audio content"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/podcast/edited"]
+    max_turns: 20
+
+  transcription_agent:
+    description: "Transcribes audio to text"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/podcast/transcripts"]
+    max_turns: 15
+
+  metadata_agent:
+    description: "Creates episode metadata"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/podcast/metadata"]
+    max_turns: 10
+
+  distribution_agent:
+    description: "Distributes to podcast platforms"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/podcast/distribution"]
+    max_turns: 12
+
+tasks:
+  import_recording:
+    description: "Import audio recording"
+    agent: "recording_agent"
+    priority: 1
+    output: "import.log"
+
+  remove_noise:
+    description: "Remove background noise"
+    agent: "editing_agent"
+    depends_on: ["import_recording"]
+    output: "noise_reduction.log"
+
+  normalize_audio:
+    description: "Normalize audio levels"
+    agent: "editing_agent"
+    depends_on: ["remove_noise"]
+    output: "normalization.log"
+
+  add_intro_outro:
+    description: "Add intro and outro music"
+    agent: "editing_agent"
+    depends_on: ["normalize_audio"]
+    output: "intro_outro.log"
+
+  master_audio:
+    description: "Master final audio"
+    agent: "editing_agent"
+    depends_on: ["add_intro_outro"]
+    output: "mastering.log"
+
+  generate_transcription:
+    description: "Generate episode transcription"
+    agent: "transcription_agent"
+    depends_on: ["master_audio"]
+    output: "transcription.txt"
+
+  create_show_notes:
+    description: "Create show notes from transcription"
+    agent: "metadata_agent"
+    depends_on: ["generate_transcription"]
+    output: "show_notes.md"
+
+  add_timestamps:
+    description: "Add chapter timestamps"
+    agent: "metadata_agent"
+    depends_on: ["create_show_notes"]
+    output: "timestamps.log"
+
+  create_rss_entry:
+    description: "Create RSS feed entry"
+    agent: "distribution_agent"
+    depends_on: ["master_audio", "add_timestamps"]
+    output: "rss_entry.xml"
+
+  upload_to_host:
+    description: "Upload to podcast hosting"
+    agent: "distribution_agent"
+    depends_on: ["create_rss_entry"]
+    output: "hosting_upload.log"
+
+  distribute_platforms:
+    description: "Distribute to podcast platforms"
+    agent: "distribution_agent"
+    depends_on: ["upload_to_host"]
+    output: "distribution.log"
+
+workflows:
+  produce_podcast:
+    description: "Complete podcast production workflow"
+    steps:
+      - stage: "ingestion"
+        agents: ["recording_agent"]
+        tasks:
+          - import_recording:
+              description: "Import audio recording"
+        mode: sequential
+
+      - stage: "editing"
+        agents: ["editing_agent"]
+        tasks:
+          - remove_noise:
+              description: "Remove background noise"
+          - normalize_audio:
+              description: "Normalize audio levels"
+          - add_intro_outro:
+              description: "Add intro and outro music"
+          - master_audio:
+              description: "Master final audio"
+        mode: sequential
+        depends_on: ["ingestion"]
+
+      - stage: "transcription"
+        agents: ["transcription_agent", "metadata_agent"]
+        tasks:
+          - generate_transcription:
+              description: "Generate episode transcription"
+          - create_show_notes:
+              description: "Create show notes from transcription"
+          - add_timestamps:
+              description: "Add chapter timestamps"
+        mode: sequential
+        depends_on: ["editing"]
+
+      - stage: "distribution"
+        agents: ["distribution_agent"]
+        tasks:
+          - create_rss_entry:
+              description: "Create RSS feed entry"
+          - upload_to_host:
+              description: "Upload to podcast hosting"
+          - distribute_platforms:
+              description: "Distribute to podcast platforms"
+        mode: sequential
+        depends_on: ["transcription"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting podcast production'"
+
+      post_workflow:
+        - "echo 'Podcast episode published'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

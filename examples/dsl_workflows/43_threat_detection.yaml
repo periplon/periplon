@@ -1,0 +1,185 @@
+# Threat Detection - Real-time threat monitoring
+name: "threat_detection"
+version: "1.0"
+
+agents:
+  monitoring_agent:
+    description: "Monitors security events"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/threat/monitoring"]
+    max_turns: 20
+
+  analysis_agent:
+    description: "Analyzes threat intelligence"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/threat/analysis"]
+    max_turns: 20
+
+  correlation_agent:
+    description: "Correlates security events"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/threat/correlation"]
+    max_turns: 15
+
+  response_agent:
+    description: "Coordinates incident response"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/threat/response"]
+    max_turns: 15
+
+  alerting_agent:
+    description: "Manages security alerts"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/threat/alerts"]
+    max_turns: 10
+
+tasks:
+  collect_logs:
+    description: "Collect security logs from all sources"
+    agent: "monitoring_agent"
+    priority: 1
+    output: "log_collection.log"
+    on_error:
+      retry: 3
+      retry_delay_secs: 10
+      exponential_backoff: true
+
+  normalize_events:
+    description: "Normalize security events"
+    agent: "monitoring_agent"
+    depends_on: ["collect_logs"]
+    output: "event_normalization.log"
+
+  detect_anomalies:
+    description: "Detect anomalous behavior"
+    agent: "analysis_agent"
+    depends_on: ["normalize_events"]
+    output: "anomaly_detection.log"
+
+  check_iocs:
+    description: "Check indicators of compromise"
+    agent: "analysis_agent"
+    depends_on: ["detect_anomalies"]
+    output: "ioc_check.log"
+
+  correlate_events:
+    description: "Correlate related security events"
+    agent: "correlation_agent"
+    depends_on: ["check_iocs"]
+    output: "event_correlation.log"
+
+  assess_threats:
+    description: "Assess threat severity"
+    agent: "analysis_agent"
+    depends_on: ["correlate_events"]
+    output: "threat_assessment.log"
+
+  classify_incidents:
+    description: "Classify security incidents"
+    agent: "correlation_agent"
+    depends_on: ["assess_threats"]
+    output: "incident_classification.log"
+
+  prioritize_alerts:
+    description: "Prioritize security alerts"
+    agent: "alerting_agent"
+    depends_on: ["classify_incidents"]
+    output: "alert_prioritization.log"
+
+  initiate_response:
+    description: "Initiate incident response procedures"
+    agent: "response_agent"
+    depends_on: ["prioritize_alerts"]
+    output: "incident_response.log"
+
+  contain_threat:
+    description: "Contain identified threats"
+    agent: "response_agent"
+    depends_on: ["initiate_response"]
+    output: "threat_containment.log"
+
+workflows:
+  detect_threats:
+    description: "Real-time threat detection with exponential backoff"
+    steps:
+      - stage: "collection"
+        agents: ["monitoring_agent"]
+        tasks:
+          - collect_logs:
+              description: "Collect security logs from all sources"
+          - normalize_events:
+              description: "Normalize security events"
+        mode: sequential
+
+      - stage: "analysis"
+        agents: ["analysis_agent"]
+        tasks:
+          - detect_anomalies:
+              description: "Detect anomalous behavior"
+          - check_iocs:
+              description: "Check indicators of compromise"
+        mode: sequential
+        depends_on: ["collection"]
+
+      - stage: "correlation"
+        agents: ["correlation_agent", "analysis_agent"]
+        tasks:
+          - correlate_events:
+              description: "Correlate related security events"
+          - assess_threats:
+              description: "Assess threat severity"
+          - classify_incidents:
+              description: "Classify security incidents"
+        mode: sequential
+        depends_on: ["analysis"]
+
+      - stage: "alerting"
+        agents: ["alerting_agent"]
+        tasks:
+          - prioritize_alerts:
+              description: "Prioritize security alerts"
+        mode: sequential
+        depends_on: ["correlation"]
+
+      - stage: "response"
+        agents: ["response_agent"]
+        tasks:
+          - initiate_response:
+              description: "Initiate incident response procedures"
+          - contain_threat:
+              description: "Contain identified threats"
+        mode: sequential
+        depends_on: ["alerting"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting threat detection cycle'"
+
+      post_workflow:
+        - "echo 'Threat detection cycle complete'"
+
+      on_error:
+        - "echo 'Threat detection error at: $WORKFLOW_STAGE'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]
+  disallowed: []
+  constraints:
+    Bash:
+      timeout: 180000
+      allowed_commands: ["grep", "awk", "sed", "jq", "splunk", "elasticsearch", "logstash", "echo", "mkdir"]

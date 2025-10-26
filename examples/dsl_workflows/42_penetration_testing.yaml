@@ -1,0 +1,174 @@
+# Penetration Testing - Security testing workflow
+name: "penetration_testing"
+version: "1.0"
+
+agents:
+  reconnaissance_agent:
+    description: "Performs reconnaissance"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/pentest/recon"]
+    max_turns: 20
+
+  scanning_agent:
+    description: "Scans target systems"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/pentest/scanning"]
+    max_turns: 20
+
+  exploitation_agent:
+    description: "Tests exploitation vectors"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/pentest/exploitation"]
+    max_turns: 25
+
+  privilege_agent:
+    description: "Tests privilege escalation"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/pentest/privilege"]
+    max_turns: 15
+
+  reporting_agent:
+    description: "Generates pentest reports"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/pentest/reports"]
+    max_turns: 12
+
+tasks:
+  passive_recon:
+    description: "Perform passive reconnaissance"
+    agent: "reconnaissance_agent"
+    priority: 1
+    output: "passive_recon.log"
+
+  active_recon:
+    description: "Perform active reconnaissance"
+    agent: "reconnaissance_agent"
+    depends_on: ["passive_recon"]
+    output: "active_recon.log"
+
+  network_scan:
+    description: "Scan network and identify services"
+    agent: "scanning_agent"
+    depends_on: ["active_recon"]
+    output: "network_scan.log"
+
+  vulnerability_enumeration:
+    description: "Enumerate vulnerabilities"
+    agent: "scanning_agent"
+    depends_on: ["network_scan"]
+    output: "vulnerability_enum.log"
+
+  web_app_testing:
+    description: "Test web application security"
+    agent: "exploitation_agent"
+    depends_on: ["vulnerability_enumeration"]
+    output: "web_app_test.log"
+
+  network_exploitation:
+    description: "Test network-level exploits"
+    agent: "exploitation_agent"
+    depends_on: ["vulnerability_enumeration"]
+    parallel_with: ["web_app_testing"]
+    output: "network_exploit.log"
+
+  test_authentication:
+    description: "Test authentication bypass"
+    agent: "exploitation_agent"
+    depends_on: ["web_app_testing"]
+    output: "auth_test.log"
+
+  privilege_escalation:
+    description: "Test privilege escalation"
+    agent: "privilege_agent"
+    depends_on: ["test_authentication", "network_exploitation"]
+    output: "privilege_escalation.log"
+
+  lateral_movement:
+    description: "Test lateral movement capabilities"
+    agent: "privilege_agent"
+    depends_on: ["privilege_escalation"]
+    output: "lateral_movement.log"
+
+  generate_report:
+    description: "Generate penetration test report"
+    agent: "reporting_agent"
+    depends_on: ["lateral_movement"]
+    output: "pentest_report.html"
+
+workflows:
+  penetration_test:
+    description: "Ethical penetration testing workflow"
+    steps:
+      - stage: "reconnaissance"
+        agents: ["reconnaissance_agent"]
+        tasks:
+          - passive_recon:
+              description: "Perform passive reconnaissance"
+          - active_recon:
+              description: "Perform active reconnaissance"
+        mode: sequential
+
+      - stage: "scanning"
+        agents: ["scanning_agent"]
+        tasks:
+          - network_scan:
+              description: "Scan network and identify services"
+          - vulnerability_enumeration:
+              description: "Enumerate vulnerabilities"
+        mode: sequential
+        depends_on: ["reconnaissance"]
+
+      - stage: "exploitation"
+        agents: ["exploitation_agent"]
+        tasks:
+          - web_app_testing:
+              description: "Test web application security"
+          - network_exploitation:
+              description: "Test network-level exploits"
+          - test_authentication:
+              description: "Test authentication bypass"
+        mode: sequential
+        depends_on: ["scanning"]
+
+      - stage: "post_exploitation"
+        agents: ["privilege_agent"]
+        tasks:
+          - privilege_escalation:
+              description: "Test privilege escalation"
+          - lateral_movement:
+              description: "Test lateral movement capabilities"
+        mode: sequential
+        depends_on: ["exploitation"]
+
+      - stage: "reporting"
+        agents: ["reporting_agent"]
+        tasks:
+          - generate_report:
+              description: "Generate penetration test report"
+        mode: sequential
+        depends_on: ["post_exploitation"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting ethical penetration test'"
+
+      post_workflow:
+        - "echo 'Penetration test complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

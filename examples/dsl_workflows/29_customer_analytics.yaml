@@ -1,0 +1,185 @@
+# Customer Analytics - Customer behavior analysis
+name: "customer_analytics"
+version: "1.0"
+
+agents:
+  data_agent:
+    description: "Collects customer data"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/analytics/data"]
+    max_turns: 15
+
+  segmentation_agent:
+    description: "Performs customer segmentation"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/analytics/segmentation"]
+    max_turns: 20
+
+  behavior_agent:
+    description: "Analyzes customer behavior"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/analytics/behavior"]
+    max_turns: 15
+
+  churn_agent:
+    description: "Predicts customer churn"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/analytics/churn"]
+    max_turns: 15
+
+  lifetime_value_agent:
+    description: "Calculates customer lifetime value"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/analytics/ltv"]
+    max_turns: 15
+
+  reporting_agent:
+    description: "Creates analytics dashboards"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/analytics/reports"]
+    max_turns: 10
+
+tasks:
+  collect_transaction_data:
+    description: "Collect customer transaction history"
+    agent: "data_agent"
+    priority: 1
+    output: "transactions.log"
+
+  collect_interaction_data:
+    description: "Collect customer interaction data"
+    agent: "data_agent"
+    priority: 1
+    parallel_with: ["collect_transaction_data"]
+    output: "interactions.log"
+
+  clean_data:
+    description: "Clean and prepare customer data"
+    agent: "data_agent"
+    depends_on: ["collect_transaction_data", "collect_interaction_data"]
+    output: "data_cleaning.log"
+
+  perform_rfm_analysis:
+    description: "Perform RFM (Recency, Frequency, Monetary) analysis"
+    agent: "segmentation_agent"
+    depends_on: ["clean_data"]
+    output: "rfm_analysis.log"
+
+  cluster_customers:
+    description: "Cluster customers into segments"
+    agent: "segmentation_agent"
+    depends_on: ["perform_rfm_analysis"]
+    output: "clustering.log"
+
+  analyze_purchase_patterns:
+    description: "Analyze purchase behavior patterns"
+    agent: "behavior_agent"
+    depends_on: ["clean_data"]
+    parallel_with: ["cluster_customers"]
+    output: "purchase_patterns.log"
+
+  predict_churn:
+    description: "Predict customer churn risk"
+    agent: "churn_agent"
+    depends_on: ["cluster_customers", "analyze_purchase_patterns"]
+    output: "churn_prediction.log"
+
+  calculate_ltv:
+    description: "Calculate customer lifetime value"
+    agent: "lifetime_value_agent"
+    depends_on: ["cluster_customers", "analyze_purchase_patterns"]
+    parallel_with: ["predict_churn"]
+    output: "ltv_calculation.log"
+
+  identify_high_value:
+    description: "Identify high-value customer segments"
+    agent: "lifetime_value_agent"
+    depends_on: ["calculate_ltv"]
+    output: "high_value_segments.log"
+
+  create_dashboard:
+    description: "Create analytics dashboard"
+    agent: "reporting_agent"
+    depends_on: ["predict_churn", "identify_high_value"]
+    output: "analytics_dashboard.html"
+
+workflows:
+  analyze_customers:
+    description: "Customer analytics with segmentation"
+    steps:
+      - stage: "data_collection"
+        agents: ["data_agent"]
+        tasks:
+          - collect_transaction_data:
+              description: "Collect customer transaction history"
+          - collect_interaction_data:
+              description: "Collect customer interaction data"
+          - clean_data:
+              description: "Clean and prepare customer data"
+        mode: sequential
+
+      - stage: "segmentation"
+        agents: ["segmentation_agent", "behavior_agent"]
+        tasks:
+          - perform_rfm_analysis:
+              description: "Perform RFM (Recency, Frequency, Monetary) analysis"
+          - cluster_customers:
+              description: "Cluster customers into segments"
+          - analyze_purchase_patterns:
+              description: "Analyze purchase behavior patterns"
+        mode: sequential
+        depends_on: ["data_collection"]
+
+      - stage: "predictive_analytics"
+        agents: ["churn_agent", "lifetime_value_agent"]
+        tasks:
+          - predict_churn:
+              description: "Predict customer churn risk"
+          - calculate_ltv:
+              description: "Calculate customer lifetime value"
+        mode: parallel
+        depends_on: ["segmentation"]
+
+      - stage: "insights"
+        agents: ["lifetime_value_agent"]
+        tasks:
+          - identify_high_value:
+              description: "Identify high-value customer segments"
+        mode: sequential
+        depends_on: ["predictive_analytics"]
+
+      - stage: "reporting"
+        agents: ["reporting_agent"]
+        tasks:
+          - create_dashboard:
+              description: "Create analytics dashboard"
+        mode: sequential
+        depends_on: ["insights"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting customer analytics'"
+
+      post_workflow:
+        - "echo 'Customer analytics complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

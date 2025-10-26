@@ -1,0 +1,143 @@
+# Data Analysis - Statistical data analysis pipeline
+name: "data_analysis"
+version: "1.0"
+
+agents:
+  ingestion_agent:
+    description: "Ingests and validates data"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/analysis/data"]
+    max_turns: 12
+
+  statistical_agent:
+    description: "Performs statistical analysis"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/analysis/stats"]
+    max_turns: 15
+
+  visualization_agent:
+    description: "Creates data visualizations"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/analysis/viz"]
+    max_turns: 12
+
+  reporting_agent:
+    description: "Generates analysis reports"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/analysis/reports"]
+    max_turns: 10
+
+tasks:
+  ingest_data:
+    description: "Load data from multiple sources"
+    agent: "ingestion_agent"
+    priority: 1
+    output: "ingestion.log"
+
+  validate_data:
+    description: "Validate data quality and completeness"
+    agent: "ingestion_agent"
+    depends_on: ["ingest_data"]
+    output: "validation.log"
+
+  exploratory_analysis:
+    description: "Perform exploratory data analysis"
+    agent: "statistical_agent"
+    depends_on: ["validate_data"]
+    output: "eda.log"
+
+  descriptive_stats:
+    description: "Calculate descriptive statistics"
+    agent: "statistical_agent"
+    depends_on: ["exploratory_analysis"]
+    output: "descriptive_stats.log"
+
+  correlation_analysis:
+    description: "Analyze correlations and relationships"
+    agent: "statistical_agent"
+    depends_on: ["exploratory_analysis"]
+    parallel_with: ["descriptive_stats"]
+    output: "correlation.log"
+
+  create_charts:
+    description: "Create charts and graphs"
+    agent: "visualization_agent"
+    depends_on: ["descriptive_stats", "correlation_analysis"]
+    output: "charts.log"
+
+  create_dashboards:
+    description: "Build interactive dashboards"
+    agent: "visualization_agent"
+    depends_on: ["create_charts"]
+    output: "dashboards.log"
+
+  generate_report:
+    description: "Generate comprehensive analysis report"
+    agent: "reporting_agent"
+    depends_on: ["create_dashboards"]
+    output: "analysis_report.html"
+
+workflows:
+  analyze_data:
+    description: "Complete statistical data analysis with visualization"
+    steps:
+      - stage: "ingestion"
+        agents: ["ingestion_agent"]
+        tasks:
+          - ingest_data:
+              description: "Load data from multiple sources"
+          - validate_data:
+              description: "Validate data quality and completeness"
+        mode: sequential
+
+      - stage: "analysis"
+        agents: ["statistical_agent"]
+        tasks:
+          - exploratory_analysis:
+              description: "Perform exploratory data analysis"
+          - descriptive_stats:
+              description: "Calculate descriptive statistics"
+          - correlation_analysis:
+              description: "Analyze correlations and relationships"
+        mode: sequential
+        depends_on: ["ingestion"]
+
+      - stage: "visualization"
+        agents: ["visualization_agent"]
+        tasks:
+          - create_charts:
+              description: "Create charts and graphs"
+          - create_dashboards:
+              description: "Build interactive dashboards"
+        mode: sequential
+        depends_on: ["analysis"]
+
+      - stage: "reporting"
+        agents: ["reporting_agent"]
+        tasks:
+          - generate_report:
+              description: "Generate comprehensive analysis report"
+        mode: sequential
+        depends_on: ["visualization"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting data analysis pipeline'"
+
+      post_workflow:
+        - "echo 'Analysis complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

@@ -1,0 +1,216 @@
+# Patent Analysis - Patent research and analysis
+name: "patent_analysis"
+version: "1.0"
+
+agents:
+  search_agent:
+    description: "Searches patent databases"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/patents/search"]
+    max_turns: 20
+
+  retrieval_agent:
+    description: "Retrieves patent documents"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/patents/documents"]
+    max_turns: 15
+
+  analysis_agent:
+    description: "Analyzes patent claims and specifications"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/patents/analysis"]
+    max_turns: 25
+
+  landscape_agent:
+    description: "Creates patent landscape analysis"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/patents/landscape"]
+    max_turns: 20
+
+  citation_agent:
+    description: "Analyzes patent citations"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/patents/citations"]
+    max_turns: 15
+
+  reporting_agent:
+    description: "Generates patent analysis reports"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/patents/reports"]
+    max_turns: 15
+
+tasks:
+  define_search_strategy:
+    description: "Define patent search strategy"
+    agent: "search_agent"
+    priority: 1
+    output: "search_strategy.md"
+
+  search_patents:
+    description: "Search patent databases (USPTO, EPO, WIPO)"
+    agent: "search_agent"
+    depends_on: ["define_search_strategy"]
+    output: "patent_search.log"
+
+  filter_results:
+    description: "Filter and rank search results"
+    agent: "search_agent"
+    depends_on: ["search_patents"]
+    output: "filtered_patents.log"
+
+  retrieve_documents:
+    description: "Retrieve patent documents"
+    agent: "retrieval_agent"
+    depends_on: ["filter_results"]
+    output: "document_retrieval.log"
+
+  extract_claims:
+    description: "Extract and parse patent claims"
+    agent: "analysis_agent"
+    depends_on: ["retrieve_documents"]
+    output: "claims_extraction.log"
+
+  analyze_claims:
+    description: "Analyze claim structure and scope"
+    agent: "analysis_agent"
+    depends_on: ["extract_claims"]
+    output: "claims_analysis.log"
+
+  identify_prior_art:
+    description: "Identify prior art references"
+    agent: "citation_agent"
+    depends_on: ["retrieve_documents"]
+    parallel_with: ["analyze_claims"]
+    output: "prior_art.log"
+
+  analyze_citation_network:
+    description: "Analyze patent citation network"
+    agent: "citation_agent"
+    depends_on: ["identify_prior_art"]
+    output: "citation_network.log"
+
+  map_technology_landscape:
+    description: "Map technology landscape"
+    agent: "landscape_agent"
+    depends_on: ["analyze_claims", "analyze_citation_network"]
+    output: "technology_map.log"
+
+  identify_key_players:
+    description: "Identify key patent holders"
+    agent: "landscape_agent"
+    depends_on: ["map_technology_landscape"]
+    output: "key_players.log"
+
+  analyze_trends:
+    description: "Analyze patent filing trends"
+    agent: "landscape_agent"
+    depends_on: ["identify_key_players"]
+    output: "trend_analysis.log"
+
+  assess_freedom_to_operate:
+    description: "Assess freedom to operate"
+    agent: "analysis_agent"
+    depends_on: ["analyze_trends"]
+    output: "freedom_to_operate.log"
+
+  generate_report:
+    description: "Generate comprehensive patent analysis report"
+    agent: "reporting_agent"
+    depends_on: ["assess_freedom_to_operate"]
+    output: "patent_analysis_report.html"
+
+workflows:
+  analyze_patents:
+    description: "Comprehensive patent analysis workflow"
+    steps:
+      - stage: "search"
+        agents: ["search_agent"]
+        tasks:
+          - define_search_strategy:
+              description: "Define patent search strategy"
+          - search_patents:
+              description: "Search patent databases (USPTO, EPO, WIPO)"
+          - filter_results:
+              description: "Filter and rank search results"
+        mode: sequential
+
+      - stage: "retrieval"
+        agents: ["retrieval_agent"]
+        tasks:
+          - retrieve_documents:
+              description: "Retrieve patent documents"
+        mode: sequential
+        depends_on: ["search"]
+
+      - stage: "analysis"
+        agents: ["analysis_agent", "citation_agent"]
+        tasks:
+          - extract_claims:
+              description: "Extract and parse patent claims"
+          - analyze_claims:
+              description: "Analyze claim structure and scope"
+          - identify_prior_art:
+              description: "Identify prior art references"
+        mode: sequential
+        depends_on: ["retrieval"]
+
+      - stage: "citation"
+        agents: ["citation_agent"]
+        tasks:
+          - analyze_citation_network:
+              description: "Analyze patent citation network"
+        mode: sequential
+        depends_on: ["analysis"]
+
+      - stage: "landscape"
+        agents: ["landscape_agent"]
+        tasks:
+          - map_technology_landscape:
+              description: "Map technology landscape"
+          - identify_key_players:
+              description: "Identify key patent holders"
+          - analyze_trends:
+              description: "Analyze patent filing trends"
+        mode: sequential
+        depends_on: ["citation"]
+
+      - stage: "assessment"
+        agents: ["analysis_agent", "reporting_agent"]
+        tasks:
+          - assess_freedom_to_operate:
+              description: "Assess freedom to operate"
+          - generate_report:
+              description: "Generate comprehensive patent analysis report"
+        mode: sequential
+        depends_on: ["landscape"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting patent analysis'"
+
+      post_workflow:
+        - "echo 'Patent analysis complete'"
+
+      on_error:
+        - "echo 'Patent analysis error at: $WORKFLOW_STAGE'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

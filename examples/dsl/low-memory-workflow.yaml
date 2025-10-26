@@ -1,0 +1,62 @@
+# Low-Memory Workflow Example
+#
+# Demonstrates conservative memory settings for resource-constrained environments
+
+name: "Low Memory Workflow"
+version: "1.0.0"
+
+# Conservative limits for minimal memory footprint
+limits:
+  # Very tight output limits
+  max_stdout_bytes: 102400       # 100KB max stdout
+  max_stderr_bytes: 51200        # 50KB max stderr
+  max_combined_bytes: 153600     # 150KB total
+  truncation_strategy: tail      # Keep most recent output
+
+  # Minimal context
+  max_context_bytes: 51200       # 50KB max context
+  max_context_tasks: 3           # Only 3 tasks in context at once
+
+  # Aggressive cleanup
+  cleanup_strategy:
+    type: lru                     # Least Recently Used
+    keep_count: 5                 # Only keep 5 most recent outputs
+
+agents:
+  worker:
+    description: "General purpose worker"
+    model: "claude-sonnet-4-5"
+    tools: [Read, Write, Bash]
+
+tasks:
+  task1:
+    description: "First task in pipeline"
+    agent: "worker"
+    output: "output1.txt"
+
+  task2:
+    description: "Second task - processes task1"
+    agent: "worker"
+    depends_on: [task1]
+    output: "output2.txt"
+
+    # Even more conservative for this specific task
+    limits:
+      max_stdout_bytes: 51200    # 50KB
+      max_context_bytes: 25600   # 25KB
+      max_context_tasks: 2
+
+  task3:
+    description: "Third task - no context needed"
+    agent: "worker"
+    depends_on: [task2]
+    output: "output3.txt"
+
+    # Disable context injection entirely
+    context:
+      mode: none
+
+workflows:
+  main:
+    tasks: [task1, task2, task3]
+    execution_mode: sequential

@@ -1,0 +1,178 @@
+# Disaster Recovery - Backup and recovery procedures
+name: "disaster_recovery"
+version: "1.0"
+
+agents:
+  backup_agent:
+    description: "Manages backups"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/backups"]
+    max_turns: 20
+
+  validation_agent:
+    description: "Validates backups"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/backups"]
+    max_turns: 12
+
+  recovery_agent:
+    description: "Performs recovery operations"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/recovery"]
+    max_turns: 15
+
+  testing_agent:
+    description: "Tests recovery procedures"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/test"]
+    max_turns: 15
+
+tasks:
+  backup_databases:
+    description: "Backup all databases"
+    agent: "backup_agent"
+    priority: 1
+    output: "db_backup.log"
+
+  backup_files:
+    description: "Backup file systems"
+    agent: "backup_agent"
+    priority: 1
+    parallel_with: ["backup_databases"]
+    output: "file_backup.log"
+
+  backup_configurations:
+    description: "Backup configurations and secrets"
+    agent: "backup_agent"
+    priority: 1
+    parallel_with: ["backup_databases", "backup_files"]
+    output: "config_backup.log"
+
+  encrypt_backups:
+    description: "Encrypt backup archives"
+    agent: "backup_agent"
+    depends_on: ["backup_databases", "backup_files", "backup_configurations"]
+    output: "encryption.log"
+
+  upload_to_offsite:
+    description: "Upload backups to offsite storage"
+    agent: "backup_agent"
+    depends_on: ["encrypt_backups"]
+    output: "offsite_upload.log"
+
+  validate_backup_integrity:
+    description: "Validate backup integrity"
+    agent: "validation_agent"
+    depends_on: ["upload_to_offsite"]
+    output: "validation.log"
+
+  create_recovery_plan:
+    description: "Document recovery procedures"
+    agent: "recovery_agent"
+    depends_on: ["validate_backup_integrity"]
+    output: "recovery_plan.md"
+
+  test_database_recovery:
+    description: "Test database restoration"
+    agent: "testing_agent"
+    depends_on: ["create_recovery_plan"]
+    output: "db_recovery_test.log"
+
+  test_file_recovery:
+    description: "Test file system restoration"
+    agent: "testing_agent"
+    depends_on: ["create_recovery_plan"]
+    parallel_with: ["test_database_recovery"]
+    output: "file_recovery_test.log"
+
+  generate_report:
+    description: "Generate disaster recovery report"
+    agent: "validation_agent"
+    depends_on: ["test_database_recovery", "test_file_recovery"]
+    output: "dr_report.html"
+
+workflows:
+  disaster_recovery_plan:
+    description: "Complete disaster recovery backup and testing"
+    steps:
+      - stage: "backup"
+        agents: ["backup_agent"]
+        tasks:
+          - backup_databases:
+              description: "Backup all databases"
+          - backup_files:
+              description: "Backup file systems"
+          - backup_configurations:
+              description: "Backup configurations and secrets"
+        mode: parallel
+
+      - stage: "secure"
+        agents: ["backup_agent"]
+        tasks:
+          - encrypt_backups:
+              description: "Encrypt backup archives"
+          - upload_to_offsite:
+              description: "Upload backups to offsite storage"
+        mode: sequential
+        depends_on: ["backup"]
+
+      - stage: "validate"
+        agents: ["validation_agent"]
+        tasks:
+          - validate_backup_integrity:
+              description: "Validate backup integrity"
+        mode: sequential
+        depends_on: ["secure"]
+
+      - stage: "plan"
+        agents: ["recovery_agent"]
+        tasks:
+          - create_recovery_plan:
+              description: "Document recovery procedures"
+        mode: sequential
+        depends_on: ["validate"]
+
+      - stage: "test"
+        agents: ["testing_agent"]
+        tasks:
+          - test_database_recovery:
+              description: "Test database restoration"
+          - test_file_recovery:
+              description: "Test file system restoration"
+        mode: parallel
+        depends_on: ["plan"]
+
+      - stage: "report"
+        agents: ["validation_agent"]
+        tasks:
+          - generate_report:
+              description: "Generate disaster recovery report"
+        mode: sequential
+        depends_on: ["test"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting disaster recovery procedures'"
+        - command: "mkdir -p /backups /recovery /test"
+          description: "Create backup directories"
+
+      post_workflow:
+        - "echo 'Disaster recovery procedures complete'"
+
+      on_error:
+        - "echo 'DR procedure failed at: $WORKFLOW_STAGE'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

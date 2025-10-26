@@ -1,0 +1,191 @@
+# Price Optimization - Dynamic pricing system
+name: "price_optimization"
+version: "1.0"
+
+agents:
+  market_agent:
+    description: "Analyzes market conditions"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/pricing/market"]
+    max_turns: 15
+
+  competitor_agent:
+    description: "Monitors competitor pricing"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/pricing/competitors"]
+    max_turns: 15
+
+  demand_agent:
+    description: "Forecasts demand elasticity"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/pricing/demand"]
+    max_turns: 20
+
+  optimization_agent:
+    description: "Optimizes pricing strategies"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/pricing/optimization"]
+    max_turns: 20
+
+  testing_agent:
+    description: "Performs A/B testing"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/pricing/testing"]
+    max_turns: 12
+
+  implementation_agent:
+    description: "Implements price changes"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/pricing/implementation"]
+    max_turns: 10
+
+tasks:
+  analyze_market_trends:
+    description: "Analyze market trends and seasonality"
+    agent: "market_agent"
+    priority: 1
+    output: "market_analysis.log"
+
+  scrape_competitor_prices:
+    description: "Collect competitor pricing data"
+    agent: "competitor_agent"
+    priority: 1
+    parallel_with: ["analyze_market_trends"]
+    output: "competitor_prices.log"
+
+  analyze_historical_sales:
+    description: "Analyze historical sales data"
+    agent: "demand_agent"
+    depends_on: ["analyze_market_trends"]
+    output: "sales_analysis.log"
+
+  calculate_price_elasticity:
+    description: "Calculate demand price elasticity"
+    agent: "demand_agent"
+    depends_on: ["analyze_historical_sales"]
+    output: "elasticity.log"
+
+  identify_price_corridors:
+    description: "Identify acceptable price ranges"
+    agent: "optimization_agent"
+    depends_on: ["scrape_competitor_prices", "calculate_price_elasticity"]
+    output: "price_corridors.log"
+
+  optimize_prices:
+    description: "Calculate optimal prices"
+    agent: "optimization_agent"
+    depends_on: ["identify_price_corridors"]
+    output: "optimized_prices.log"
+
+  simulate_revenue:
+    description: "Simulate revenue impact"
+    agent: "optimization_agent"
+    depends_on: ["optimize_prices"]
+    output: "revenue_simulation.log"
+
+  design_ab_test:
+    description: "Design A/B pricing test"
+    agent: "testing_agent"
+    depends_on: ["simulate_revenue"]
+    output: "ab_test_design.log"
+
+  implement_test_prices:
+    description: "Implement test pricing"
+    agent: "implementation_agent"
+    depends_on: ["design_ab_test"]
+    output: "test_implementation.log"
+
+  monitor_results:
+    description: "Monitor test results"
+    agent: "testing_agent"
+    depends_on: ["implement_test_prices"]
+    output: "test_monitoring.log"
+
+  implement_final_prices:
+    description: "Implement final optimized prices"
+    agent: "implementation_agent"
+    depends_on: ["monitor_results"]
+    output: "final_implementation.log"
+
+workflows:
+  optimize_pricing:
+    description: "Dynamic pricing optimization system"
+    steps:
+      - stage: "data_collection"
+        agents: ["market_agent", "competitor_agent"]
+        tasks:
+          - analyze_market_trends:
+              description: "Analyze market trends and seasonality"
+          - scrape_competitor_prices:
+              description: "Collect competitor pricing data"
+        mode: parallel
+
+      - stage: "demand_analysis"
+        agents: ["demand_agent"]
+        tasks:
+          - analyze_historical_sales:
+              description: "Analyze historical sales data"
+          - calculate_price_elasticity:
+              description: "Calculate demand price elasticity"
+        mode: sequential
+        depends_on: ["data_collection"]
+
+      - stage: "optimization"
+        agents: ["optimization_agent"]
+        tasks:
+          - identify_price_corridors:
+              description: "Identify acceptable price ranges"
+          - optimize_prices:
+              description: "Calculate optimal prices"
+          - simulate_revenue:
+              description: "Simulate revenue impact"
+        mode: sequential
+        depends_on: ["demand_analysis"]
+
+      - stage: "testing"
+        agents: ["testing_agent", "implementation_agent"]
+        tasks:
+          - design_ab_test:
+              description: "Design A/B pricing test"
+          - implement_test_prices:
+              description: "Implement test pricing"
+          - monitor_results:
+              description: "Monitor test results"
+        mode: sequential
+        depends_on: ["optimization"]
+
+      - stage: "implementation"
+        agents: ["implementation_agent"]
+        tasks:
+          - implement_final_prices:
+              description: "Implement final optimized prices"
+        mode: sequential
+        depends_on: ["testing"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting price optimization'"
+
+      post_workflow:
+        - "echo 'Price optimization complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

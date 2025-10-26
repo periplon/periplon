@@ -1,0 +1,80 @@
+# Collaborative Research Workflow
+# This workflow demonstrates inter-agent communication using channels
+
+name: "Collaborative Research"
+version: "1.0.0"
+
+agents:
+  data_researcher:
+    description: "Collects and analyzes data"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - WebSearch
+      - Write
+    permissions:
+      mode: "acceptEdits"
+
+  ml_specialist:
+    description: "Machine learning expert"
+    model: "claude-opus-4"
+    tools:
+      - Read
+      - Write
+    permissions:
+      mode: "acceptEdits"
+
+  report_writer:
+    description: "Writes comprehensive reports"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - Write
+      - Edit
+    permissions:
+      mode: "acceptEdits"
+
+communication:
+  channels:
+    research_findings:
+      description: "Share research findings and insights"
+      participants:
+        - data_researcher
+        - ml_specialist
+        - report_writer
+      message_format: "markdown"
+
+    ml_insights:
+      description: "Machine learning analysis and recommendations"
+      participants:
+        - ml_specialist
+        - report_writer
+      message_format: "json"
+
+tasks:
+  research_project:
+    description: "Collaborative research project"
+
+    subtasks:
+      - collect_data:
+          description: "Collect and analyze data"
+          agent: "data_researcher"
+          output: "data_analysis.md"
+
+      - ml_analysis:
+          description: "Perform ML analysis on collected data"
+          agent: "ml_specialist"
+          depends_on:
+            - collect_data
+          output: "ml_findings.json"
+
+      - write_report:
+          description: "Write comprehensive research report"
+          agent: "report_writer"
+          depends_on:
+            - collect_data
+            - ml_analysis
+          output: "research_report.md"
+
+    on_complete:
+      notify: "Research project completed successfully"

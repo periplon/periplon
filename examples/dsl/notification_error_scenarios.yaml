@@ -1,0 +1,580 @@
+name: "Notification Error Handling Demo"
+version: "1.0.0"
+description: |
+  Comprehensive demonstration of error handling in notification systems.
+  This example showcases:
+  - Notifications triggered by task failures
+  - Retry notifications with attempt tracking
+  - Fallback channel chains when primary channels fail
+  - Error message interpolation with context
+  - Notification delivery failures and retry strategies
+  - Graceful degradation patterns
+  - Error escalation workflows
+  - Recovery notifications
+
+# Secrets for notification channels
+secrets:
+  slack_webhook:
+    source:
+      type: env
+      var: SLACK_WEBHOOK_URL
+    description: "Slack incoming webhook URL"
+
+  ntfy_auth_token:
+    source:
+      type: env
+      var: NTFY_AUTH_TOKEN
+    description: "Ntfy.sh authentication token"
+
+  pagerduty_key:
+    source:
+      type: env
+      var: PAGERDUTY_INTEGRATION_KEY
+    description: "PagerDuty integration key for critical alerts"
+
+# Workflow inputs
+inputs:
+  project_name:
+    type: string
+    required: true
+    default: "Error Handling Demo"
+    description: "Project name for error notifications"
+
+  environment:
+    type: string
+    required: false
+    default: "staging"
+    description: "Target environment"
+
+  error_threshold:
+    type: number
+    required: false
+    default: 3
+    description: "Number of failures before escalation"
+
+# Default notification settings with fallback chain
+notifications:
+  notify_on_start: true
+  notify_on_completion: true
+  notify_on_failure: true
+  default_channels:
+    # Primary: Console for immediate feedback
+    - type: console
+      colored: true
+      timestamp: true
+    # Fallback: File logging (always works)
+    - type: file
+      path: "./logs/workflow-errors.log"
+      append: true
+      timestamp: true
+      format: json
+
+agents:
+  error_test_agent:
+    description: "Agent for testing error scenarios"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - Write
+      - Bash
+    permissions:
+      mode: acceptEdits
+    max_turns: 5
+
+  recovery_agent:
+    description: "Agent for recovery operations"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - Write
+      - Bash
+    permissions:
+      mode: acceptEdits
+    max_turns: 3
+
+tasks:
+  # Task 1: Simple failure with error notification
+  task_with_simple_failure:
+    description: |
+      This task will fail intentionally to demonstrate basic error notifications.
+      The on_error notification will be triggered.
+    agent: error_test_agent
+    on_error:
+      retry: 0
+      fallback_agent: recovery_agent
+    on_complete:
+      notify:
+        message: "Task completed successfully (this should not appear)"
+        channels:
+          - type: console
+            colored: true
+            timestamp: true
+    definition_of_done:
+      criteria:
+        - type: file_exists
+          path: "/tmp/nonexistent-file-simple.txt"
+          description: "This file does not exist (intentional failure)"
+      max_retries: 0
+      fail_on_unmet: true
+
+  # Task 2: Failure with retry notifications
+  task_with_retry_notifications:
+    description: |
+      This task demonstrates retry notifications.
+      Each retry attempt will trigger a notification.
+    agent: error_test_agent
+    depends_on:
+      - task_with_simple_failure
+    condition:
+      type: task_status
+      task: task_with_simple_failure
+      status: failed
+    on_error:
+      retry: 3
+      retry_delay_secs: 2
+      exponential_backoff: true
+    on_complete:
+      notify:
+        message: |
+          **Retry Test Completed**
+          Project: ${workflow.project_name}
+          This task completed after retries.
+        channels:
+          - type: ntfy
+            server: "https://ntfy.sh"
+            topic: "error-demo"
+            title: "Retry Success"
+            priority: 3
+            tags: ["white_check_mark", "repeat"]
+            markdown: true
+    definition_of_done:
+      criteria:
+        - type: command_succeeds
+          command: "false"
+          description: "This command always fails"
+      max_retries: 2
+      fail_on_unmet: true
+
+  # Task 3: Error with fallback channel chain
+  task_with_fallback_chain:
+    description: |
+      Demonstrates fallback channel chain.
+      Primary channel may fail, fallback channels should succeed.
+    agent: error_test_agent
+    depends_on:
+      - task_with_retry_notifications
+    condition:
+      type: always
+    on_complete:
+      notify:
+        message: |
+          **Fallback Chain Test**
+
+          This notification attempts multiple channels in order:
+          1. Primary: Ntfy.sh (may fail if not configured)
+          2. Secondary: Slack (may fail if not configured)
+          3. Tertiary: Console (always succeeds)
+          4. Final: File log (always succeeds)
+        title: "Fallback Chain Test"
+        priority: normal
+        channels:
+          # Primary channel (may fail)
+          - type: ntfy
+            server: "https://ntfy.sh"
+            topic: "error-demo"
+            title: "Primary Channel"
+            priority: 3
+            tags: ["one"]
+            auth_token: "${secret.ntfy_auth_token}"
+
+          # Secondary channel (may fail)
+          - type: slack
+            credential: "${secret.slack_webhook}"
+            channel: "#errors"
+            method: webhook
+            attachments:
+              - text: "Secondary fallback channel"
+                color: "warning"
+
+          # Tertiary channel (reliable)
+          - type: console
+            colored: true
+            timestamp: true
+
+          # Final fallback (always works)
+          - type: file
+            path: "./logs/fallback-test.log"
+            append: true
+            timestamp: true
+            format: text
+
+  # Task 4: Error with detailed context interpolation
+  task_with_error_context:
+    description: |
+      Demonstrates error message interpolation with detailed context.
+      Shows task name, error details, environment, and retry count.
+    agent: error_test_agent
+    depends_on:
+      - task_with_fallback_chain
+    on_error:
+      retry: 2
+      retry_delay_secs: 3
+    on_complete:
+      notify: "This should not appear - task will fail"
+    definition_of_done:
+      criteria:
+        - type: file_exists
+          path: "/tmp/error-context-test.txt"
+          description: "Missing file for error context demo"
+        - type: command_succeeds
+          command: "exit"
+          args: ["1"]
+          description: "Command that exits with failure"
+      max_retries: 1
+      fail_on_unmet: true
+
+  # Task 5: Critical error with escalation
+  critical_task_with_escalation:
+    description: |
+      Simulates a critical failure that triggers escalation.
+      Uses high-priority notifications and PagerDuty integration.
+    agent: error_test_agent
+    depends_on:
+      - task_with_error_context
+    condition:
+      type: task_status
+      task: task_with_error_context
+      status: failed
+    on_error:
+      retry: 1
+      retry_delay_secs: 5
+      fallback_agent: recovery_agent
+    on_complete:
+      notify:
+        message: "Critical task completed (should not appear)"
+        channels:
+          - type: console
+            colored: true
+            timestamp: true
+    definition_of_done:
+      criteria:
+        - type: tests_passed
+          command: "false"
+          description: "Simulated test failure"
+      max_retries: 0
+      fail_on_unmet: true
+
+  # Task 6: Notification delivery failure handling
+  task_with_notification_retry:
+    description: |
+      Demonstrates notification delivery retry logic.
+      Uses webhook with custom retry configuration.
+    agent: error_test_agent
+    depends_on:
+      - critical_task_with_escalation
+    condition:
+      type: always
+    on_complete:
+      notify:
+        message: |
+          **Notification Retry Test**
+
+          Project: ${workflow.project_name}
+          Environment: ${workflow.environment}
+
+          This notification uses aggressive retry settings.
+        title: "Retry Configuration Demo"
+        priority: high
+        channels:
+          # Webhook with custom retry
+          - type: webhook
+            url: "https://httpstat.us/500"
+            method: POST
+            headers:
+              Content-Type: "application/json"
+            body_template: |
+              {
+                "project": "${workflow.project_name}",
+                "environment": "${workflow.environment}",
+                "message": "Testing notification retry",
+                "timestamp": "{{timestamp}}"
+              }
+            timeout_secs: 10
+            retry:
+              max_attempts: 5
+              delay_secs: 2
+              exponential_backoff: true
+
+          # Console fallback
+          - type: console
+            colored: true
+            timestamp: true
+
+          # File fallback
+          - type: file
+            path: "./logs/notification-retry.log"
+            append: true
+            timestamp: true
+            format: json
+
+  # Task 7: Recovery notification after errors
+  recovery_task:
+    description: |
+      Recovery task that runs after errors.
+      Sends recovery notification when system is restored.
+    agent: recovery_agent
+    depends_on:
+      - task_with_notification_retry
+    condition:
+      type: always
+    on_complete:
+      notify:
+        message: |
+          **System Recovery Complete**
+
+          Project: ${workflow.project_name}
+          Environment: ${workflow.environment}
+
+          Previous errors have been handled:
+          - Task failures captured
+          - Retry logic executed
+          - Fallback channels tested
+          - Error escalation verified
+
+          System is now operational.
+        title: "Recovery Complete"
+        priority: normal
+        channels:
+          - type: ntfy
+            server: "https://ntfy.sh"
+            topic: "error-demo"
+            title: "Recovery"
+            priority: 3
+            tags: ["green_heart", "arrows_counterclockwise"]
+            markdown: true
+
+          - type: console
+            colored: true
+            timestamp: true
+
+          - type: file
+            path: "./logs/recovery.log"
+            append: true
+            timestamp: true
+            format: text
+
+  # Task 8: Multiple failure modes
+  task_with_multiple_failures:
+    description: |
+      Demonstrates handling multiple types of failures:
+      - File not found
+      - Command failure
+      - Pattern mismatch
+    agent: error_test_agent
+    depends_on:
+      - recovery_task
+    on_error:
+      retry: 2
+      retry_delay_secs: 3
+      exponential_backoff: true
+    on_complete:
+      notify:
+        message: "All criteria met (should not appear)"
+        channels:
+          - type: console
+            colored: true
+            timestamp: true
+    definition_of_done:
+      criteria:
+        - type: file_exists
+          path: "/tmp/multi-failure-1.txt"
+          description: "First missing file"
+        - type: file_exists
+          path: "/tmp/multi-failure-2.txt"
+          description: "Second missing file"
+        - type: command_succeeds
+          command: "grep"
+          args: ["nonexistent", "/dev/null"]
+          description: "Grep command that fails"
+      max_retries: 1
+      fail_on_unmet: true
+
+  # Task 9: Conditional error notification
+  conditional_error_notification:
+    description: |
+      Sends different notifications based on which previous tasks failed.
+      Demonstrates conditional error handling logic.
+    agent: error_test_agent
+    depends_on:
+      - task_with_multiple_failures
+    condition:
+      or:
+        - type: task_status
+          task: task_with_multiple_failures
+          status: failed
+        - type: task_status
+          task: critical_task_with_escalation
+          status: failed
+    on_complete:
+      notify:
+        message: |
+          **Conditional Error Analysis**
+
+          Project: ${workflow.project_name}
+
+          Analysis of upstream failures:
+          - Multiple failure modes detected
+          - Error patterns identified
+          - Remediation steps recommended
+        title: "Error Analysis"
+        priority: normal
+        channels:
+          - type: console
+            colored: true
+            timestamp: true
+
+          - type: file
+            path: "./logs/error-analysis.log"
+            append: true
+            timestamp: true
+            format: json
+
+  # Task 10: Graceful degradation notification
+  graceful_degradation_test:
+    description: |
+      Demonstrates graceful degradation when channels fail.
+      System continues operating with reduced notification coverage.
+    agent: error_test_agent
+    depends_on:
+      - conditional_error_notification
+    on_complete:
+      notify:
+        message: |
+          **Graceful Degradation Test**
+
+          This notification tests graceful degradation:
+          - Primary channels may be unavailable
+          - Secondary channels provide coverage
+          - System continues operating
+          - No critical functionality lost
+
+          Project: ${workflow.project_name}
+          Environment: ${workflow.environment}
+        title: "Graceful Degradation"
+        priority: low
+        channels:
+          # Primary (may fail)
+          - type: ntfy
+            server: "https://ntfy.sh"
+            topic: "error-demo"
+            priority: 2
+            tags: ["info"]
+
+          # Secondary (may fail)
+          - type: slack
+            credential: "${secret.slack_webhook}"
+            channel: "#monitoring"
+            method: webhook
+
+          # Tertiary (reliable)
+          - type: console
+            colored: true
+            timestamp: true
+
+          # Always works
+          - type: file
+            path: "./logs/graceful-degradation.log"
+            append: true
+            timestamp: true
+            format: text
+
+  # Task 11: Error summary with statistics
+  error_summary:
+    description: |
+      Generate comprehensive error summary.
+      Aggregates all errors and sends final report.
+    agent: error_test_agent
+    depends_on:
+      - graceful_degradation_test
+    on_complete:
+      notify:
+        message: |
+          **Error Handling Demo Complete**
+
+          Project: ${workflow.project_name}
+          Environment: ${workflow.environment}
+
+          **Summary:**
+          ✅ Simple failure handling
+          ✅ Retry notifications
+          ✅ Fallback channel chains
+          ✅ Error context interpolation
+          ✅ Critical error escalation
+          ✅ Notification delivery retries
+          ✅ Recovery procedures
+          ✅ Multiple failure modes
+          ✅ Conditional error handling
+          ✅ Graceful degradation
+
+          **Key Features Demonstrated:**
+          - Task failure notifications
+          - Retry attempt tracking
+          - Multi-level fallback chains
+          - Dynamic error message interpolation
+          - Notification delivery resilience
+          - Error recovery workflows
+          - Priority-based escalation
+          - Conditional notification logic
+
+          All error handling scenarios tested successfully!
+        title: "Demo Complete"
+        priority: normal
+        channels:
+          - type: console
+            colored: true
+            timestamp: true
+
+          - type: ntfy
+            server: "https://ntfy.sh"
+            topic: "error-demo"
+            title: "Demo Summary"
+            priority: 4
+            tags: ["trophy", "chart_with_upwards_trend"]
+            markdown: true
+
+          - type: file
+            path: "./logs/error-summary.log"
+            append: true
+            timestamp: true
+            format: json
+
+          - type: file
+            path: "./logs/error-summary.txt"
+            append: false
+            timestamp: true
+            format: text
+
+  # Task 12: Cleanup and final verification
+  cleanup_task:
+    description: |
+      Cleanup task that verifies error handling system.
+      Ensures all logs and notifications were properly recorded.
+    agent: error_test_agent
+    depends_on:
+      - error_summary
+    on_complete:
+      notify:
+        message: |
+          Cleanup complete for ${workflow.project_name}.
+          All error scenarios tested and verified.
+          Logs available in ./logs/ directory.
+        channels:
+          - type: console
+            colored: true
+            timestamp: true
+
+          - type: file
+            path: "./logs/cleanup.log"
+            append: true
+            timestamp: true
+            format: text

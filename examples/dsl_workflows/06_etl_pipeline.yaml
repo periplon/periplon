@@ -1,0 +1,168 @@
+# ETL Pipeline - Extract, Transform, Load data processing
+name: "etl_pipeline"
+version: "1.0"
+
+agents:
+  extract_agent:
+    description: "Extracts data from multiple sources"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/data/raw"]
+    max_turns: 15
+
+  transform_agent:
+    description: "Transforms and cleans data"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/data/processed"]
+    max_turns: 20
+
+  load_agent:
+    description: "Loads data into target systems"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/data/warehouse"]
+    max_turns: 12
+
+  validation_agent:
+    description: "Validates data quality"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/data"]
+    max_turns: 10
+
+tasks:
+  extract_database:
+    description: "Extract data from relational databases"
+    agent: "extract_agent"
+    priority: 1
+    parallel_with: ["extract_api", "extract_files"]
+    output: "db_extract.log"
+    on_error:
+      retry: 3
+      retry_delay_secs: 10
+      exponential_backoff: true
+
+  extract_api:
+    description: "Extract data from REST APIs"
+    agent: "extract_agent"
+    priority: 1
+    parallel_with: ["extract_database", "extract_files"]
+    output: "api_extract.log"
+    on_error:
+      retry: 3
+      retry_delay_secs: 10
+      exponential_backoff: true
+
+  extract_files:
+    description: "Extract data from CSV and JSON files"
+    agent: "extract_agent"
+    priority: 1
+    parallel_with: ["extract_database", "extract_api"]
+    output: "file_extract.log"
+    on_error:
+      retry: 3
+      retry_delay_secs: 10
+      exponential_backoff: true
+
+  validate_extraction:
+    description: "Validate extracted data completeness"
+    agent: "validation_agent"
+    depends_on: ["extract_database", "extract_api", "extract_files"]
+    output: "extraction_validation.log"
+
+  clean_data:
+    description: "Clean and normalize data"
+    agent: "transform_agent"
+    depends_on: ["validate_extraction"]
+    output: "data_cleaning.log"
+
+  transform_data:
+    description: "Apply business logic transformations"
+    agent: "transform_agent"
+    depends_on: ["clean_data"]
+    output: "data_transform.log"
+
+  validate_transformation:
+    description: "Validate transformed data quality"
+    agent: "validation_agent"
+    depends_on: ["transform_data"]
+    output: "transform_validation.log"
+
+  load_warehouse:
+    description: "Load data into data warehouse"
+    agent: "load_agent"
+    depends_on: ["validate_transformation"]
+    output: "warehouse_load.log"
+
+workflows:
+  etl_process:
+    description: "End-to-end ETL data pipeline with exponential backoff"
+    steps:
+      - stage: "extract"
+        agents: ["extract_agent"]
+        tasks:
+          - extract_database:
+              description: "Extract data from relational databases"
+          - extract_api:
+              description: "Extract data from REST APIs"
+          - extract_files:
+              description: "Extract data from CSV and JSON files"
+        mode: parallel
+
+      - stage: "validate_extract"
+        agents: ["validation_agent"]
+        tasks:
+          - validate_extraction:
+              description: "Validate extracted data completeness"
+        mode: sequential
+        depends_on: ["extract"]
+
+      - stage: "transform"
+        agents: ["transform_agent"]
+        tasks:
+          - clean_data:
+              description: "Clean and normalize data"
+          - transform_data:
+              description: "Apply business logic transformations"
+        mode: sequential
+        depends_on: ["validate_extract"]
+
+      - stage: "validate_transform"
+        agents: ["validation_agent"]
+        tasks:
+          - validate_transformation:
+              description: "Validate transformed data quality"
+        mode: sequential
+        depends_on: ["transform"]
+
+      - stage: "load"
+        agents: ["load_agent"]
+        tasks:
+          - load_warehouse:
+              description: "Load data into data warehouse"
+        mode: sequential
+        depends_on: ["validate_transform"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting ETL pipeline'"
+        - command: "mkdir -p /data/raw /data/processed /data/warehouse"
+          description: "Create data directories"
+
+      post_workflow:
+        - "echo 'ETL pipeline complete'"
+
+      on_error:
+        - "echo 'ETL error at stage: $WORKFLOW_STAGE'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

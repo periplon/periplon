@@ -1,0 +1,48 @@
+name: "Parallel ForEach Demo"
+version: "1.0.0"
+description: "Demonstrates parallel ForEach loop execution with concurrency limiting"
+
+agents:
+  worker_agent:
+    description: "Agent that processes items in parallel"
+    tools: []
+    permissions:
+      mode: "default"
+
+  batch_processor:
+    description: "Agent that handles batch processing"
+    tools: []
+    permissions:
+      mode: "default"
+
+tasks:
+  process_items_parallel:
+    description: "Process item {{item}} concurrently"
+    agent: "worker_agent"
+    loop:
+      type: for_each
+      collection:
+        source: inline
+        items: ["file1.txt", "file2.txt", "file3.txt", "file4.txt", "file5.txt"]
+      iterator: "item"
+      parallel: true
+      max_parallel: 3  # Process up to 3 items concurrently
+    loop_control:
+      collect_results: true
+      result_key: "processing_results"
+
+  batch_process_range:
+    description: "Batch {{num}}: Processing range items in parallel"
+    agent: "batch_processor"
+    loop:
+      type: for_each
+      collection:
+        source: range
+        start: 0
+        end: 10
+        step: 1
+      iterator: "num"
+      parallel: true
+      max_parallel: 5  # Process up to 5 at once
+    loop_control:
+      collect_results: true

@@ -1,0 +1,235 @@
+name: "Hierarchical Task Groups"
+version: "1.0.0"
+description: |
+  Demonstrates hierarchical group organization:
+  - Nested task groups (groups within groups)
+  - Parent-child group relationships
+  - Inheritance of group properties
+  - Scoped error handling and timeouts
+
+inputs:
+  service_name:
+    type: string
+    required: true
+    description: "Name of the service to deploy"
+
+  environment:
+    type: string
+    required: true
+    description: "Target environment (dev, staging, prod)"
+
+agents:
+  builder:
+    description: "Builds and packages applications"
+    tools: [Bash, Read, Write]
+    permissions:
+      mode: "acceptEdits"
+
+  tester:
+    description: "Runs tests and validations"
+    tools: [Bash, Read]
+    permissions:
+      mode: "default"
+
+  deployer:
+    description: "Handles deployment operations"
+    tools: [Bash, Read, Write]
+    permissions:
+      mode: "acceptEdits"
+
+task_groups:
+  # Root group: Complete deployment pipeline
+  full_deployment:
+    description: "Complete deployment pipeline for ${workflow.service_name}"
+    execution_mode: "sequential"
+    groups:
+      - build_and_test
+      - deploy_and_verify
+
+    on_error: "stop"
+    timeout: 1800  # 30 minutes for entire deployment
+
+  # Level 1: Build and Test phase
+  build_and_test:
+    description: "Build and test ${workflow.service_name}"
+    parent: "full_deployment"
+    execution_mode: "sequential"
+    groups:
+      - build_phase
+      - test_phase
+
+    on_error: "stop"
+    timeout: 900  # 15 minutes
+
+  # Level 2: Build phase
+  build_phase:
+    description: "Build all components"
+    parent: "build_and_test"
+    execution_mode: "parallel"
+    tasks:
+      - compile_code
+      - build_assets
+      - create_container
+
+    max_concurrency: 3
+    on_error: "stop"
+    timeout: 300
+
+  # Level 2: Test phase
+  test_phase:
+    description: "Run all test suites"
+    parent: "build_and_test"
+    execution_mode: "parallel"
+    groups:
+      - unit_tests
+      - integration_tests
+
+    depends_on: [build_phase]
+    on_error: "continue"  # Collect all test failures
+    timeout: 600
+
+  # Level 3: Unit tests
+  unit_tests:
+    description: "Run unit tests"
+    parent: "test_phase"
+    execution_mode: "parallel"
+    tasks:
+      - test_backend
+      - test_frontend
+      - test_api
+
+    max_concurrency: 3
+
+  # Level 3: Integration tests
+  integration_tests:
+    description: "Run integration tests"
+    parent: "test_phase"
+    execution_mode: "sequential"
+    tasks:
+      - test_database
+      - test_services
+      - test_e2e
+
+  # Level 1: Deploy and Verify phase
+  deploy_and_verify:
+    description: "Deploy and verify ${workflow.service_name} to ${workflow.environment}"
+    parent: "full_deployment"
+    execution_mode: "sequential"
+    groups:
+      - deployment
+      - verification
+
+    depends_on: [build_and_test]
+    on_error: "rollback"  # Custom error handling
+
+  # Level 2: Deployment
+  deployment:
+    description: "Deploy to ${workflow.environment}"
+    parent: "deploy_and_verify"
+    execution_mode: "sequential"
+    tasks:
+      - backup_current
+      - deploy_new
+      - update_config
+
+    timeout: 300
+
+  # Level 2: Verification
+  verification:
+    description: "Verify deployment"
+    parent: "deploy_and_verify"
+    execution_mode: "parallel"
+    tasks:
+      - health_check
+      - smoke_tests
+      - performance_check
+
+    depends_on: [deployment]
+    max_concurrency: 3
+    timeout: 180
+
+tasks:
+  # Build phase tasks
+  compile_code:
+    description: "Compile ${workflow.service_name} source code"
+    agent: "builder"
+    group: "build_phase"
+
+  build_assets:
+    description: "Build static assets"
+    agent: "builder"
+    group: "build_phase"
+
+  create_container:
+    description: "Create container image"
+    agent: "builder"
+    group: "build_phase"
+    depends_on: [compile_code]
+
+  # Unit test tasks
+  test_backend:
+    description: "Run backend unit tests"
+    agent: "tester"
+    group: "unit_tests"
+
+  test_frontend:
+    description: "Run frontend unit tests"
+    agent: "tester"
+    group: "unit_tests"
+
+  test_api:
+    description: "Run API unit tests"
+    agent: "tester"
+    group: "unit_tests"
+
+  # Integration test tasks
+  test_database:
+    description: "Test database integration"
+    agent: "tester"
+    group: "integration_tests"
+
+  test_services:
+    description: "Test service integration"
+    agent: "tester"
+    group: "integration_tests"
+    depends_on: [test_database]
+
+  test_e2e:
+    description: "Run end-to-end tests"
+    agent: "tester"
+    group: "integration_tests"
+    depends_on: [test_services]
+
+  # Deployment tasks
+  backup_current:
+    description: "Backup current ${workflow.environment} deployment"
+    agent: "deployer"
+    group: "deployment"
+
+  deploy_new:
+    description: "Deploy new version to ${workflow.environment}"
+    agent: "deployer"
+    group: "deployment"
+    depends_on: [backup_current]
+
+  update_config:
+    description: "Update configuration for ${workflow.environment}"
+    agent: "deployer"
+    group: "deployment"
+    depends_on: [deploy_new]
+
+  # Verification tasks
+  health_check:
+    description: "Run health checks"
+    agent: "tester"
+    group: "verification"
+
+  smoke_tests:
+    description: "Run smoke tests"
+    agent: "tester"
+    group: "verification"
+
+  performance_check:
+    description: "Check performance metrics"
+    agent: "tester"
+    group: "verification"

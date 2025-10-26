@@ -1,0 +1,186 @@
+# Medical Image Analysis - Diagnostic image analysis
+name: "medical_imaging"
+version: "1.0"
+
+agents:
+  acquisition_agent:
+    description: "Acquires and validates medical images"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/imaging/raw"]
+    max_turns: 12
+
+  preprocessing_agent:
+    description: "Preprocesses medical images"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/imaging/processed"]
+    max_turns: 15
+
+  analysis_agent:
+    description: "Analyzes images with AI models"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/imaging/analysis"]
+    max_turns: 20
+
+  fallback_analysis_agent:
+    description: "Fallback image analysis agent"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/imaging/analysis"]
+    max_turns: 20
+
+  reporting_agent:
+    description: "Generates diagnostic reports"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/imaging/reports"]
+    max_turns: 10
+
+  quality_agent:
+    description: "Performs quality assurance"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/imaging"]
+    max_turns: 10
+
+tasks:
+  acquire_images:
+    description: "Acquire medical images from PACS"
+    agent: "acquisition_agent"
+    priority: 1
+    output: "acquisition.log"
+    on_error:
+      retry: 3
+      retry_delay_secs: 10
+      exponential_backoff: true
+
+  validate_dicom:
+    description: "Validate DICOM format and metadata"
+    agent: "acquisition_agent"
+    depends_on: ["acquire_images"]
+    output: "dicom_validation.log"
+
+  denoise_images:
+    description: "Apply denoising filters"
+    agent: "preprocessing_agent"
+    depends_on: ["validate_dicom"]
+    output: "denoising.log"
+
+  normalize_intensity:
+    description: "Normalize image intensity"
+    agent: "preprocessing_agent"
+    depends_on: ["denoise_images"]
+    output: "normalization.log"
+
+  segment_regions:
+    description: "Segment anatomical regions"
+    agent: "analysis_agent"
+    depends_on: ["normalize_intensity"]
+    output: "segmentation.log"
+    on_error:
+      retry: 2
+      retry_delay_secs: 15
+      exponential_backoff: true
+      fallback_agent: "fallback_analysis_agent"
+
+  detect_abnormalities:
+    description: "Detect potential abnormalities"
+    agent: "analysis_agent"
+    depends_on: ["segment_regions"]
+    output: "detection.log"
+
+  measure_features:
+    description: "Measure diagnostic features"
+    agent: "analysis_agent"
+    depends_on: ["detect_abnormalities"]
+    output: "measurements.log"
+
+  qa_review:
+    description: "Quality assurance review"
+    agent: "quality_agent"
+    depends_on: ["measure_features"]
+    output: "qa_review.log"
+
+  generate_report:
+    description: "Generate diagnostic report"
+    agent: "reporting_agent"
+    depends_on: ["qa_review"]
+    output: "diagnostic_report.html"
+
+workflows:
+  analyze_medical_images:
+    description: "Medical imaging analysis with fallback and exponential backoff"
+    steps:
+      - stage: "acquisition"
+        agents: ["acquisition_agent"]
+        tasks:
+          - acquire_images:
+              description: "Acquire medical images from PACS"
+          - validate_dicom:
+              description: "Validate DICOM format and metadata"
+        mode: sequential
+
+      - stage: "preprocessing"
+        agents: ["preprocessing_agent"]
+        tasks:
+          - denoise_images:
+              description: "Apply denoising filters"
+          - normalize_intensity:
+              description: "Normalize image intensity"
+        mode: sequential
+        depends_on: ["acquisition"]
+
+      - stage: "analysis"
+        agents: ["analysis_agent", "fallback_analysis_agent"]
+        tasks:
+          - segment_regions:
+              description: "Segment anatomical regions"
+          - detect_abnormalities:
+              description: "Detect potential abnormalities"
+          - measure_features:
+              description: "Measure diagnostic features"
+        mode: sequential
+        depends_on: ["preprocessing"]
+
+      - stage: "quality_assurance"
+        agents: ["quality_agent"]
+        tasks:
+          - qa_review:
+              description: "Quality assurance review"
+        mode: sequential
+        depends_on: ["analysis"]
+
+      - stage: "reporting"
+        agents: ["reporting_agent"]
+        tasks:
+          - generate_report:
+              description: "Generate diagnostic report"
+        mode: sequential
+        depends_on: ["quality_assurance"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting medical image analysis'"
+
+      post_workflow:
+        - "echo 'Medical image analysis complete'"
+
+      on_error:
+        - "echo 'Analysis error at stage: $WORKFLOW_STAGE'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

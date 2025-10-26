@@ -1,0 +1,166 @@
+# Health Monitoring - Patient health tracking
+name: "health_monitoring"
+version: "1.0"
+
+agents:
+  device_agent:
+    description: "Collects data from wearable devices"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/health/devices"]
+    max_turns: 15
+
+  vitals_agent:
+    description: "Monitors vital signs"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/health/vitals"]
+    max_turns: 15
+
+  analysis_agent:
+    description: "Analyzes health trends"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/health/analysis"]
+    max_turns: 20
+
+  alert_agent:
+    description: "Generates health alerts"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/health/alerts"]
+    max_turns: 10
+
+  reporting_agent:
+    description: "Creates health reports"
+    model: "claude-sonnet-4-5"
+    tools: ["Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/health/reports"]
+    max_turns: 10
+
+tasks:
+  sync_wearable_data:
+    description: "Sync data from wearable devices"
+    agent: "device_agent"
+    priority: 1
+    output: "device_sync.log"
+
+  collect_vital_signs:
+    description: "Collect vital sign measurements"
+    agent: "vitals_agent"
+    priority: 1
+    parallel_with: ["sync_wearable_data"]
+    output: "vitals.log"
+
+  validate_readings:
+    description: "Validate sensor readings"
+    agent: "vitals_agent"
+    depends_on: ["sync_wearable_data", "collect_vital_signs"]
+    output: "validation.log"
+
+  detect_anomalies:
+    description: "Detect anomalous health patterns"
+    agent: "analysis_agent"
+    depends_on: ["validate_readings"]
+    output: "anomalies.log"
+
+  analyze_trends:
+    description: "Analyze long-term health trends"
+    agent: "analysis_agent"
+    depends_on: ["detect_anomalies"]
+    output: "trends.log"
+
+  assess_risk_factors:
+    description: "Assess health risk factors"
+    agent: "analysis_agent"
+    depends_on: ["analyze_trends"]
+    output: "risk_assessment.log"
+
+  check_alert_conditions:
+    description: "Check for alert conditions"
+    agent: "alert_agent"
+    depends_on: ["assess_risk_factors"]
+    output: "alert_check.log"
+
+  send_notifications:
+    description: "Send notifications to patient/provider"
+    agent: "alert_agent"
+    depends_on: ["check_alert_conditions"]
+    output: "notifications.log"
+
+  generate_health_report:
+    description: "Generate comprehensive health report"
+    agent: "reporting_agent"
+    depends_on: ["assess_risk_factors"]
+    output: "health_report.html"
+
+workflows:
+  monitor_patient_health:
+    description: "Real-time patient health monitoring"
+    steps:
+      - stage: "data_collection"
+        agents: ["device_agent", "vitals_agent"]
+        tasks:
+          - sync_wearable_data:
+              description: "Sync data from wearable devices"
+          - collect_vital_signs:
+              description: "Collect vital sign measurements"
+        mode: parallel
+
+      - stage: "validation"
+        agents: ["vitals_agent"]
+        tasks:
+          - validate_readings:
+              description: "Validate sensor readings"
+        mode: sequential
+        depends_on: ["data_collection"]
+
+      - stage: "analysis"
+        agents: ["analysis_agent"]
+        tasks:
+          - detect_anomalies:
+              description: "Detect anomalous health patterns"
+          - analyze_trends:
+              description: "Analyze long-term health trends"
+          - assess_risk_factors:
+              description: "Assess health risk factors"
+        mode: sequential
+        depends_on: ["validation"]
+
+      - stage: "alerting"
+        agents: ["alert_agent"]
+        tasks:
+          - check_alert_conditions:
+              description: "Check for alert conditions"
+          - send_notifications:
+              description: "Send notifications to patient/provider"
+        mode: sequential
+        depends_on: ["analysis"]
+
+      - stage: "reporting"
+        agents: ["reporting_agent"]
+        tasks:
+          - generate_health_report:
+              description: "Generate comprehensive health report"
+        mode: sequential
+        depends_on: ["analysis"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting health monitoring cycle'"
+
+      post_workflow:
+        - "echo 'Health monitoring cycle complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]

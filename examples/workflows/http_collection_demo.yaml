@@ -1,0 +1,58 @@
+name: "HTTP Collection Demo"
+version: "1.0.0"
+description: "Demonstrates fetching data from HTTP/HTTPS APIs as loop collections"
+
+agents:
+  api_consumer:
+    description: "Agent that processes data fetched from APIs"
+    tools: []
+    permissions:
+      mode: "default"
+
+tasks:
+  fetch_users:
+    description: "Processing user {{user.id}}: {{user.name}}"
+    agent: "api_consumer"
+    loop:
+      type: for_each
+      collection:
+        source: http
+        url: "https://jsonplaceholder.typicode.com/users"
+        method: "GET"
+        format: json
+      iterator: "user"
+    loop_control:
+      collect_results: true
+      result_key: "processed_users"
+
+  fetch_posts_with_path:
+    description: "Processing post {{post.id}}: {{post.title}}"
+    agent: "api_consumer"
+    loop:
+      type: for_each
+      collection:
+        source: http
+        url: "https://jsonplaceholder.typicode.com/posts"
+        method: "GET"
+        format: json
+      iterator: "post"
+    loop_control:
+      collect_results: true
+      result_key: "processed_posts"
+      max_iterations: 5  # Process only first 5 posts
+
+  fetch_json_array_endpoint:
+    description: "Processing todo {{todo.id}}: {{todo.title}}"
+    agent: "api_consumer"
+    loop:
+      type: for_each
+      collection:
+        source: http
+        url: "https://jsonplaceholder.typicode.com/todos"
+        method: "GET"
+        format: json
+      iterator: "todo"
+    loop_control:
+      collect_results: true
+      result_key: "processed_todos"
+      max_iterations: 10  # Process only first 10 todos

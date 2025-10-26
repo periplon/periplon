@@ -1,0 +1,142 @@
+# Model Deployment - ML model deployment and monitoring
+name: "model_deployment"
+version: "1.0"
+
+agents:
+  packaging_agent:
+    description: "Packages model for deployment"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/models"]
+    max_turns: 12
+
+  deployment_agent:
+    description: "Deploys model to production"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/deploy"]
+    max_turns: 15
+
+  monitoring_agent:
+    description: "Sets up monitoring and alerts"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read", "Write"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/monitoring"]
+    max_turns: 12
+
+  validation_agent:
+    description: "Validates deployment"
+    model: "claude-sonnet-4-5"
+    tools: ["Bash", "Read"]
+    permissions:
+      mode: "default"
+      allowed_directories: ["/deploy"]
+    max_turns: 10
+
+tasks:
+  package_model:
+    description: "Package model artifacts and dependencies"
+    agent: "packaging_agent"
+    priority: 1
+    output: "packaging.log"
+
+  create_api:
+    description: "Create REST API endpoint"
+    agent: "deployment_agent"
+    depends_on: ["package_model"]
+    output: "api_creation.log"
+
+  deploy_staging:
+    description: "Deploy to staging environment"
+    agent: "deployment_agent"
+    depends_on: ["create_api"]
+    output: "staging_deploy.log"
+
+  validate_staging:
+    description: "Validate staging deployment"
+    agent: "validation_agent"
+    depends_on: ["deploy_staging"]
+    output: "staging_validation.log"
+
+  deploy_production:
+    description: "Deploy to production environment"
+    agent: "deployment_agent"
+    depends_on: ["validate_staging"]
+    output: "production_deploy.log"
+
+  setup_monitoring:
+    description: "Configure performance monitoring"
+    agent: "monitoring_agent"
+    depends_on: ["deploy_production"]
+    output: "monitoring_setup.log"
+
+  setup_alerts:
+    description: "Configure alerting rules"
+    agent: "monitoring_agent"
+    depends_on: ["setup_monitoring"]
+    output: "alerts_setup.log"
+
+  validate_production:
+    description: "Validate production deployment"
+    agent: "validation_agent"
+    depends_on: ["setup_alerts"]
+    output: "production_validation.log"
+
+workflows:
+  deploy_ml_model:
+    description: "Complete ML model deployment with monitoring"
+    steps:
+      - stage: "packaging"
+        agents: ["packaging_agent"]
+        tasks:
+          - package_model:
+              description: "Package model artifacts and dependencies"
+        mode: sequential
+
+      - stage: "staging"
+        agents: ["deployment_agent", "validation_agent"]
+        tasks:
+          - create_api:
+              description: "Create REST API endpoint"
+          - deploy_staging:
+              description: "Deploy to staging environment"
+          - validate_staging:
+              description: "Validate staging deployment"
+        mode: sequential
+        depends_on: ["packaging"]
+
+      - stage: "production"
+        agents: ["deployment_agent"]
+        tasks:
+          - deploy_production:
+              description: "Deploy to production environment"
+        mode: sequential
+        depends_on: ["staging"]
+
+      - stage: "monitoring"
+        agents: ["monitoring_agent", "validation_agent"]
+        tasks:
+          - setup_monitoring:
+              description: "Configure performance monitoring"
+          - setup_alerts:
+              description: "Configure alerting rules"
+          - validate_production:
+              description: "Validate production deployment"
+        mode: sequential
+        depends_on: ["production"]
+
+    hooks:
+      pre_workflow:
+        - "echo 'Starting model deployment'"
+
+      post_workflow:
+        - "echo 'Model deployment and monitoring complete'"
+
+tools:
+  allowed: ["Bash", "Read", "Write"]
