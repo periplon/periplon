@@ -60,6 +60,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          df -h
+
       - name: Download web build
         uses: actions/download-artifact@v4
         with:
@@ -112,6 +121,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Free disk space (Ubuntu only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          df -h
+
       - name: Download web build
         uses: actions/download-artifact@v4
         with:
@@ -144,8 +163,14 @@ jobs:
       - name: Run tests (default features)
         run: cargo test --verbose
 
+      - name: Clean build artifacts before all-features
+        run: cargo clean --release
+
       - name: Run tests (all features)
         run: cargo test --all-features --verbose
+
+      - name: Clean build artifacts before TUI
+        run: cargo clean --release
 
       - name: Run tests (TUI feature)
         run: cargo test --features tui --verbose
@@ -333,6 +358,15 @@ jobs:
     needs: [build-web]
     steps:
       - uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          df -h
 
       - name: Download web build
         uses: actions/download-artifact@v4
