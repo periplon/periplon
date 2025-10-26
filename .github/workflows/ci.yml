@@ -183,20 +183,29 @@ jobs:
           path: target
           key: ${{ runner.os }}-${{ matrix.rust }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Run tests (default features)
-        run: cargo test --verbose -- --skip cli_group_commands_tests
+      - name: Run unit tests (lib, default features)
+        run: cargo test --lib --verbose
+
+      - name: Run unit tests (bins, default features)
+        run: cargo test --bins --verbose
 
       - name: Clean build artifacts before all-features
         run: cargo clean --release
 
-      - name: Run tests (all features)
-        run: cargo test --all-features --verbose -- --skip cli_group_commands_tests
+      - name: Run unit tests (lib, all features)
+        run: cargo test --lib --all-features --verbose
+
+      - name: Run unit tests (bins, all features)
+        run: cargo test --bins --all-features --verbose
 
       - name: Clean build artifacts before TUI
         run: cargo clean --release
 
-      - name: Run tests (TUI feature)
-        run: cargo test --features tui --verbose -- --skip cli_group_commands_tests
+      - name: Run unit tests (lib, TUI feature)
+        run: cargo test --lib --features tui --verbose
+
+      - name: Run unit tests (bins, TUI feature)
+        run: cargo test --bins --features tui --verbose
 
       - name: Run doc tests
         run: cargo test --doc --all-features
@@ -416,20 +425,17 @@ jobs:
           tar -xzf cargo-tarpaulin-x86_64-unknown-linux-musl.tar.gz -C ~/.cargo/bin/
           chmod +x ~/.cargo/bin/cargo-tarpaulin
 
-      - name: Generate coverage
+      - name: Generate coverage (unit tests only)
         run: |
-          # Run tarpaulin with features that work well with coverage
-          # Exclude TUI feature as it requires terminal interaction
-          # Skip integration tests that require CLI binary
+          # Run tarpaulin on unit tests only (lib and bins, excluding integration tests)
+          # Using --lib and --bins flags to exclude integration tests in tests/
           cargo tarpaulin \
             --features cli,server \
             --workspace \
+            --lib \
+            --bins \
             --timeout 600 \
             --out xml \
-            --exclude-files 'tests/*_integration_test.rs' \
-            --exclude-files 'tests/tui_*.rs' \
-            --exclude-files 'tests/git_integration_tests.rs' \
-            --exclude-files 'tests/cli_group_commands_tests.rs' \
             || echo "Coverage generation failed but continuing..."
 
       - name: Upload coverage to Codecov
