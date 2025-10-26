@@ -18,6 +18,10 @@ use periplon_sdk::dsl::executor::DSLExecutor;
 use periplon_sdk::dsl::parser::parse_workflow;
 
 #[tokio::test]
+#[cfg_attr(
+    not(feature = "cli-required-tests"),
+    ignore = "Requires CLI binary installed"
+)]
 async fn test_parent_task_dependency_resolution() {
     let yaml = r#"
 name: "Parent Dependency Resolution Test"
@@ -109,6 +113,10 @@ tasks:
 }
 
 #[tokio::test]
+#[cfg_attr(
+    not(feature = "cli-required-tests"),
+    ignore = "Requires CLI binary installed"
+)]
 async fn test_parent_dependency_with_loop() {
     let yaml = r#"
 name: "Parent Dependency with Loop Test"

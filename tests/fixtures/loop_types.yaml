@@ -12,17 +12,17 @@ tasks:
   test_foreach_inline:
     description: "Test for_each with inline collection"
     agent: "test_agent"
-    loop_spec:
-      for_each:
-        collection:
-          inline:
-            items:
-              - "apple"
-              - "banana"
-              - "cherry"
-              - "date"
-        iterator: "fruit"
-        parallel: false
+    loop:
+      type: for_each
+      collection:
+        source: inline
+        items:
+          - "apple"
+          - "banana"
+          - "cherry"
+          - "date"
+      iterator: "fruit"
+      parallel: false
     subtasks:
       - process_item:
           description: "Process ${loop.fruit}"
@@ -32,15 +32,15 @@ tasks:
   test_foreach_range:
     description: "Test for_each with range collection"
     agent: "test_agent"
-    loop_spec:
-      for_each:
-        collection:
-          range:
-            start: 1
-            end: 5
-            step: 1
-        iterator: "number"
-        parallel: false
+    loop:
+      type: for_each
+      collection:
+        source: range
+        start: 1
+        end: 5
+        step: 1
+      iterator: "number"
+      parallel: false
     subtasks:
       - range_task:
           description: "Process number"
@@ -49,18 +49,18 @@ tasks:
   test_foreach_parallel:
     description: "Test for_each with parallel execution"
     agent: "test_agent"
-    loop_spec:
-      for_each:
-        collection:
-          inline:
-            items:
-              - "task1"
-              - "task2"
-              - "task3"
-              - "task4"
-        iterator: "task_name"
-        parallel: true
-        max_parallel: 2
+    loop:
+      type: for_each
+      collection:
+        source: inline
+        items:
+          - "task1"
+          - "task2"
+          - "task3"
+          - "task4"
+      iterator: "task_name"
+      parallel: true
+      max_parallel: 2
     subtasks:
       - parallel_task:
           description: "Execute task in parallel"
@@ -69,11 +69,11 @@ tasks:
   test_repeat:
     description: "Test repeat loop"
     agent: "test_agent"
-    loop_spec:
-      repeat:
-        count: 3
-        iterator: "index"
-        parallel: false
+    loop:
+      type: repeat
+      count: 3
+      iterator: "index"
+      parallel: false
     subtasks:
       - repeat_task:
           description: "Iteration ${loop.index}"
@@ -83,12 +83,12 @@ tasks:
   test_repeat_parallel:
     description: "Test repeat with parallel execution"
     agent: "test_agent"
-    loop_spec:
-      repeat:
-        count: 4
-        iterator: "batch"
-        parallel: true
-        max_parallel: 2
+    loop:
+      type: repeat
+      count: 4
+      iterator: "batch"
+      parallel: true
+      max_parallel: 2
     subtasks:
       - batch_task:
           description: "Batch processing"
@@ -97,15 +97,15 @@ tasks:
   test_while:
     description: "Test while loop"
     agent: "test_agent"
-    loop_spec:
-      while:
-        condition:
-          state_key: "continue_processing"
-          operator: "equals"
-          value: true
-        max_iterations: 5
-        iteration_variable: "iteration"
-        delay_between_secs: 1
+    loop:
+      type: while
+      condition:
+        type: state_equals
+        key: "continue_processing"
+        value: true
+      max_iterations: 5
+      iteration_variable: "iteration"
+      delay_between_secs: 1
     subtasks:
       - while_task:
           description: "Process iteration ${loop.iteration}"
@@ -114,16 +114,16 @@ tasks:
   test_repeat_until:
     description: "Test repeat_until loop"
     agent: "test_agent"
-    loop_spec:
-      repeat_until:
-        condition:
-          state_key: "processing_complete"
-          operator: "equals"
-          value: true
-        min_iterations: 1
-        max_iterations: 3
-        iteration_variable: "attempt"
-        delay_between_secs: 1
+    loop:
+      type: repeat_until
+      condition:
+        type: state_equals
+        key: "processing_complete"
+        value: true
+      min_iterations: 1
+      max_iterations: 3
+      iteration_variable: "attempt"
+      delay_between_secs: 1
     subtasks:
       - until_task:
           description: "Attempt processing"
@@ -132,14 +132,14 @@ tasks:
   test_loop_break:
     description: "Test loop with break condition"
     agent: "test_agent"
-    loop_spec:
-      repeat:
-        count: 10
-        iterator: "index"
+    loop:
+      type: repeat
+      count: 10
+      iterator: "index"
     loop_control:
       break_condition:
-        state_key: "should_break"
-        operator: "equals"
+        type: state_equals
+        key: "should_break"
         value: true
       collect_results: true
       result_key: "break_results"
@@ -151,14 +151,14 @@ tasks:
   test_loop_continue:
     description: "Test loop with continue condition"
     agent: "test_agent"
-    loop_spec:
-      repeat:
-        count: 5
-        iterator: "index"
+    loop:
+      type: repeat
+      count: 5
+      iterator: "index"
     loop_control:
       continue_condition:
-        state_key: "should_skip"
-        operator: "equals"
+        type: state_equals
+        key: "should_skip"
         value: true
       collect_results: true
       result_key: "continue_results"
@@ -170,15 +170,15 @@ tasks:
   test_loop_results:
     description: "Test loop with result collection"
     agent: "test_agent"
-    loop_spec:
-      for_each:
-        collection:
-          inline:
-            items:
-              - "item1"
-              - "item2"
-              - "item3"
-        iterator: "item"
+    loop:
+      type: for_each
+      collection:
+        source: inline
+        items:
+          - "item1"
+          - "item2"
+          - "item3"
+      iterator: "item"
     loop_control:
       collect_results: true
       result_key: "collected_items"
@@ -196,22 +196,22 @@ tasks:
   test_nested_loops:
     description: "Test nested loops"
     agent: "test_agent"
-    loop_spec:
-      repeat:
-        count: 2
-        iterator: "outer"
+    loop:
+      type: repeat
+      count: 2
+      iterator: "outer"
     subtasks:
       - inner_loop:
           description: "Inner loop"
           agent: "test_agent"
-          loop_spec:
-            for_each:
-              collection:
-                inline:
-                  items:
-                    - "a"
-                    - "b"
-              iterator: "inner"
+          loop:
+            type: for_each
+            collection:
+              source: inline
+              items:
+                - "a"
+                - "b"
+            iterator: "inner"
           subtasks:
             - nested_task:
                 description: "Outer ${loop.outer} Inner ${loop.inner}"
@@ -221,10 +221,10 @@ tasks:
   test_loop_timeout:
     description: "Test loop with timeout"
     agent: "test_agent"
-    loop_spec:
-      repeat:
-        count: 100
-        iterator: "index"
+    loop:
+      type: repeat
+      count: 100
+      iterator: "index"
     loop_control:
       timeout_secs: 30
       checkpoint_interval: 10
@@ -236,18 +236,18 @@ tasks:
   test_complex_condition:
     description: "Test loop with complex condition"
     agent: "test_agent"
-    loop_spec:
-      repeat:
-        count: 20
-        iterator: "index"
+    loop:
+      type: repeat
+      count: 20
+      iterator: "index"
     loop_control:
       break_condition:
         and:
-          - state_key: "condition1"
-            operator: "equals"
+          - type: state_equals
+            key: "condition1"
             value: true
-          - state_key: "condition2"
-            operator: "equals"
+          - type: state_equals
+            key: "condition2"
             value: true
     subtasks:
       - complex_task:

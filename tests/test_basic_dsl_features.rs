@@ -123,6 +123,10 @@ async fn test_task_dependency_resolution() {
 }
 
 #[tokio::test]
+#[cfg_attr(
+    not(feature = "cli-required-tests"),
+    ignore = "Requires CLI binary installed"
+)]
 async fn test_topological_sort() {
     let workflow_path = "tests/fixtures/basic_features.yaml";
     let workflow = parse_workflow_file(workflow_path).expect("Failed to parse workflow");
@@ -206,6 +210,10 @@ async fn test_topological_sort() {
 }
 
 #[tokio::test]
+#[cfg_attr(
+    not(feature = "cli-required-tests"),
+    ignore = "Requires CLI binary installed"
+)]
 async fn test_ready_tasks() {
     let workflow_path = "tests/fixtures/basic_features.yaml";
     let workflow = parse_workflow_file(workflow_path).expect("Failed to parse workflow");

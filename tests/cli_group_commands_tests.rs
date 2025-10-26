@@ -6,6 +6,8 @@
 //! - group update
 //! - group validate
 
+#![allow(clippy::unnecessary_unwrap)]
+
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;

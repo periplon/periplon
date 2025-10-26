@@ -4,6 +4,7 @@
 //! using the ratatui TestBackend.
 
 #![cfg(feature = "tui")]
+#![allow(clippy::field_reassign_with_default)]
 
 use periplon_sdk::dsl::state::{WorkflowState, WorkflowStatus};
 use periplon_sdk::tui::theme::Theme;

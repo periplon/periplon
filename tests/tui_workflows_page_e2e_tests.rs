@@ -19,6 +19,7 @@
 //! rather than individual component functionality.
 
 #![cfg(feature = "tui")]
+#![allow(clippy::collapsible_match)]
 
 use periplon_sdk::tui::state::{
     AppState, ConfirmAction, InputAction, Modal, ViewMode, WorkflowEntry,

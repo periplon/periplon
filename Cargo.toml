@@ -6,6 +6,11 @@ authors = ["Periplon Contributors"]
 description = "Rust SDK for building multi-agent AI workflows and automation"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/periplon/periplon"
+homepage = "https://github.com/periplon/periplon"
+documentation = "https://docs.rs/periplon"
+readme = "README.md"
+keywords = ["ai", "agents", "workflows", "automation", "async"]
+categories = ["api-bindings", "asynchronous", "development-tools"]
 
 [dependencies]
 # Core dependencies
@@ -27,13 +32,13 @@ clap = { version = "4.5", features = ["derive"] }
 colored = "2.1"
 colored_json = "5.0"
 chrono = { version = "0.4", features = ["serde"] }
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 sha2 = "0.10"
 hex = "0.4"
 base64 = "0.22"
 tempfile = "3.13"
 dirs = "5.0"
-git2 = "0.18"
+git2 = { version = "0.18", default-features = false, features = ["https", "vendored-libgit2", "vendored-openssl"] }
 shellexpand = "3.0"
 semver = "1.0"  # Semantic versioning
 petgraph = "0.6"  # Dependency graphs
@@ -178,10 +183,15 @@ required-features = ["tui"]
 name = "dsl_benchmarks"
 harness = false
 
+# docs.rs configuration - build with all features
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
 # cargo-release configuration
 [package.metadata.release]
 # Don't publish to crates.io automatically (GitHub Actions handles this)
-publish = false
+# publish = false  # Removed to allow manual publishing
 # Use v prefix for tags (e.g., v0.1.0)
 tag-prefix = "v"
 # Push changes and tags to remote

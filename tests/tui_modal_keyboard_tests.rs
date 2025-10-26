@@ -17,6 +17,7 @@ fn key(code: KeyCode) -> KeyEvent {
 }
 
 /// Create a KeyEvent with Ctrl modifier
+#[allow(dead_code)]
 fn ctrl_key(code: KeyCode) -> KeyEvent {
     KeyEvent::new(code, KeyModifiers::CONTROL)
 }

@@ -15,8 +15,8 @@ use std::sync::{Arc, Mutex};
 /// # Examples
 ///
 /// ```
-/// use periplon_sdk::adapters::secondary::MockHookService;
-/// use periplon_sdk::ports::secondary::HookEvent;
+/// use periplon_sdk::testing::MockHookService;
+/// use periplon_sdk::ports::secondary::{HookEvent, HookService};
 /// use periplon_sdk::domain::{HookInput, HookContext, HookJSONOutput};
 ///
 /// let mut service = MockHookService::new();
@@ -121,7 +121,7 @@ impl MockHookService {
     /// # Examples
     ///
     /// ```
-    /// # use periplon_sdk::adapters::secondary::MockHookService;
+    /// # use periplon_sdk::testing::MockHookService;
     /// # use periplon_sdk::ports::secondary::HookEvent;
     /// # use periplon_sdk::domain::{HookInput, HookJSONOutput};
     /// let mut service = MockHookService::new();

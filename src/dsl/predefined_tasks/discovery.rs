@@ -389,7 +389,7 @@ spec:
         // Sort by priority
         discovery
             .sources
-            .sort_by(|a, b| b.priority().cmp(&a.priority()));
+            .sort_by_key(|b| std::cmp::Reverse(b.priority()));
 
         // Should get version from high-priority source
         let task = discovery.find_task("shared-task", None).await.unwrap();

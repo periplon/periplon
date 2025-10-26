@@ -44,6 +44,10 @@ tasks:
 }
 
 #[tokio::test]
+#[cfg_attr(
+    not(feature = "cli-required-tests"),
+    ignore = "Requires CLI binary installed"
+)]
 async fn test_parent_task_minimal_attributes() {
     let yaml = r#"
 name: "Minimal Parent Test"

@@ -326,6 +326,7 @@ mod tests {
     use crate::dsl::truncation::create_task_output;
     use std::collections::HashMap;
 
+    #[allow(clippy::field_reassign_with_default)]
     fn create_test_workflow() -> DSLWorkflow {
         let mut workflow = DSLWorkflow {
             name: "test".to_string(),
