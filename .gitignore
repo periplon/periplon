@@ -89,6 +89,7 @@ logs/
 tarpaulin-report.html
 cobertura.xml
 *.profraw
+/coverage/
 
 # Flamegraph
 flamegraph.svg

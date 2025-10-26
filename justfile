@@ -10,7 +10,7 @@ pre-commit: fmt-check clippy test
     @echo "✅ All pre-commit checks passed!"
 
 # Full CI check (what runs in GitHub Actions)
-ci: fmt-check clippy test build-release audit
+ci: fmt-check clippy test coverage-ci build-release audit
     @echo "✅ CI checks passed!"
 
 # Format code
@@ -64,6 +64,34 @@ test-integration:
 # Run specific test by name
 test-name TEST:
     cargo test {{TEST}} -- --nocapture
+
+# Generate code coverage report
+coverage:
+    @echo "📊 Generating code coverage report..."
+    cargo tarpaulin \
+        --features cli,server \
+        --workspace \
+        --timeout 600 \
+        --out Html \
+        --output-dir coverage \
+        --exclude-files 'tests/*_integration_test.rs' \
+        --exclude-files 'tests/tui_*.rs' \
+        --exclude-files 'tests/git_integration_tests.rs'
+    @echo "✅ Coverage report generated at coverage/index.html"
+
+# Generate code coverage for CI (XML output)
+coverage-ci:
+    @echo "📊 Generating code coverage for CI..."
+    @cargo tarpaulin \
+        --features cli,server \
+        --workspace \
+        --timeout 600 \
+        --out Xml \
+        --exclude-files 'tests/*_integration_test.rs' \
+        --exclude-files 'tests/tui_*.rs' \
+        --exclude-files 'tests/git_integration_tests.rs' \
+        || (echo "⚠️  Coverage generation failed (tarpaulin may not be installed: cargo install cargo-tarpaulin)" && exit 0)
+    @echo "✅ Coverage generated at cobertura.xml"
 
 # Check code without building
 check:

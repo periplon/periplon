@@ -1,6 +1,6 @@
 //! CLI Group Management Commands Integration Tests
 //!
-//! Tests the `dsl-executor group` subcommands:
+//! Tests the `periplon-executor group` subcommands:
 //! - group list
 //! - group install
 //! - group update
@@ -17,21 +17,28 @@ use tempfile::TempDir;
 // Test Helpers
 // ============================================================================
 
-/// Get the path to the dsl-executor binary
+/// Get the path to the periplon-executor binary
 fn get_dsl_executor_path() -> PathBuf {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("target");
 
+    // Binary name differs on Windows
+    let binary_name = if cfg!(windows) {
+        "periplon-executor.exe"
+    } else {
+        "periplon-executor"
+    };
+
     // Try release first, then debug
-    let release_path = path.join("release").join("dsl-executor");
+    let release_path = path.join("release").join(binary_name);
     if release_path.exists() {
         return release_path;
     }
 
-    path.join("debug").join("dsl-executor")
+    path.join("debug").join(binary_name)
 }
 
-/// Check if dsl-executor binary exists (built)
+/// Check if periplon-executor binary exists (built)
 fn is_binary_available() -> bool {
     get_dsl_executor_path().exists()
 }
@@ -104,7 +111,7 @@ spec:
 #[test]
 fn test_group_list_empty_directory() {
     if !is_binary_available() {
-        eprintln!("Skipping test: dsl-executor binary not built");
+        eprintln!("Skipping test: periplon-executor binary not built");
         return;
     }
 
@@ -127,7 +134,7 @@ fn test_group_list_empty_directory() {
 #[test]
 fn test_group_list_with_groups() {
     if !is_binary_available() {
-        eprintln!("Skipping test: dsl-executor binary not built");
+        eprintln!("Skipping test: periplon-executor binary not built");
         return;
     }
 
@@ -170,7 +177,7 @@ fn test_group_list_with_groups() {
 #[test]
 fn test_group_list_json_output() {
     if !is_binary_available() {
-        eprintln!("Skipping test: dsl-executor binary not built");
+        eprintln!("Skipping test: periplon-executor binary not built");
         return;
     }
 
@@ -212,7 +219,7 @@ fn test_group_list_json_output() {
 #[test]
 fn test_group_list_verbose() {
     if !is_binary_available() {
-        eprintln!("Skipping test: dsl-executor binary not built");
+        eprintln!("Skipping test: periplon-executor binary not built");
         return;
     }
 
@@ -255,7 +262,7 @@ fn test_group_list_verbose() {
 #[test]
 fn test_group_validate_valid_group() {
     if !is_binary_available() {
-        eprintln!("Skipping test: dsl-executor binary not built");
+        eprintln!("Skipping test: periplon-executor binary not built");
         return;
     }
 
@@ -299,7 +306,7 @@ fn test_group_validate_valid_group() {
 #[test]
 fn test_group_validate_invalid_yaml() {
     if !is_binary_available() {
-        eprintln!("Skipping test: dsl-executor binary not built");
+        eprintln!("Skipping test: periplon-executor binary not built");
         return;
     }
 
@@ -336,7 +343,7 @@ spec:
 #[test]
 fn test_group_validate_json_output() {
     if !is_binary_available() {
-        eprintln!("Skipping test: dsl-executor binary not built");
+        eprintln!("Skipping test: periplon-executor binary not built");
         return;
     }
 
@@ -374,7 +381,7 @@ fn test_group_validate_json_output() {
 #[test]
 fn test_group_install_invalid_reference() {
     if !is_binary_available() {
-        eprintln!("Skipping test: dsl-executor binary not built");
+        eprintln!("Skipping test: periplon-executor binary not built");
         return;
     }
 
@@ -393,7 +400,7 @@ fn test_group_install_invalid_reference() {
 #[test]
 fn test_group_install_nonexistent_group() {
     if !is_binary_available() {
-        eprintln!("Skipping test: dsl-executor binary not built");
+        eprintln!("Skipping test: periplon-executor binary not built");
         return;
     }
 
@@ -416,7 +423,7 @@ fn test_group_install_nonexistent_group() {
 #[test]
 fn test_group_update_all() {
     if !is_binary_available() {
-        eprintln!("Skipping test: dsl-executor binary not built");
+        eprintln!("Skipping test: periplon-executor binary not built");
         return;
     }
 
@@ -441,7 +448,7 @@ fn test_group_update_all() {
 #[test]
 fn test_group_update_json_output() {
     if !is_binary_available() {
-        eprintln!("Skipping test: dsl-executor binary not built");
+        eprintln!("Skipping test: periplon-executor binary not built");
         return;
     }
 
@@ -466,7 +473,7 @@ fn test_group_update_json_output() {
 #[test]
 fn test_group_update_force() {
     if !is_binary_available() {
-        eprintln!("Skipping test: dsl-executor binary not built");
+        eprintln!("Skipping test: periplon-executor binary not built");
         return;
     }
 
@@ -493,7 +500,7 @@ fn test_group_update_force() {
 #[test]
 fn test_group_command_help() {
     if !is_binary_available() {
-        eprintln!("Skipping test: dsl-executor binary not built");
+        eprintln!("Skipping test: periplon-executor binary not built");
         return;
     }
 
@@ -514,7 +521,7 @@ fn test_group_command_help() {
 #[test]
 fn test_group_list_help() {
     if !is_binary_available() {
-        eprintln!("Skipping test: dsl-executor binary not built");
+        eprintln!("Skipping test: periplon-executor binary not built");
         return;
     }
 
@@ -534,7 +541,7 @@ fn test_group_list_help() {
 #[test]
 fn test_group_validate_help() {
     if !is_binary_available() {
-        eprintln!("Skipping test: dsl-executor binary not built");
+        eprintln!("Skipping test: periplon-executor binary not built");
         return;
     }
 
@@ -557,7 +564,7 @@ fn test_group_validate_help() {
 #[test]
 fn test_group_workflow_list_validate_sequence() {
     if !is_binary_available() {
-        eprintln!("Skipping test: dsl-executor binary not built");
+        eprintln!("Skipping test: periplon-executor binary not built");
         return;
     }
 
@@ -607,7 +614,7 @@ fn test_group_workflow_list_validate_sequence() {
 #[test]
 fn test_multiple_groups_discovery() {
     if !is_binary_available() {
-        eprintln!("Skipping test: dsl-executor binary not built");
+        eprintln!("Skipping test: periplon-executor binary not built");
         return;
     }
 
