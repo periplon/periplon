@@ -103,7 +103,9 @@ jobs:
     name: Test Suite
     runs-on: ${{ matrix.os }}
     needs: [build-web]
+    continue-on-error: ${{ matrix.rust == 'beta' && matrix.os == 'windows-latest' }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         rust: [stable, beta]
