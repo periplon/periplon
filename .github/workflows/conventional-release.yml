@@ -1,0 +1,222 @@
+name: Conventional Commits Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  release:
+    name: Analyze Commits and Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for accurate commit analysis
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Analyze commits and determine version bump
+        id: version
+        run: |
+          # Get the latest tag, or use v0.0.0 if no tags exist
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Latest tag: $LATEST_TAG"
+
+          # Extract version numbers
+          VERSION=${LATEST_TAG#v}
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+          # Get commits since last tag
+          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+            COMMITS=$(git log --pretty=format:"%s" HEAD)
+          else
+            COMMITS=$(git log --pretty=format:"%s" ${LATEST_TAG}..HEAD)
+          fi
+
+          echo "Commits since last release:"
+          echo "$COMMITS"
+
+          # Check if there are any commits to release
+          if [ -z "$COMMITS" ]; then
+            echo "No new commits since last release"
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Determine version bump based on conventional commits
+          BUMP_TYPE="none"
+
+          # Check for breaking changes (BREAKING CHANGE: or ! in commit)
+          if echo "$COMMITS" | grep -qE "^[a-z]+(\(.+\))?!:|BREAKING CHANGE:"; then
+            BUMP_TYPE="major"
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+          # Check for features (feat: or feature:)
+          elif echo "$COMMITS" | grep -qE "^feat(\(.+\))?:|^feature(\(.+\))?:"; then
+            BUMP_TYPE="minor"
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          # Check for fixes (fix:)
+          elif echo "$COMMITS" | grep -qE "^fix(\(.+\))?:"; then
+            BUMP_TYPE="patch"
+            PATCH=$((PATCH + 1))
+          # Check for other conventional commit types that should trigger a release
+          elif echo "$COMMITS" | grep -qE "^(build|chore|ci|docs|perf|refactor|revert|style|test)(\(.+\))?:"; then
+            # These trigger a patch release
+            BUMP_TYPE="patch"
+            PATCH=$((PATCH + 1))
+          fi
+
+          if [ "$BUMP_TYPE" = "none" ]; then
+            echo "No conventional commits found that warrant a release"
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          echo "Bump type: $BUMP_TYPE"
+          echo "New version: v$NEW_VERSION"
+
+          echo "should_release=true" >> $GITHUB_OUTPUT
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "new_tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
+
+      - name: Update Cargo.toml version
+        if: steps.version.outputs.should_release == 'true'
+        run: |
+          NEW_VERSION="${{ steps.version.outputs.new_version }}"
+          sed -i.bak "s/^version = \".*\"/version = \"$NEW_VERSION\"/" Cargo.toml
+          rm Cargo.toml.bak
+
+          echo "Updated Cargo.toml to version $NEW_VERSION"
+          git diff Cargo.toml
+
+      - name: Update Cargo.lock
+        if: steps.version.outputs.should_release == 'true'
+        run: cargo update -p periplon
+
+      - name: Run tests
+        if: steps.version.outputs.should_release == 'true'
+        run: cargo test --all-features
+
+      - name: Generate changelog
+        if: steps.version.outputs.should_release == 'true'
+        id: changelog
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          NEW_TAG="${{ steps.version.outputs.new_tag }}"
+
+          # Generate changelog from conventional commits
+          {
+            echo "changelog<<EOF"
+            echo "## What's Changed"
+            echo ""
+
+            if [ -z "$LATEST_TAG" ]; then
+              COMMITS=$(git log --pretty=format:"%s" HEAD)
+            else
+              COMMITS=$(git log --pretty=format:"%s" ${LATEST_TAG}..HEAD)
+            fi
+
+            # Parse commits by type
+            echo "### ✨ Features"
+            echo "$COMMITS" | grep -E "^feat(\(.+\))?:" | sed 's/^feat/- feat/' || echo ""
+            echo ""
+
+            echo "### 🐛 Bug Fixes"
+            echo "$COMMITS" | grep -E "^fix(\(.+\))?:" | sed 's/^fix/- fix/' || echo ""
+            echo ""
+
+            echo "### 💥 Breaking Changes"
+            echo "$COMMITS" | grep -E "^[a-z]+(\(.+\))?!:|BREAKING CHANGE:" | sed 's/^/- /' || echo ""
+            echo ""
+
+            echo "### 📚 Documentation"
+            echo "$COMMITS" | grep -E "^docs(\(.+\))?:" | sed 's/^docs/- docs/' || echo ""
+            echo ""
+
+            echo "### 🔧 Chores"
+            echo "$COMMITS" | grep -E "^(chore|build|ci)(\(.+\))?:" | sed 's/^/- /' || echo ""
+            echo ""
+
+            echo "### ⚡ Performance"
+            echo "$COMMITS" | grep -E "^perf(\(.+\))?:" | sed 's/^perf/- perf/' || echo ""
+            echo ""
+
+            echo "### ♻️ Refactoring"
+            echo "$COMMITS" | grep -E "^refactor(\(.+\))?:" | sed 's/^refactor/- refactor/' || echo ""
+            echo ""
+
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Commit version bump
+        if: steps.version.outputs.should_release == 'true'
+        run: |
+          git add Cargo.toml Cargo.lock
+          git commit -m "chore(release): bump version to ${{ steps.version.outputs.new_version }}"
+          git push origin main
+
+      - name: Create and push tag
+        if: steps.version.outputs.should_release == 'true'
+        run: |
+          NEW_TAG="${{ steps.version.outputs.new_tag }}"
+          git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
+          git push origin "$NEW_TAG"
+
+      - name: Create GitHub Release
+        if: steps.version.outputs.should_release == 'true'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.new_tag }}
+          release_name: Release ${{ steps.version.outputs.new_tag }}
+          body: |
+            ${{ steps.changelog.outputs.changelog }}
+
+            ---
+
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.version.outputs.new_tag }}
+
+            ## Installation
+
+            Binaries will be available shortly after the release workflow completes.
+          draft: false
+          prerelease: false
+
+      - name: Summary
+        if: steps.version.outputs.should_release == 'true'
+        run: |
+          echo "## 🎉 Release Created!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.version.outputs.new_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bump Type**: ${{ steps.version.outputs.bump_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The release workflow will now build and publish binaries." >> $GITHUB_STEP_SUMMARY
+
+      - name: No release needed
+        if: steps.version.outputs.should_release == 'false'
+        run: |
+          echo "## ℹ️ No Release Needed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "No conventional commits found that warrant a new release." >> $GITHUB_STEP_SUMMARY

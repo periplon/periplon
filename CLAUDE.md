@@ -318,6 +318,80 @@ All CLI communication goes through the `Transport` trait, enabling:
   - AI-powered workflow generation
   - Context-sensitive help system
 
+## Commit Conventions
+
+This project uses **Conventional Commits** for automatic semantic versioning and changelog generation.
+
+### Commit Message Format
+
+```
+<type>(<scope>): <subject>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+### Commit Types
+
+- **feat**: A new feature (triggers MINOR version bump)
+- **fix**: A bug fix (triggers PATCH version bump)
+- **docs**: Documentation only changes (triggers PATCH version bump)
+- **style**: Code style changes (formatting, missing semi-colons, etc.) (triggers PATCH version bump)
+- **refactor**: Code refactoring without changing functionality (triggers PATCH version bump)
+- **perf**: Performance improvements (triggers PATCH version bump)
+- **test**: Adding or updating tests (triggers PATCH version bump)
+- **build**: Changes to build system or dependencies (triggers PATCH version bump)
+- **ci**: Changes to CI configuration (triggers PATCH version bump)
+- **chore**: Other changes that don't modify src or test files (triggers PATCH version bump)
+- **revert**: Reverts a previous commit (triggers PATCH version bump)
+
+### Breaking Changes
+
+To indicate a breaking change, add `!` after the type or include `BREAKING CHANGE:` in the footer:
+
+```
+feat!: remove deprecated API endpoints
+
+BREAKING CHANGE: The /v1/old-endpoint has been removed. Use /v2/new-endpoint instead.
+```
+
+Breaking changes trigger a MAJOR version bump.
+
+### Examples
+
+```bash
+# Feature (minor version bump)
+feat(dsl): add support for parallel task execution
+
+# Bug fix (patch version bump)
+fix(executor): resolve race condition in task completion
+
+# Breaking change (major version bump)
+feat(api)!: redesign message protocol
+
+BREAKING CHANGE: Message format has changed from JSON to NDJSON.
+Client applications must be updated to handle the new format.
+
+# Documentation (patch version bump)
+docs(readme): add installation instructions
+
+# Chore (patch version bump)
+chore(deps): update tokio to 1.42
+```
+
+### Automated Releases
+
+The project uses GitHub Actions to automatically:
+1. Analyze commits on `main` branch
+2. Determine version bump based on conventional commits
+3. Update `Cargo.toml` version
+4. Create and push git tag (e.g., `v0.2.0`)
+5. Generate changelog from commit messages
+6. Trigger release workflow to build and publish binaries
+
+**No manual version bumping or tagging is required** - just push conventional commits to `main`.
+
 ## Important Development Notes
 
 - **Never buffer entire responses**: Use streaming throughout
@@ -327,4 +401,5 @@ All CLI communication goes through the `Transport` trait, enabling:
 - **Structured errors**: Always use specific error variants, never strings
 - **DSL validation**: Validate workflows before execution (cycles, references, etc.)
 - **CLI version compatibility**: Ensure minimum version 2.0.0
--   ALWAYS user Rust best practices and idioms for safety, performance, and maintainability. 
+- **ALWAYS use Rust best practices and idioms for safety, performance, and maintainability**
+- **ALWAYS use conventional commits for all changes** to enable automated releases 
