@@ -170,13 +170,13 @@ jobs:
             artifact_name: periplon-tui
             asset_name: periplon-tui-linux-aarch64
 
-          # macOS x86_64
-          - os: macos-latest
+          # macOS x86_64 (Intel) - use macos-13 for native Intel build
+          - os: macos-13
             target: x86_64-apple-darwin
             artifact_name: periplon-tui
             asset_name: periplon-tui-macos-x86_64
 
-          # macOS ARM64 (Apple Silicon)
+          # macOS ARM64 (Apple Silicon) - use macos-latest for native ARM build
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact_name: periplon-tui
@@ -260,11 +260,13 @@ jobs:
             artifact_name: periplon-executor
             asset_name: periplon-executor-linux-x86_64
 
-          - os: macos-latest
+          # macOS x86_64 (Intel) - use macos-13 for native Intel build
+          - os: macos-13
             target: x86_64-apple-darwin
             artifact_name: periplon-executor
             asset_name: periplon-executor-macos-x86_64
 
+          # macOS ARM64 (Apple Silicon) - use macos-latest for native ARM build
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact_name: periplon-executor
