@@ -38,7 +38,7 @@ hex = "0.4"
 base64 = "0.22"
 tempfile = "3.13"
 dirs = "5.0"
-git2 = "0.18"
+git2 = { version = "0.18", default-features = false, features = ["https", "vendored-libgit2", "vendored-openssl"] }
 shellexpand = "3.0"
 semver = "1.0"  # Semantic versioning
 petgraph = "0.6"  # Dependency graphs
