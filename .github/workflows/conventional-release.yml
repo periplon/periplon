@@ -115,7 +115,7 @@ jobs:
         run: cargo update -p periplon
 
       - name: Setup Node.js
-        if: steps.version.outputs.should_release == 'true'
+        if: steps.version.outputs.should_release == 'true' && hashFiles('web/package-lock.json') != ''
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -123,7 +123,7 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       - name: Build web UI
-        if: steps.version.outputs.should_release == 'true'
+        if: steps.version.outputs.should_release == 'true' && hashFiles('web/package-lock.json') != ''
         run: |
           cd web
           npm ci
