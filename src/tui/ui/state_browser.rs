@@ -8,10 +8,7 @@ use ratatui::Frame;
 
 // Re-export types from the views module
 pub use crate::tui::views::state_browser::{
-    StateBrowserState,
-    StateBrowserViewMode,
-    StateSortMode,
-    StateEntry,
+    StateBrowserState, StateBrowserViewMode, StateEntry, StateSortMode,
 };
 
 /// State browser view component

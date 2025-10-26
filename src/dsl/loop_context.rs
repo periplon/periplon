@@ -359,7 +359,10 @@ mod tests {
     #[test]
     fn test_dollar_sign_task_syntax() {
         let mut context = LoopContext::new(5);
-        context.set_variable("feature".to_string(), Value::String("yaml_editor".to_string()));
+        context.set_variable(
+            "feature".to_string(),
+            Value::String("yaml_editor".to_string()),
+        );
 
         let text = "Testing feature: ${task.feature} on iteration ${task.iteration}";
         let result = context.substitute_variables(text);

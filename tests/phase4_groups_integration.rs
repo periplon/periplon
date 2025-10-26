@@ -740,7 +740,7 @@ tasks:
 
     // Verify tasks use different namespaces
     assert_eq!(workflow.tasks.len(), 4);
-    assert!(workflow.tasks.get("fetch_data").is_some());
-    assert!(workflow.tasks.get("upload_results").is_some());
-    assert!(workflow.tasks.get("notify_team").is_some());
+    assert!(workflow.tasks.contains_key("fetch_data"));
+    assert!(workflow.tasks.contains_key("upload_results"));
+    assert!(workflow.tasks.contains_key("notify_team"));
 }

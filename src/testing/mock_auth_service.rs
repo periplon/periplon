@@ -133,9 +133,7 @@ impl UserStorage for MockUserStorage {
         }
 
         if !state.users.contains_key(&user_id) {
-            return Err(StorageError::NotFound(
-                "User not found".to_string(),
-            ));
+            return Err(StorageError::NotFound("User not found".to_string()));
         }
 
         state.users.insert(user_id, user.clone());
@@ -361,7 +359,11 @@ impl Default for MockAuthorizationService {
 #[cfg(feature = "server")]
 #[async_trait]
 impl AuthorizationService for MockAuthorizationService {
-    async fn has_permission(&self, user_id: &str, permission: &str) -> std::result::Result<bool, String> {
+    async fn has_permission(
+        &self,
+        user_id: &str,
+        permission: &str,
+    ) -> std::result::Result<bool, String> {
         let state = self.state.lock().unwrap();
 
         if state.should_fail {
@@ -411,7 +413,10 @@ impl AuthorizationService for MockAuthorizationService {
             .unwrap_or(false))
     }
 
-    async fn get_user_permissions(&self, user_id: &str) -> std::result::Result<Vec<String>, String> {
+    async fn get_user_permissions(
+        &self,
+        user_id: &str,
+    ) -> std::result::Result<Vec<String>, String> {
         let state = self.state.lock().unwrap();
 
         if state.should_fail {
@@ -488,9 +493,18 @@ mod tests {
         auth.grant_permission(user_id, "workflows:read");
         auth.grant_permission(user_id, "workflows:write");
 
-        assert!(auth.has_permission(user_id, "workflows:read").await.unwrap());
-        assert!(auth.has_permission(user_id, "workflows:write").await.unwrap());
-        assert!(!auth.has_permission(user_id, "workflows:delete").await.unwrap());
+        assert!(auth
+            .has_permission(user_id, "workflows:read")
+            .await
+            .unwrap());
+        assert!(auth
+            .has_permission(user_id, "workflows:write")
+            .await
+            .unwrap());
+        assert!(!auth
+            .has_permission(user_id, "workflows:delete")
+            .await
+            .unwrap());
     }
 
     #[tokio::test]
@@ -515,21 +529,17 @@ mod tests {
         auth.grant_resource_access(user_id, "workflow", workflow_id, "read");
         auth.grant_resource_access(user_id, "workflow", workflow_id, "write");
 
-        assert!(
-            auth.can_access_resource(user_id, "workflow", workflow_id, "read")
-                .await
-                .unwrap()
-        );
-        assert!(
-            auth.can_access_resource(user_id, "workflow", workflow_id, "write")
-                .await
-                .unwrap()
-        );
-        assert!(
-            !auth
-                .can_access_resource(user_id, "workflow", workflow_id, "delete")
-                .await
-                .unwrap()
-        );
+        assert!(auth
+            .can_access_resource(user_id, "workflow", workflow_id, "read")
+            .await
+            .unwrap());
+        assert!(auth
+            .can_access_resource(user_id, "workflow", workflow_id, "write")
+            .await
+            .unwrap());
+        assert!(!auth
+            .can_access_resource(user_id, "workflow", workflow_id, "delete")
+            .await
+            .unwrap());
     }
 }

@@ -8,11 +8,11 @@
 //! - JSON output with syntax coloring
 
 use clap::{Parser, Subcommand};
+use colored::*;
 use periplon_sdk::dsl::{
     generate_and_save, generate_template, parse_workflow_file, validate_workflow, DSLExecutor,
     StatePersistence, DSL_GRAMMAR_VERSION,
 };
-use colored::*;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::time::Instant;
@@ -1128,7 +1128,11 @@ async fn show_status(
             "Progress:".bold(),
             state.get_progress() * 100.0
         );
-        println!("  {} {}", "Total Tasks:".bold(), state.get_total_task_count());
+        println!(
+            "  {} {}",
+            "Total Tasks:".bold(),
+            state.get_total_task_count()
+        );
         println!(
             "  {} {}",
             "Completed:".bold(),

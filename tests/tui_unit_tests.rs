@@ -6,8 +6,8 @@
 
 use periplon_sdk::tui::app::AppConfig;
 use periplon_sdk::tui::state::{
-    AppState, EditorError, EditorState, ErrorSeverity, ExecutionState, ExecutionStatus,
-    ViewerSection, ViewerState, ViewMode, WorkflowEntry,
+    AppState, EditorError, EditorState, ErrorSeverity, ExecutionState, ExecutionStatus, ViewMode,
+    ViewerSection, ViewerState, WorkflowEntry,
 };
 use periplon_sdk::tui::theme::Theme;
 use std::path::PathBuf;
@@ -182,8 +182,7 @@ fn test_editor_state_error_tracking() {
 
 #[test]
 fn test_editor_error_severity_levels() {
-    let errors = vec![
-        EditorError {
+    let errors = [EditorError {
             line: 1,
             column: None,
             message: "Error".to_string(),
@@ -200,8 +199,7 @@ fn test_editor_error_severity_levels() {
             column: None,
             message: "Info".to_string(),
             severity: ErrorSeverity::Info,
-        },
-    ];
+        }];
 
     assert_eq!(errors.len(), 3);
     assert_ne!(ErrorSeverity::Error, ErrorSeverity::Warning);

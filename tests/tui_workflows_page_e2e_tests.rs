@@ -146,9 +146,13 @@ fn test_e2e_initial_page_load_mixed_validity() {
     // Scenario: Directory contains both valid and invalid workflows
     let mut state = AppState::new();
     state.workflows.push(create_workflow("valid1.yaml"));
-    state.workflows.push(create_invalid_workflow("invalid1.yaml"));
+    state
+        .workflows
+        .push(create_invalid_workflow("invalid1.yaml"));
     state.workflows.push(create_workflow("valid2.yaml"));
-    state.workflows.push(create_invalid_workflow("invalid2.yaml"));
+    state
+        .workflows
+        .push(create_invalid_workflow("invalid2.yaml"));
 
     assert_eq!(state.workflows.len(), 4);
 
@@ -470,12 +474,15 @@ fn test_e2e_edit_workflow_validation_error() {
     state.editor_state.modified = true;
 
     // Simulate validation errors from editing
-    state.editor_state.errors.push(periplon_sdk::tui::state::EditorError {
-        line: 10,
-        column: Some(5),
-        message: "Invalid YAML syntax".to_string(),
-        severity: periplon_sdk::tui::state::ErrorSeverity::Error,
-    });
+    state
+        .editor_state
+        .errors
+        .push(periplon_sdk::tui::state::EditorError {
+            line: 10,
+            column: Some(5),
+            message: "Invalid YAML syntax".to_string(),
+            severity: periplon_sdk::tui::state::ErrorSeverity::Error,
+        });
 
     assert_eq!(state.editor_state.errors.len(), 1);
 
@@ -601,7 +608,9 @@ fn test_e2e_search_workflows_by_name() {
     let mut state = AppState::new();
     state.workflows.push(create_workflow("api_test.yaml"));
     state.workflows.push(create_workflow("database_setup.yaml"));
-    state.workflows.push(create_workflow("api_integration.yaml"));
+    state
+        .workflows
+        .push(create_workflow("api_integration.yaml"));
     state.workflows.push(create_workflow("frontend_build.yaml"));
 
     // User searches for "api"
@@ -640,7 +649,9 @@ fn test_e2e_search_case_insensitive() {
     // Scenario: Search is case-insensitive
     let mut state = AppState::new();
     state.workflows.push(create_workflow("TestWorkflow.yaml"));
-    state.workflows.push(create_workflow("production_test.yaml"));
+    state
+        .workflows
+        .push(create_workflow("production_test.yaml"));
 
     // Search with different cases
     state.search_query = "TEST".to_string();
@@ -713,7 +724,9 @@ fn test_e2e_complete_workflow_creation_journey() {
 
     // Step 8: Return to list with new workflow
     state.view_mode = ViewMode::WorkflowList;
-    state.workflows.push(create_workflow("data_processing.yaml"));
+    state
+        .workflows
+        .push(create_workflow("data_processing.yaml"));
 
     assert_eq!(state.view_mode, ViewMode::WorkflowList);
     assert_eq!(state.workflows.len(), 1);
@@ -800,10 +813,7 @@ fn test_e2e_search_select_delete_journey() {
     // Step 5: Clear search and verify deletion
     state.search_query = String::new();
     assert_eq!(state.workflows.len(), 2);
-    assert!(!state
-        .workflows
-        .iter()
-        .any(|w| w.name == "delete_me.yaml"));
+    assert!(!state.workflows.iter().any(|w| w.name == "delete_me.yaml"));
 }
 
 // ============================================================================

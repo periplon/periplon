@@ -5,13 +5,13 @@
 
 #[cfg(test)]
 mod test_utilities_examples {
-    use periplon_sdk::testing::{
-        HookInputBuilder, MessageBuilder, MockHookService, MockMcpServer,
-        MockPermissionService, NotificationBuilder, PermissionContextBuilder,
-    };
     use periplon_sdk::domain::{ContentBlock, HookJSONOutput, PermissionDecision};
     use periplon_sdk::dsl::NotificationPriority;
     use periplon_sdk::ports::secondary::{HookEvent, HookService, McpServer, PermissionService};
+    use periplon_sdk::testing::{
+        HookInputBuilder, MessageBuilder, MockHookService, MockMcpServer, MockPermissionService,
+        NotificationBuilder, PermissionContextBuilder,
+    };
     use serde_json::json;
 
     /// Example: Testing MCP Server Integration
@@ -101,7 +101,10 @@ mod test_utilities_examples {
             .await
             .unwrap();
 
-        if let HookJSONOutput::Sync { should_continue, .. } = result {
+        if let HookJSONOutput::Sync {
+            should_continue, ..
+        } = result
+        {
             assert_eq!(should_continue, Some(true));
         }
 
@@ -137,9 +140,7 @@ mod test_utilities_examples {
             .build();
 
         if let periplon_sdk::dsl::NotificationSpec::Structured {
-            message,
-            channels,
-            ..
+            message, channels, ..
         } = notification
         {
             assert_eq!(message, "Task completed");

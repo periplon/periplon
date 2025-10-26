@@ -158,9 +158,11 @@ mod auth_tests {
     async fn test_user_registration() {
         let storage = Arc::new(MockUserStorage::new());
 
-        let user = create_test_user("newuser@example.com", "password123", vec![
-            "user".to_string(),
-        ]);
+        let user = create_test_user(
+            "newuser@example.com",
+            "password123",
+            vec!["user".to_string()],
+        );
 
         let user_id = storage.create_user(&user).await.unwrap();
         assert_eq!(user_id, user.id);
@@ -176,9 +178,7 @@ mod auth_tests {
         let jwt_manager = Arc::new(JwtManager::new("test_secret", 24));
 
         // Register user
-        let user = create_test_user("login@example.com", "password123", vec![
-            "user".to_string(),
-        ]);
+        let user = create_test_user("login@example.com", "password123", vec!["user".to_string()]);
         storage.create_user(&user).await.unwrap();
 
         // Simulate login: get user by email
@@ -209,14 +209,18 @@ mod auth_tests {
     async fn test_duplicate_user_registration() {
         let storage = Arc::new(MockUserStorage::new());
 
-        let user1 = create_test_user("duplicate@example.com", "password1", vec![
-            "user".to_string(),
-        ]);
+        let user1 = create_test_user(
+            "duplicate@example.com",
+            "password1",
+            vec!["user".to_string()],
+        );
         storage.create_user(&user1).await.unwrap();
 
-        let user2 = create_test_user("duplicate@example.com", "password2", vec![
-            "admin".to_string(),
-        ]);
+        let user2 = create_test_user(
+            "duplicate@example.com",
+            "password2",
+            vec!["admin".to_string()],
+        );
         let result = storage.create_user(&user2).await;
 
         assert!(result.is_err(), "Should reject duplicate email");
@@ -226,9 +230,11 @@ mod auth_tests {
     async fn test_user_update() {
         let storage = Arc::new(MockUserStorage::new());
 
-        let mut user = create_test_user("update@example.com", "password123", vec![
-            "user".to_string(),
-        ]);
+        let mut user = create_test_user(
+            "update@example.com",
+            "password123",
+            vec!["user".to_string()],
+        );
         let user_id = storage.create_user(&user).await.unwrap();
 
         // Update user
@@ -245,9 +251,11 @@ mod auth_tests {
     async fn test_user_deletion() {
         let storage = Arc::new(MockUserStorage::new());
 
-        let user = create_test_user("delete@example.com", "password123", vec![
-            "user".to_string(),
-        ]);
+        let user = create_test_user(
+            "delete@example.com",
+            "password123",
+            vec!["user".to_string()],
+        );
         let user_id = storage.create_user(&user).await.unwrap();
 
         storage.delete_user(user_id).await.unwrap();
@@ -260,9 +268,7 @@ mod auth_tests {
     async fn test_last_login_tracking() {
         let storage = Arc::new(MockUserStorage::new());
 
-        let user = create_test_user("login@example.com", "password123", vec![
-            "user".to_string(),
-        ]);
+        let user = create_test_user("login@example.com", "password123", vec!["user".to_string()]);
         let user_id = storage.create_user(&user).await.unwrap();
 
         // Initially no last login
@@ -281,9 +287,11 @@ mod auth_tests {
     async fn test_inactive_user() {
         let storage = Arc::new(MockUserStorage::new());
 
-        let mut user = create_test_user("inactive@example.com", "password123", vec![
-            "user".to_string(),
-        ]);
+        let mut user = create_test_user(
+            "inactive@example.com",
+            "password123",
+            vec!["user".to_string()],
+        );
         user.is_active = false;
         storage.create_user(&user).await.unwrap();
 
@@ -306,30 +314,22 @@ mod auth_tests {
         auth_service.grant_permission(&user_id, "workflows:write");
         auth_service.grant_permission(&user_id, "executions:read");
 
-        assert!(
-            auth_service
-                .has_permission(&user_id, "workflows:read")
-                .await
-                .unwrap()
-        );
-        assert!(
-            auth_service
-                .has_permission(&user_id, "workflows:write")
-                .await
-                .unwrap()
-        );
-        assert!(
-            auth_service
-                .has_permission(&user_id, "executions:read")
-                .await
-                .unwrap()
-        );
-        assert!(
-            !auth_service
-                .has_permission(&user_id, "workflows:delete")
-                .await
-                .unwrap()
-        );
+        assert!(auth_service
+            .has_permission(&user_id, "workflows:read")
+            .await
+            .unwrap());
+        assert!(auth_service
+            .has_permission(&user_id, "workflows:write")
+            .await
+            .unwrap());
+        assert!(auth_service
+            .has_permission(&user_id, "executions:read")
+            .await
+            .unwrap());
+        assert!(!auth_service
+            .has_permission(&user_id, "workflows:delete")
+            .await
+            .unwrap());
     }
 
     #[tokio::test]
@@ -360,38 +360,28 @@ mod auth_tests {
         auth_service.grant_resource_access(&user_id, "execution", execution_id, "read");
 
         // Check workflow access
-        assert!(
-            auth_service
-                .can_access_resource(&user_id, "workflow", workflow_id, "read")
-                .await
-                .unwrap()
-        );
-        assert!(
-            auth_service
-                .can_access_resource(&user_id, "workflow", workflow_id, "write")
-                .await
-                .unwrap()
-        );
-        assert!(
-            !auth_service
-                .can_access_resource(&user_id, "workflow", workflow_id, "delete")
-                .await
-                .unwrap()
-        );
+        assert!(auth_service
+            .can_access_resource(&user_id, "workflow", workflow_id, "read")
+            .await
+            .unwrap());
+        assert!(auth_service
+            .can_access_resource(&user_id, "workflow", workflow_id, "write")
+            .await
+            .unwrap());
+        assert!(!auth_service
+            .can_access_resource(&user_id, "workflow", workflow_id, "delete")
+            .await
+            .unwrap());
 
         // Check execution access
-        assert!(
-            auth_service
-                .can_access_resource(&user_id, "execution", execution_id, "read")
-                .await
-                .unwrap()
-        );
-        assert!(
-            !auth_service
-                .can_access_resource(&user_id, "execution", execution_id, "write")
-                .await
-                .unwrap()
-        );
+        assert!(auth_service
+            .can_access_resource(&user_id, "execution", execution_id, "read")
+            .await
+            .unwrap());
+        assert!(!auth_service
+            .can_access_resource(&user_id, "execution", execution_id, "write")
+            .await
+            .unwrap());
     }
 
     #[tokio::test]
@@ -400,20 +390,16 @@ mod auth_tests {
         let user_id = Uuid::new_v4().to_string();
 
         auth_service.grant_permission(&user_id, "workflows:write");
-        assert!(
-            auth_service
-                .has_permission(&user_id, "workflows:write")
-                .await
-                .unwrap()
-        );
+        assert!(auth_service
+            .has_permission(&user_id, "workflows:write")
+            .await
+            .unwrap());
 
         auth_service.revoke_permission(&user_id, "workflows:write");
-        assert!(
-            !auth_service
-                .has_permission(&user_id, "workflows:write")
-                .await
-                .unwrap()
-        );
+        assert!(!auth_service
+            .has_permission(&user_id, "workflows:write")
+            .await
+            .unwrap());
     }
 
     #[tokio::test]
@@ -425,10 +411,7 @@ mod auth_tests {
         auth_service.grant_permission(&user_id, "workflows:write");
         auth_service.grant_permission(&user_id, "executions:read");
 
-        let permissions = auth_service
-            .get_user_permissions(&user_id)
-            .await
-            .unwrap();
+        let permissions = auth_service.get_user_permissions(&user_id).await.unwrap();
 
         assert_eq!(permissions.len(), 3);
         assert!(permissions.contains(&"workflows:read".to_string()));
@@ -445,31 +428,23 @@ mod auth_tests {
         auth_service.grant_permission(&user1_id, "workflows:read");
         auth_service.grant_permission(&user2_id, "workflows:write");
 
-        assert!(
-            auth_service
-                .has_permission(&user1_id, "workflows:read")
-                .await
-                .unwrap()
-        );
-        assert!(
-            !auth_service
-                .has_permission(&user1_id, "workflows:write")
-                .await
-                .unwrap()
-        );
+        assert!(auth_service
+            .has_permission(&user1_id, "workflows:read")
+            .await
+            .unwrap());
+        assert!(!auth_service
+            .has_permission(&user1_id, "workflows:write")
+            .await
+            .unwrap());
 
-        assert!(
-            !auth_service
-                .has_permission(&user2_id, "workflows:read")
-                .await
-                .unwrap()
-        );
-        assert!(
-            auth_service
-                .has_permission(&user2_id, "workflows:write")
-                .await
-                .unwrap()
-        );
+        assert!(!auth_service
+            .has_permission(&user2_id, "workflows:read")
+            .await
+            .unwrap());
+        assert!(auth_service
+            .has_permission(&user2_id, "workflows:write")
+            .await
+            .unwrap());
     }
 
     #[tokio::test]
@@ -494,21 +469,17 @@ mod auth_tests {
 
         // Verify admin permissions
         assert!(auth_service.has_role(&admin_id, "admin").await.unwrap());
-        assert!(
-            auth_service
-                .has_permission(&admin_id, "workflows:delete")
-                .await
-                .unwrap()
-        );
+        assert!(auth_service
+            .has_permission(&admin_id, "workflows:delete")
+            .await
+            .unwrap());
 
         // Verify user permissions
         assert!(auth_service.has_role(&user_id, "user").await.unwrap());
-        assert!(
-            !auth_service
-                .has_permission(&user_id, "workflows:delete")
-                .await
-                .unwrap()
-        );
+        assert!(!auth_service
+            .has_permission(&user_id, "workflows:delete")
+            .await
+            .unwrap());
     }
 
     // ===== Integration Tests =====
@@ -520,9 +491,11 @@ mod auth_tests {
         let jwt_manager = Arc::new(JwtManager::new("test_secret", 24));
 
         // 1. Register user
-        let user = create_test_user("complete@example.com", "password123", vec![
-            "user".to_string(),
-        ]);
+        let user = create_test_user(
+            "complete@example.com",
+            "password123",
+            vec!["user".to_string()],
+        );
         let user_id = user_storage.create_user(&user).await.unwrap();
 
         // 2. Setup permissions
@@ -541,11 +514,7 @@ mod auth_tests {
 
         // 4. Generate token
         let token = jwt_manager
-            .generate_token(
-                &user_id_str,
-                &stored_user.email,
-                stored_user.roles.clone(),
-            )
+            .generate_token(&user_id_str, &stored_user.email, stored_user.roles.clone())
             .unwrap();
 
         // 5. Validate token
@@ -553,12 +522,10 @@ mod auth_tests {
         assert_eq!(claims.sub, user_id_str);
 
         // 6. Check authorization
-        assert!(
-            auth_service
-                .has_permission(&user_id_str, "workflows:read")
-                .await
-                .unwrap()
-        );
+        assert!(auth_service
+            .has_permission(&user_id_str, "workflows:read")
+            .await
+            .unwrap());
         assert!(auth_service.has_role(&user_id_str, "user").await.unwrap());
 
         // 7. Update last login
@@ -569,9 +536,11 @@ mod auth_tests {
     async fn test_failed_login_invalid_password() {
         let storage = Arc::new(MockUserStorage::new());
 
-        let user = create_test_user("test@example.com", "correctpassword", vec![
-            "user".to_string(),
-        ]);
+        let user = create_test_user(
+            "test@example.com",
+            "correctpassword",
+            vec!["user".to_string()],
+        );
         storage.create_user(&user).await.unwrap();
 
         let stored_user = storage
@@ -602,9 +571,7 @@ mod auth_tests {
     async fn test_storage_failure_handling() {
         let storage = Arc::new(MockUserStorage::new());
 
-        let user = create_test_user("test@example.com", "password123", vec![
-            "user".to_string(),
-        ]);
+        let user = create_test_user("test@example.com", "password123", vec!["user".to_string()]);
         storage.create_user(&user).await.unwrap();
 
         storage.fail_operations();
@@ -622,10 +589,9 @@ mod auth_tests {
 
         auth_service.fail_operations();
 
-        let result = auth_service.has_permission(&user_id, "workflows:read").await;
-        assert!(
-            result.is_err(),
-            "Should fail when failure mode enabled"
-        );
+        let result = auth_service
+            .has_permission(&user_id, "workflows:read")
+            .await;
+        assert!(result.is_err(), "Should fail when failure mode enabled");
     }
 }

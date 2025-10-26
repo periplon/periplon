@@ -80,7 +80,11 @@ fn create_test_schedule(workflow_id: Uuid, cron_expression: &str) -> Schedule {
     }
 }
 
-fn create_test_schedule_run(schedule_id: Uuid, execution_id: Option<Uuid>, status: ScheduleRunStatus) -> ScheduleRun {
+fn create_test_schedule_run(
+    schedule_id: Uuid,
+    execution_id: Option<Uuid>,
+    status: ScheduleRunStatus,
+) -> ScheduleRun {
     let status_clone = status.clone();
     ScheduleRun {
         id: Uuid::new_v4(),
@@ -164,14 +168,20 @@ async fn test_update_schedule() {
     schedule.is_active = false;
     schedule.description = Some("Updated description".to_string());
 
-    storage.update_schedule(schedule_id, &schedule).await.unwrap();
+    storage
+        .update_schedule(schedule_id, &schedule)
+        .await
+        .unwrap();
 
     // Verify update
     let retrieved = storage.get_schedule(schedule_id).await.unwrap().unwrap();
     assert_eq!(retrieved.cron_expression, "0 12 * * *");
     assert_eq!(retrieved.timezone, "America/New_York");
     assert!(!retrieved.is_active);
-    assert_eq!(retrieved.description, Some("Updated description".to_string()));
+    assert_eq!(
+        retrieved.description,
+        Some("Updated description".to_string())
+    );
 }
 
 #[tokio::test]
@@ -237,8 +247,14 @@ async fn test_filter_schedules_by_workflow() {
     let workflow_id1 = metadata1.id;
     let workflow_id2 = metadata2.id;
 
-    storage.store_workflow(&workflow1, &metadata1).await.unwrap();
-    storage.store_workflow(&workflow2, &metadata2).await.unwrap();
+    storage
+        .store_workflow(&workflow1, &metadata1)
+        .await
+        .unwrap();
+    storage
+        .store_workflow(&workflow2, &metadata2)
+        .await
+        .unwrap();
 
     // Create schedules for both workflows
     for _ in 0..3 {
@@ -387,9 +403,7 @@ async fn test_get_due_schedules() {
     let due_schedules = storage.get_due_schedules(now).await.unwrap();
     assert_eq!(due_schedules.len(), 2);
     assert!(due_schedules.iter().all(|s| s.is_active));
-    assert!(due_schedules
-        .iter()
-        .all(|s| s.next_run_at.unwrap() <= now));
+    assert!(due_schedules.iter().all(|s| s.next_run_at.unwrap() <= now));
 }
 
 #[tokio::test]
@@ -432,7 +446,11 @@ async fn test_store_and_retrieve_schedule_runs() {
 
     // Store multiple runs
     for i in 0..5 {
-        let execution_id = if i % 2 == 0 { Some(Uuid::new_v4()) } else { None };
+        let execution_id = if i % 2 == 0 {
+            Some(Uuid::new_v4())
+        } else {
+            None
+        };
         let status = match i % 3 {
             0 => ScheduleRunStatus::Completed,
             1 => ScheduleRunStatus::Running,
@@ -461,12 +479,19 @@ async fn test_schedule_run_pagination() {
 
     // Store 10 runs
     for _ in 0..10 {
-        let run = create_test_schedule_run(schedule_id, Some(Uuid::new_v4()), ScheduleRunStatus::Completed);
+        let run = create_test_schedule_run(
+            schedule_id,
+            Some(Uuid::new_v4()),
+            ScheduleRunStatus::Completed,
+        );
         storage.store_schedule_run(&run).await.unwrap();
     }
 
     // Get with limit
-    let runs = storage.get_schedule_runs(schedule_id, Some(5)).await.unwrap();
+    let runs = storage
+        .get_schedule_runs(schedule_id, Some(5))
+        .await
+        .unwrap();
     assert_eq!(runs.len(), 5);
 }
 
@@ -500,9 +525,13 @@ async fn test_schedule_run_status_tracking() {
     assert_eq!(runs.len(), 5);
 
     // Verify all statuses are represented
-    assert!(runs.iter().any(|r| r.status == ScheduleRunStatus::Scheduled));
+    assert!(runs
+        .iter()
+        .any(|r| r.status == ScheduleRunStatus::Scheduled));
     assert!(runs.iter().any(|r| r.status == ScheduleRunStatus::Running));
-    assert!(runs.iter().any(|r| r.status == ScheduleRunStatus::Completed));
+    assert!(runs
+        .iter()
+        .any(|r| r.status == ScheduleRunStatus::Completed));
     assert!(runs.iter().any(|r| r.status == ScheduleRunStatus::Failed));
     assert!(runs.iter().any(|r| r.status == ScheduleRunStatus::Skipped));
 }
@@ -531,7 +560,10 @@ async fn test_schedule_activation_deactivation() {
 
     // Deactivate
     schedule.is_active = false;
-    storage.update_schedule(schedule_id, &schedule).await.unwrap();
+    storage
+        .update_schedule(schedule_id, &schedule)
+        .await
+        .unwrap();
 
     // Verify inactive
     let retrieved = storage.get_schedule(schedule_id).await.unwrap().unwrap();
@@ -539,7 +571,10 @@ async fn test_schedule_activation_deactivation() {
 
     // Reactivate
     schedule.is_active = true;
-    storage.update_schedule(schedule_id, &schedule).await.unwrap();
+    storage
+        .update_schedule(schedule_id, &schedule)
+        .await
+        .unwrap();
 
     // Verify active again
     let retrieved = storage.get_schedule(schedule_id).await.unwrap().unwrap();
@@ -617,12 +652,18 @@ async fn test_schedule_last_run_tracking() {
     // Update with last run time
     let last_run = Utc::now();
     schedule.last_run_at = Some(last_run);
-    storage.update_schedule(schedule_id, &schedule).await.unwrap();
+    storage
+        .update_schedule(schedule_id, &schedule)
+        .await
+        .unwrap();
 
     // Verify last run was recorded
     let retrieved = storage.get_schedule(schedule_id).await.unwrap().unwrap();
     assert!(retrieved.last_run_at.is_some());
-    assert_eq!(retrieved.last_run_at.unwrap().timestamp(), last_run.timestamp());
+    assert_eq!(
+        retrieved.last_run_at.unwrap().timestamp(),
+        last_run.timestamp()
+    );
 }
 
 // ============================================================================
@@ -688,7 +729,11 @@ async fn test_delete_schedule_cascade() {
 
     // Create schedule runs
     for _ in 0..3 {
-        let run = create_test_schedule_run(schedule_id, Some(Uuid::new_v4()), ScheduleRunStatus::Completed);
+        let run = create_test_schedule_run(
+            schedule_id,
+            Some(Uuid::new_v4()),
+            ScheduleRunStatus::Completed,
+        );
         storage.store_schedule_run(&run).await.unwrap();
     }
 

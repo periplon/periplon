@@ -19,7 +19,11 @@ mod tests {
 
         // Check that each category has topics
         for (cat, topics) in categories {
-            assert!(!topics.is_empty(), "Category {} should have topics", cat.name());
+            assert!(
+                !topics.is_empty(),
+                "Category {} should have topics",
+                cat.name()
+            );
         }
     }
 
@@ -47,7 +51,11 @@ mod tests {
 
         let lower = engine.search("workflow");
         let upper = engine.search("WORKFLOW");
-        assert_eq!(lower.len(), upper.len(), "Search should be case-insensitive");
+        assert_eq!(
+            lower.len(),
+            upper.len(),
+            "Search should be case-insensitive"
+        );
     }
 
     #[test]
@@ -73,7 +81,10 @@ mod tests {
         let engine = HelpSearchEngine::new(content);
 
         let suggestions = engine.suggest("work");
-        assert!(!suggestions.is_empty(), "Should have suggestions for 'work'");
+        assert!(
+            !suggestions.is_empty(),
+            "Should have suggestions for 'work'"
+        );
     }
 
     #[test]
@@ -102,7 +113,11 @@ mod tests {
     fn test_markdown_inline_styles() {
         let renderer = MarkdownRenderer::new();
         let text = renderer.render("**bold** and *italic* and `code`");
-        assert_eq!(text.lines.len(), 1, "Should render one line with inline styles");
+        assert_eq!(
+            text.lines.len(),
+            1,
+            "Should render one line with inline styles"
+        );
     }
 
     #[test]
@@ -150,7 +165,10 @@ mod tests {
     #[test]
     fn test_help_context_topics() {
         let topics = HelpContext::WorkflowList.topics();
-        assert!(!topics.is_empty(), "WorkflowList context should have topics");
+        assert!(
+            !topics.is_empty(),
+            "WorkflowList context should have topics"
+        );
 
         let topics = HelpContext::Editor.topics();
         assert!(!topics.is_empty(), "Editor context should have topics");
@@ -167,7 +185,10 @@ mod tests {
         use super::super::content::HelpCategory;
 
         assert_eq!(HelpCategory::GettingStarted.name(), "Getting Started");
-        assert_eq!(HelpCategory::WorkflowManagement.name(), "Workflow Management");
+        assert_eq!(
+            HelpCategory::WorkflowManagement.name(),
+            "Workflow Management"
+        );
         assert_eq!(HelpCategory::KeyboardShortcuts.name(), "Keyboard Shortcuts");
     }
 

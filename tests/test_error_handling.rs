@@ -102,7 +102,7 @@ fi
     };
 
     // Add task with retry configuration
-    let mut task = TaskSpec {
+    let task = TaskSpec {
         description: "Task that retries".to_string(),
         command: Some(periplon_sdk::dsl::schema::CommandSpec {
             executable: "bash".to_string(),
@@ -340,11 +340,14 @@ exit 0
 
     // The fallback mechanism is implemented for agent-based tasks
     // For this test, we verify the configuration structure is correct
-    assert!(workflow.tasks.get("fallback_task").is_some());
+    assert!(workflow.tasks.contains_key("fallback_task"));
     let task = workflow.tasks.get("fallback_task").unwrap();
     assert!(task.on_error.is_some());
     let error_handling = task.on_error.as_ref().unwrap();
-    assert_eq!(error_handling.fallback_agent, Some("fallback_agent".to_string()));
+    assert_eq!(
+        error_handling.fallback_agent,
+        Some("fallback_agent".to_string())
+    );
 
     cleanup_test_workspace(&workspace_dir);
 }
@@ -531,12 +534,18 @@ exit 1
     let result = executor.execute().await;
 
     // Should fail after all retries
-    assert!(result.is_err(), "Workflow should fail after exhausting retries");
+    assert!(
+        result.is_err(),
+        "Workflow should fail after exhausting retries"
+    );
 
     // Verify it tried the correct number of times (initial + 3 retries = 4 total)
     let counter_content = fs::read_to_string(&counter_file).unwrap();
     let count: u32 = counter_content.trim().parse().unwrap();
-    assert_eq!(count, 4, "Should have 4 total attempts (1 initial + 3 retries)");
+    assert_eq!(
+        count, 4,
+        "Should have 4 total attempts (1 initial + 3 retries)"
+    );
 
     cleanup_test_workspace(&workspace_dir);
 }

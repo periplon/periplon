@@ -219,7 +219,10 @@ fn test_enter_selects_topic() {
 
 #[test]
 fn test_regular_characters_ignored() {
-    let ignored_chars = vec!['a', 'b', 'c', 'd', 'e', 'f', 'g', 'i', 'm', 'o', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3'];
+    let ignored_chars = vec![
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'i', 'm', 'o', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y',
+        'z', '1', '2', '3',
+    ];
 
     for ch in ignored_chars {
         let action = handle_help_key_simulation(key(KeyCode::Char(ch)), false);
@@ -281,12 +284,10 @@ fn test_rapid_navigation_keys() {
 #[test]
 fn test_mixed_navigation_keys() {
     // Mix arrow keys and vim keys
-    let actions = vec![
-        handle_help_key_simulation(key(KeyCode::Down), false),
+    let actions = [handle_help_key_simulation(key(KeyCode::Down), false),
         handle_help_key_simulation(key(KeyCode::Char('j')), false),
         handle_help_key_simulation(key(KeyCode::Up), false),
-        handle_help_key_simulation(key(KeyCode::Char('k')), false),
-    ];
+        handle_help_key_simulation(key(KeyCode::Char('k')), false)];
 
     assert_eq!(actions[0], HelpAction::ScrollDown);
     assert_eq!(actions[1], HelpAction::ScrollDown);
@@ -418,8 +419,7 @@ fn test_all_topic_navigation() {
 #[test]
 fn test_all_defined_actions_have_keys() {
     // Ensure all actions can be triggered
-    let actions = vec![
-        HelpAction::ExitHelp,
+    let actions = [HelpAction::ExitHelp,
         HelpAction::BackToBrowse,
         HelpAction::ScrollUp,
         HelpAction::ScrollDown,
@@ -429,8 +429,7 @@ fn test_all_defined_actions_have_keys() {
         HelpAction::PrevTopic,
         HelpAction::NextCategory,
         HelpAction::PrevCategory,
-        HelpAction::SelectTopic,
-    ];
+        HelpAction::SelectTopic];
 
     // Each action should have at least one key that triggers it
     assert_eq!(actions.len(), 11); // All actions accounted for

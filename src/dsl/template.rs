@@ -112,7 +112,8 @@ fn generate_notification_json_schema() -> String {
                 ]
             }
         }
-    })).unwrap_or_else(|_| "{}".to_string())
+    }))
+    .unwrap_or_else(|_| "{}".to_string())
 }
 
 /// Current DSL grammar version
@@ -222,16 +223,40 @@ pub fn generate_template() -> String {
     .unwrap();
     writeln!(&mut template, "# limits:").unwrap();
     writeln!(&mut template, "#   # Output Truncation").unwrap();
-    writeln!(&mut template, "#   max_stdout_bytes: 1048576       # 1MB per task (default)").unwrap();
-    writeln!(&mut template, "#   max_stderr_bytes: 262144        # 256KB per task (default)").unwrap();
-    writeln!(&mut template, "#   truncation_strategy: tail        # head|tail|both|summary (default: tail)").unwrap();
+    writeln!(
+        &mut template,
+        "#   max_stdout_bytes: 1048576       # 1MB per task (default)"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "#   max_stderr_bytes: 262144        # 256KB per task (default)"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "#   truncation_strategy: tail        # head|tail|both|summary (default: tail)"
+    )
+    .unwrap();
     writeln!(&mut template, "#   # Context Injection").unwrap();
-    writeln!(&mut template, "#   max_context_bytes: 102400        # 100KB total context (default)").unwrap();
-    writeln!(&mut template, "#   max_context_tasks: 10            # Max tasks to include (default)").unwrap();
+    writeln!(
+        &mut template,
+        "#   max_context_bytes: 102400        # 100KB total context (default)"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "#   max_context_tasks: 10            # Max tasks to include (default)"
+    )
+    .unwrap();
     writeln!(&mut template, "#   # Cleanup Strategy").unwrap();
     writeln!(&mut template, "#   cleanup_strategy:").unwrap();
     writeln!(&mut template, "#     type: highest_relevance        # most_recent|highest_relevance|lru|direct_dependencies").unwrap();
-    writeln!(&mut template, "#     keep_count: 20                 # Number of task outputs to retain").unwrap();
+    writeln!(
+        &mut template,
+        "#     keep_count: 20                 # Number of task outputs to retain"
+    )
+    .unwrap();
     writeln!(&mut template).unwrap();
 
     writeln!(
@@ -348,7 +373,11 @@ pub fn generate_template() -> String {
         "# Outputs can read from files, state, or task outputs"
     )
     .unwrap();
-    writeln!(&mut template, "# IMPORTANT: source must be an object with 'type' field").unwrap();
+    writeln!(
+        &mut template,
+        "# IMPORTANT: source must be an object with 'type' field"
+    )
+    .unwrap();
     writeln!(&mut template, "# outputs:").unwrap();
     writeln!(&mut template, "#   final_report:").unwrap();
     writeln!(&mut template, "#     source:").unwrap();
@@ -375,7 +404,11 @@ pub fn generate_template() -> String {
         "#       key: \"result\"               # For type: state"
     )
     .unwrap();
-    writeln!(&mut template, "#     description: \"Task result from state\"").unwrap();
+    writeln!(
+        &mut template,
+        "#     description: \"Task result from state\""
+    )
+    .unwrap();
     writeln!(&mut template, "#   analysis:").unwrap();
     writeln!(&mut template, "#     source:").unwrap();
     writeln!(
@@ -472,12 +505,24 @@ pub fn generate_template() -> String {
     writeln!(&mut template).unwrap();
 
     writeln!(&mut template, "    # (optional) Agent output variables").unwrap();
-    writeln!(&mut template, "    # IMPORTANT: source must be an object with 'type' field").unwrap();
+    writeln!(
+        &mut template,
+        "    # IMPORTANT: source must be an object with 'type' field"
+    )
+    .unwrap();
     writeln!(&mut template, "    # outputs:").unwrap();
     writeln!(&mut template, "#       result:").unwrap();
     writeln!(&mut template, "#         source:").unwrap();
-    writeln!(&mut template, "#           type: state             # REQUIRED: file, state, or task_output").unwrap();
-    writeln!(&mut template, "#           key: \"agent_result\"    # For type: state").unwrap();
+    writeln!(
+        &mut template,
+        "#           type: state             # REQUIRED: file, state, or task_output"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "#           key: \"agent_result\"    # For type: state"
+    )
+    .unwrap();
     writeln!(&mut template, "#         description: \"Agent result\"").unwrap();
     writeln!(&mut template).unwrap();
 
@@ -544,7 +589,11 @@ pub fn generate_template() -> String {
     // Add processor_agent for the hierarchical tasks example
     writeln!(&mut template, "  # Additional agent for processing tasks").unwrap();
     writeln!(&mut template, "  processor_agent:").unwrap();
-    writeln!(&mut template, "    description: \"Processes and transforms data\"").unwrap();
+    writeln!(
+        &mut template,
+        "    description: \"Processes and transforms data\""
+    )
+    .unwrap();
     writeln!(&mut template, "    tools:").unwrap();
     writeln!(&mut template, "      - Read").unwrap();
     writeln!(&mut template, "      - Write").unwrap();
@@ -646,12 +695,24 @@ pub fn generate_template() -> String {
         "    # Can be referenced by dependent tasks as ${{task.var_name}}"
     )
     .unwrap();
-    writeln!(&mut template, "    # IMPORTANT: source must be an object with 'type' field").unwrap();
+    writeln!(
+        &mut template,
+        "    # IMPORTANT: source must be an object with 'type' field"
+    )
+    .unwrap();
     writeln!(&mut template, "    # outputs:").unwrap();
     writeln!(&mut template, "#       analysis_result:").unwrap();
     writeln!(&mut template, "#         source:").unwrap();
-    writeln!(&mut template, "#           type: file              # REQUIRED: file, state, or task_output").unwrap();
-    writeln!(&mut template, "#           path: \"./analysis.json\" # For type: file").unwrap();
+    writeln!(
+        &mut template,
+        "#           type: file              # REQUIRED: file, state, or task_output"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "#           path: \"./analysis.json\" # For type: file"
+    )
+    .unwrap();
     writeln!(&mut template, "#         description: \"Analysis result\"").unwrap();
     writeln!(&mut template).unwrap();
 
@@ -684,9 +745,21 @@ pub fn generate_template() -> String {
     )
     .unwrap();
     writeln!(&mut template, "    # VARIABLE INTERPOLATION:").unwrap();
-    writeln!(&mut template, "    # - ${{workflow.var}} and ${{task.var}} are substituted before execution").unwrap();
-    writeln!(&mut template, "    # - Use \\${{...}} to escape (becomes literal ${{...}} in script)").unwrap();
-    writeln!(&mut template, "    # - Useful for mixing DSL variables with shell/language variables").unwrap();
+    writeln!(
+        &mut template,
+        "    # - ${{workflow.var}} and ${{task.var}} are substituted before execution"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "    # - Use \\${{...}} to escape (becomes literal ${{...}} in script)"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "    # - Useful for mixing DSL variables with shell/language variables"
+    )
+    .unwrap();
     writeln!(&mut template, "    # (option 1) Inline script content").unwrap();
     writeln!(&mut template, "    script:").unwrap();
     writeln!(
@@ -980,25 +1053,73 @@ pub fn generate_template() -> String {
         "    # (optional) Nested subtasks (hierarchical task decomposition)"
     )
     .unwrap();
-    writeln!(&mut template, "    # IMPORTANT: Parent tasks with subtasks serve ONLY as grouping/template mechanisms").unwrap();
-    writeln!(&mut template, "    # - Parent tasks with subtasks DO NOT EXECUTE - only their subtasks execute").unwrap();
-    writeln!(&mut template, "    # - Parent tasks DON'T need an 'agent' if they have subtasks").unwrap();
-    writeln!(&mut template, "    # - Subtasks inherit attributes (agent, priority, on_error, etc.) from parent").unwrap();
-    writeln!(&mut template, "    # - Subtasks can override any inherited attribute").unwrap();
-    writeln!(&mut template, "    # - IMPORTANT: If subtask defines ANY execution type (agent, subflow, script, etc.),").unwrap();
-    writeln!(&mut template, "    #   it will NOT inherit parent's agent - allows mixing execution types!").unwrap();
+    writeln!(
+        &mut template,
+        "    # IMPORTANT: Parent tasks with subtasks serve ONLY as grouping/template mechanisms"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "    # - Parent tasks with subtasks DO NOT EXECUTE - only their subtasks execute"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "    # - Parent tasks DON'T need an 'agent' if they have subtasks"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "    # - Subtasks inherit attributes (agent, priority, on_error, etc.) from parent"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "    # - Subtasks can override any inherited attribute"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "    # - IMPORTANT: If subtask defines ANY execution type (agent, subflow, script, etc.),"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "    #   it will NOT inherit parent's agent - allows mixing execution types!"
+    )
+    .unwrap();
     writeln!(&mut template, "    # subtasks:").unwrap();
     writeln!(&mut template, "    #   - subtask_1:").unwrap();
     writeln!(&mut template, "    #       description: \"First subtask\"").unwrap();
-    writeln!(&mut template, "    #       # No execution type - inherits agent from parent").unwrap();
+    writeln!(
+        &mut template,
+        "    #       # No execution type - inherits agent from parent"
+    )
+    .unwrap();
     writeln!(&mut template, "    #   - subtask_2:").unwrap();
     writeln!(&mut template, "    #       description: \"Second subtask\"").unwrap();
-    writeln!(&mut template, "    #       agent: \"different_agent\"  # Override with different agent").unwrap();
+    writeln!(
+        &mut template,
+        "    #       agent: \"different_agent\"  # Override with different agent"
+    )
+    .unwrap();
     writeln!(&mut template, "    #   - subtask_3:").unwrap();
-    writeln!(&mut template, "    #       description: \"Third subtask with script\"").unwrap();
-    writeln!(&mut template, "    #       script:  # Different execution type - won't inherit parent's agent").unwrap();
+    writeln!(
+        &mut template,
+        "    #       description: \"Third subtask with script\""
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "    #       script:  # Different execution type - won't inherit parent's agent"
+    )
+    .unwrap();
     writeln!(&mut template, "    #         language: bash").unwrap();
-    writeln!(&mut template, "    #         content: \"echo 'Running script'\"").unwrap();
+    writeln!(
+        &mut template,
+        "    #         content: \"echo 'Running script'\""
+    )
+    .unwrap();
     writeln!(&mut template).unwrap();
 
     writeln!(
@@ -1050,7 +1171,11 @@ pub fn generate_template() -> String {
     .unwrap();
     writeln!(&mut template, "    # Single condition:").unwrap();
     writeln!(&mut template, "    # condition:").unwrap();
-    writeln!(&mut template, "    #   type: state_equals  # or state_exists, task_status, always, never").unwrap();
+    writeln!(
+        &mut template,
+        "    #   type: state_equals  # or state_exists, task_status, always, never"
+    )
+    .unwrap();
     writeln!(&mut template, "    #   key: \"environment\"").unwrap();
     writeln!(&mut template, "    #   value: \"production\"").unwrap();
     writeln!(&mut template, "    # Combined conditions (AND):").unwrap();
@@ -1145,21 +1270,9 @@ pub fn generate_template() -> String {
         "    # Inputs provide configuration values that agents can use"
     )
     .unwrap();
-    writeln!(
-        &mut template,
-        "    # inputs:"
-    )
-    .unwrap();
-    writeln!(
-        &mut template,
-        "    #   topic: \"Rust async programming\""
-    )
-    .unwrap();
-    writeln!(
-        &mut template,
-        "    #   depth: \"detailed\""
-    )
-    .unwrap();
+    writeln!(&mut template, "    # inputs:").unwrap();
+    writeln!(&mut template, "    #   topic: \"Rust async programming\"").unwrap();
+    writeln!(&mut template, "    #   depth: \"detailed\"").unwrap();
     writeln!(&mut template).unwrap();
     writeln!(
         &mut template,
@@ -1171,31 +1284,11 @@ pub fn generate_template() -> String {
         "    # Outputs define where task results should be stored"
     )
     .unwrap();
-    writeln!(
-        &mut template,
-        "    # outputs:"
-    )
-    .unwrap();
-    writeln!(
-        &mut template,
-        "    #   report:"
-    )
-    .unwrap();
-    writeln!(
-        &mut template,
-        "    #     source:"
-    )
-    .unwrap();
-    writeln!(
-        &mut template,
-        "    #       type: file"
-    )
-    .unwrap();
-    writeln!(
-        &mut template,
-        "    #       path: \"./output/report.md\""
-    )
-    .unwrap();
+    writeln!(&mut template, "    # outputs:").unwrap();
+    writeln!(&mut template, "    #   report:").unwrap();
+    writeln!(&mut template, "    #     source:").unwrap();
+    writeln!(&mut template, "    #       type: file").unwrap();
+    writeln!(&mut template, "    #       path: \"./output/report.md\"").unwrap();
     writeln!(
         &mut template,
         "    #     description: \"Research findings\""
@@ -1230,13 +1323,37 @@ pub fn generate_template() -> String {
     )
     .unwrap();
     writeln!(&mut template, "    # context:").unwrap();
-    writeln!(&mut template, "#       mode: automatic              # automatic|manual|none (default: automatic)").unwrap();
-    writeln!(&mut template, "#       min_relevance: 0.5           # 0.0-1.0 filter threshold (default: 0.5)").unwrap();
-    writeln!(&mut template, "#       max_bytes: 100000            # Override workflow limit").unwrap();
-    writeln!(&mut template, "#       max_tasks: 5                 # Override workflow limit").unwrap();
+    writeln!(
+        &mut template,
+        "#       mode: automatic              # automatic|manual|none (default: automatic)"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "#       min_relevance: 0.5           # 0.0-1.0 filter threshold (default: 0.5)"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "#       max_bytes: 100000            # Override workflow limit"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "#       max_tasks: 5                 # Override workflow limit"
+    )
+    .unwrap();
     writeln!(&mut template, "#       # Manual mode only:").unwrap();
-    writeln!(&mut template, "#       include_tasks: [task1]       # Explicit task list").unwrap();
-    writeln!(&mut template, "#       exclude_tasks: [noisy_task]  # Tasks to exclude").unwrap();
+    writeln!(
+        &mut template,
+        "#       include_tasks: [task1]       # Explicit task list"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "#       exclude_tasks: [noisy_task]  # Tasks to exclude"
+    )
+    .unwrap();
     writeln!(&mut template).unwrap();
 
     writeln!(
@@ -1250,8 +1367,16 @@ pub fn generate_template() -> String {
     )
     .unwrap();
     writeln!(&mut template, "    # limits:").unwrap();
-    writeln!(&mut template, "#       max_stdout_bytes: 10485760   # 10MB override").unwrap();
-    writeln!(&mut template, "#       truncation_strategy: both    # head|tail|both|summary").unwrap();
+    writeln!(
+        &mut template,
+        "#       max_stdout_bytes: 10485760   # 10MB override"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "#       truncation_strategy: both    # head|tail|both|summary"
+    )
+    .unwrap();
     writeln!(&mut template).unwrap();
 
     writeln!(
@@ -1499,42 +1624,110 @@ pub fn generate_template() -> String {
 
     // Hierarchical tasks example
     writeln!(&mut template, "# HIERARCHICAL TASKS (Parent/Subtasks)").unwrap();
-    writeln!(&mut template, "# Complete example showing parent tasks as grouping mechanisms").unwrap();
+    writeln!(
+        &mut template,
+        "# Complete example showing parent tasks as grouping mechanisms"
+    )
+    .unwrap();
     writeln!(&mut template, "# and flexible execution type mixing").unwrap();
     writeln!(&mut template).unwrap();
 
-    writeln!(&mut template, "  # Example: Parent task for grouping (NO agent needed)").unwrap();
+    writeln!(
+        &mut template,
+        "  # Example: Parent task for grouping (NO agent needed)"
+    )
+    .unwrap();
     writeln!(&mut template, "  file_processing_group:").unwrap();
-    writeln!(&mut template, "    description: \"Process files in stages\"").unwrap();
-    writeln!(&mut template, "    # NOTE: No 'agent' field needed - this parent task won't execute").unwrap();
-    writeln!(&mut template, "    # Subtasks without execution types will inherit these settings:").unwrap();
-    writeln!(&mut template, "    agent: \"example_agent\"  # Inherited by subtasks without execution type").unwrap();
-    writeln!(&mut template, "    priority: 5  # Inherited by all subtasks").unwrap();
+    writeln!(
+        &mut template,
+        "    description: \"Process files in stages\""
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "    # NOTE: No 'agent' field needed - this parent task won't execute"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "    # Subtasks without execution types will inherit these settings:"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "    agent: \"example_agent\"  # Inherited by subtasks without execution type"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "    priority: 5  # Inherited by all subtasks"
+    )
+    .unwrap();
     writeln!(&mut template, "    on_error:  # Inherited by all subtasks").unwrap();
     writeln!(&mut template, "      retry: 2").unwrap();
     writeln!(&mut template, "      retry_delay_secs: 5").unwrap();
-    writeln!(&mut template, "    # Subtasks (only these will actually execute):").unwrap();
+    writeln!(
+        &mut template,
+        "    # Subtasks (only these will actually execute):"
+    )
+    .unwrap();
     writeln!(&mut template, "    subtasks:").unwrap();
     writeln!(&mut template, "      - scan_files:").unwrap();
-    writeln!(&mut template, "          description: \"Scan and catalog files\"").unwrap();
-    writeln!(&mut template, "          # No execution type - inherits agent, priority, on_error from parent").unwrap();
+    writeln!(
+        &mut template,
+        "          description: \"Scan and catalog files\""
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "          # No execution type - inherits agent, priority, on_error from parent"
+    )
+    .unwrap();
     writeln!(&mut template).unwrap();
     writeln!(&mut template, "      - validate_files:").unwrap();
-    writeln!(&mut template, "          description: \"Validate file formats using script\"").unwrap();
+    writeln!(
+        &mut template,
+        "          description: \"Validate file formats using script\""
+    )
+    .unwrap();
     writeln!(&mut template, "          depends_on:").unwrap();
-    writeln!(&mut template, "            - scan_files  # Depends on sibling subtask").unwrap();
-    writeln!(&mut template, "          # Uses script execution type - won't inherit parent's agent").unwrap();
+    writeln!(
+        &mut template,
+        "            - scan_files  # Depends on sibling subtask"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "          # Uses script execution type - won't inherit parent's agent"
+    )
+    .unwrap();
     writeln!(&mut template, "          script:").unwrap();
     writeln!(&mut template, "            language: bash").unwrap();
-    writeln!(&mut template, "            content: \"find . -type f -name '*.txt' | xargs file\"").unwrap();
+    writeln!(
+        &mut template,
+        "            content: \"find . -type f -name '*.txt' | xargs file\""
+    )
+    .unwrap();
     writeln!(&mut template).unwrap();
     writeln!(&mut template, "      - process_files:").unwrap();
-    writeln!(&mut template, "          description: \"Process validated files\"").unwrap();
+    writeln!(
+        &mut template,
+        "          description: \"Process validated files\""
+    )
+    .unwrap();
     writeln!(&mut template, "          depends_on:").unwrap();
     writeln!(&mut template, "            - validate_files").unwrap();
-    writeln!(&mut template, "          # Override with different agent (still inherits priority, on_error)").unwrap();
+    writeln!(
+        &mut template,
+        "          # Override with different agent (still inherits priority, on_error)"
+    )
+    .unwrap();
     writeln!(&mut template, "          agent: \"processor_agent\"").unwrap();
-    writeln!(&mut template, "          priority: 1  # Override parent's priority (higher priority)").unwrap();
+    writeln!(
+        &mut template,
+        "          priority: 1  # Override parent's priority (higher priority)"
+    )
+    .unwrap();
     writeln!(&mut template).unwrap();
 
     // Subflows section
@@ -1646,18 +1839,38 @@ pub fn generate_template() -> String {
 
     // Imports section
     writeln!(&mut template, "# (optional) Task group imports").unwrap();
-    writeln!(&mut template, "# Import prebuilt workflow collections from external sources").unwrap();
-    writeln!(&mut template, "# Format: namespace -> \"group-name@version\"").unwrap();
+    writeln!(
+        &mut template,
+        "# Import prebuilt workflow collections from external sources"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "# Format: namespace -> \"group-name@version\""
+    )
+    .unwrap();
     writeln!(&mut template, "# imports:").unwrap();
     writeln!(&mut template, "#   google: \"google-workspace@1.0.0\"").unwrap();
     writeln!(&mut template, "#   aws: \"aws-services@2.1.0\"").unwrap();
     writeln!(&mut template, "#   slack: \"slack-integration@0.5.0\"").unwrap();
     writeln!(&mut template, "#").unwrap();
-    writeln!(&mut template, "# Use imported workflows in tasks with uses_workflow:").unwrap();
+    writeln!(
+        &mut template,
+        "# Use imported workflows in tasks with uses_workflow:"
+    )
+    .unwrap();
     writeln!(&mut template, "# tasks:").unwrap();
     writeln!(&mut template, "#   upload_to_drive:").unwrap();
-    writeln!(&mut template, "#     description: \"Upload file to Google Drive\"").unwrap();
-    writeln!(&mut template, "#     uses_workflow: \"google:upload-file\"  # namespace:workflow_name").unwrap();
+    writeln!(
+        &mut template,
+        "#     description: \"Upload file to Google Drive\""
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "#     uses_workflow: \"google:upload-file\"  # namespace:workflow_name"
+    )
+    .unwrap();
     writeln!(&mut template, "#     inputs:").unwrap();
     writeln!(&mut template, "#       file_path: \"./document.pdf\"").unwrap();
     writeln!(&mut template, "#       folder_id: \"abc123\"").unwrap();
@@ -1779,15 +1992,27 @@ pub fn generate_template() -> String {
     writeln!(&mut template).unwrap();
 
     // Notifications section
-    writeln!(&mut template, "# (optional) Notification system configuration").unwrap();
+    writeln!(
+        &mut template,
+        "# (optional) Notification system configuration"
+    )
+    .unwrap();
     writeln!(
         &mut template,
         "# Define default notification channels and settings"
     )
     .unwrap();
-    writeln!(&mut template, "# IMPORTANT: Channels must be defined inline (not as named references)").unwrap();
+    writeln!(
+        &mut template,
+        "# IMPORTANT: Channels must be defined inline (not as named references)"
+    )
+    .unwrap();
     writeln!(&mut template, "# notifications:").unwrap();
-    writeln!(&mut template, "#   default_channels:  # Default channels for notifications").unwrap();
+    writeln!(
+        &mut template,
+        "#   default_channels:  # Default channels for notifications"
+    )
+    .unwrap();
     writeln!(&mut template, "#     - type: console").unwrap();
     writeln!(&mut template, "#       colored: true").unwrap();
     writeln!(&mut template, "#       timestamp: true").unwrap();
@@ -1802,29 +2027,65 @@ pub fn generate_template() -> String {
     writeln!(&mut template, "# Notification channels (inline in tasks):").unwrap();
     writeln!(&mut template, "# tasks:").unwrap();
     writeln!(&mut template, "#   example_task:").unwrap();
-    writeln!(&mut template, "#     description: \"Task with notification\"").unwrap();
+    writeln!(
+        &mut template,
+        "#     description: \"Task with notification\""
+    )
+    .unwrap();
     writeln!(&mut template, "#     agent: \"example_agent\"").unwrap();
     writeln!(&mut template, "#     on_complete:").unwrap();
-    writeln!(&mut template, "#       notify:  # Simple string notification").unwrap();
-    writeln!(&mut template, "#         message: \"Task completed successfully\"").unwrap();
-    writeln!(&mut template, "#         channels:  # MUST be inline, not references").unwrap();
+    writeln!(
+        &mut template,
+        "#       notify:  # Simple string notification"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "#         message: \"Task completed successfully\""
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "#         channels:  # MUST be inline, not references"
+    )
+    .unwrap();
     writeln!(&mut template, "#           - type: console").unwrap();
     writeln!(&mut template, "#             colored: true").unwrap();
     writeln!(&mut template, "#             timestamp: true").unwrap();
-    writeln!(&mut template, "#           - type: slack  # Example: Slack notification").unwrap();
-    writeln!(&mut template, "#             credential: \"${{secret.slack_webhook}}\"").unwrap();
+    writeln!(
+        &mut template,
+        "#           - type: slack  # Example: Slack notification"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "#             credential: \"${{secret.slack_webhook}}\""
+    )
+    .unwrap();
     writeln!(&mut template, "#             channel: \"#notifications\"").unwrap();
     writeln!(&mut template, "#             method: webhook").unwrap();
-    writeln!(&mut template, "#         # OR simple string: notify: \"Task completed\"").unwrap();
+    writeln!(
+        &mut template,
+        "#         # OR simple string: notify: \"Task completed\""
+    )
+    .unwrap();
     writeln!(&mut template, "#").unwrap();
     writeln!(&mut template, "# Supported notification channels:").unwrap();
-    writeln!(&mut template, "#   - console: Console/stdout with colors and timestamps").unwrap();
+    writeln!(
+        &mut template,
+        "#   - console: Console/stdout with colors and timestamps"
+    )
+    .unwrap();
     writeln!(&mut template, "#   - email: SMTP email notifications").unwrap();
     writeln!(&mut template, "#   - slack: Slack webhook or bot").unwrap();
     writeln!(&mut template, "#   - discord: Discord webhook").unwrap();
     writeln!(&mut template, "#   - teams: Microsoft Teams webhook").unwrap();
     writeln!(&mut template, "#   - telegram: Telegram bot API").unwrap();
-    writeln!(&mut template, "#   - pagerduty: PagerDuty incident notifications").unwrap();
+    writeln!(
+        &mut template,
+        "#   - pagerduty: PagerDuty incident notifications"
+    )
+    .unwrap();
     writeln!(&mut template, "#   - webhook: Generic HTTP webhook").unwrap();
     writeln!(&mut template, "#   - file: Write to log file").unwrap();
     writeln!(&mut template, "#   - ntfy: ntfy.sh push notifications").unwrap();
@@ -1887,22 +2148,54 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "# Your Task").unwrap();
     writeln!(&mut prompt, "Convert natural language descriptions of multi-agent AI workflows into valid YAML-based DSL syntax.").unwrap();
     writeln!(&mut prompt).unwrap();
-    writeln!(&mut prompt, "# ⚠️ CRITICAL: ALWAYS START WITH REQUIRED FIELDS ⚠️").unwrap();
+    writeln!(
+        &mut prompt,
+        "# ⚠️ CRITICAL: ALWAYS START WITH REQUIRED FIELDS ⚠️"
+    )
+    .unwrap();
     writeln!(&mut prompt, "EVERY workflow MUST begin with:").unwrap();
     writeln!(&mut prompt, "```yaml").unwrap();
     writeln!(&mut prompt, "name: \"Your Workflow Name\"").unwrap();
     writeln!(&mut prompt, "version: \"1.0.0\"").unwrap();
     writeln!(&mut prompt, "```").unwrap();
-    writeln!(&mut prompt, "These two fields are MANDATORY and must appear at the top of every workflow.").unwrap();
-    writeln!(&mut prompt, "Workflows without `name` and `version` fields will fail validation.").unwrap();
+    writeln!(
+        &mut prompt,
+        "These two fields are MANDATORY and must appear at the top of every workflow."
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "Workflows without `name` and `version` fields will fail validation."
+    )
+    .unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "# CRITICAL VALIDATION RULES").unwrap();
-    writeln!(&mut prompt, "When using loop specifications, you MUST include ALL required fields:").unwrap();
-    writeln!(&mut prompt, "- `repeat` type REQUIRES `count` field (number of iterations)").unwrap();
-    writeln!(&mut prompt, "- `for_each` type REQUIRES `collection` and `iterator` fields").unwrap();
+    writeln!(
+        &mut prompt,
+        "When using loop specifications, you MUST include ALL required fields:"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "- `repeat` type REQUIRES `count` field (number of iterations)"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "- `for_each` type REQUIRES `collection` and `iterator` fields"
+    )
+    .unwrap();
     writeln!(&mut prompt, "- `while` type REQUIRES `condition` field").unwrap();
-    writeln!(&mut prompt, "- `repeat_until` type REQUIRES `condition` field").unwrap();
-    writeln!(&mut prompt, "DO NOT use loop types without their required fields or validation will fail.").unwrap();
+    writeln!(
+        &mut prompt,
+        "- `repeat_until` type REQUIRES `condition` field"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "DO NOT use loop types without their required fields or validation will fail."
+    )
+    .unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "# DSL Structure").unwrap();
     writeln!(&mut prompt).unwrap();
@@ -1971,8 +2264,16 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     )
     .unwrap();
     writeln!(&mut prompt, "- `mcp_servers`: MCP server configurations").unwrap();
-    writeln!(&mut prompt, "- `subflows`: Map of reusable subflow definitions (can be inline or external)").unwrap();
-    writeln!(&mut prompt, "- `imports`: Map of task group imports (namespace -> \"group@version\")").unwrap();
+    writeln!(
+        &mut prompt,
+        "- `subflows`: Map of reusable subflow definitions (can be inline or external)"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "- `imports`: Map of task group imports (namespace -> \"group@version\")"
+    )
+    .unwrap();
     writeln!(&mut prompt).unwrap();
 
     writeln!(&mut prompt, "## Stdio & Context Management").unwrap();
@@ -1982,21 +2283,53 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "```yaml").unwrap();
     writeln!(&mut prompt, "limits:").unwrap();
     writeln!(&mut prompt, "  # Output Truncation").unwrap();
-    writeln!(&mut prompt, "  max_stdout_bytes: 1048576       # 1MB per task (default)").unwrap();
-    writeln!(&mut prompt, "  max_stderr_bytes: 262144        # 256KB per task (default)").unwrap();
-    writeln!(&mut prompt, "  truncation_strategy: tail        # head|tail|both|summary (default: tail)").unwrap();
+    writeln!(
+        &mut prompt,
+        "  max_stdout_bytes: 1048576       # 1MB per task (default)"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "  max_stderr_bytes: 262144        # 256KB per task (default)"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "  truncation_strategy: tail        # head|tail|both|summary (default: tail)"
+    )
+    .unwrap();
     writeln!(&mut prompt, "  # Context Injection").unwrap();
-    writeln!(&mut prompt, "  max_context_bytes: 102400        # 100KB total context (default)").unwrap();
-    writeln!(&mut prompt, "  max_context_tasks: 10            # Max tasks to include (default)").unwrap();
+    writeln!(
+        &mut prompt,
+        "  max_context_bytes: 102400        # 100KB total context (default)"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "  max_context_tasks: 10            # Max tasks to include (default)"
+    )
+    .unwrap();
     writeln!(&mut prompt, "  # Cleanup Strategy").unwrap();
     writeln!(&mut prompt, "  cleanup_strategy:").unwrap();
     writeln!(&mut prompt, "    type: highest_relevance        # most_recent|highest_relevance|lru|direct_dependencies").unwrap();
-    writeln!(&mut prompt, "    keep_count: 20                 # Number of task outputs to retain").unwrap();
+    writeln!(
+        &mut prompt,
+        "    keep_count: 20                 # Number of task outputs to retain"
+    )
+    .unwrap();
     writeln!(&mut prompt, "```").unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "### Truncation Strategies").unwrap();
-    writeln!(&mut prompt, "- `tail`: Keep last N bytes (most recent output) - DEFAULT").unwrap();
-    writeln!(&mut prompt, "- `head`: Keep first N bytes (startup messages)").unwrap();
+    writeln!(
+        &mut prompt,
+        "- `tail`: Keep last N bytes (most recent output) - DEFAULT"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "- `head`: Keep first N bytes (startup messages)"
+    )
+    .unwrap();
     writeln!(&mut prompt, "- `both`: Keep first N/2 and last N/2 bytes").unwrap();
     writeln!(&mut prompt, "- `summary`: AI-generated summary (future)").unwrap();
     writeln!(&mut prompt).unwrap();
@@ -2006,21 +2339,57 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "  my_task:").unwrap();
     writeln!(&mut prompt, "    description: \"Task with smart context\"").unwrap();
     writeln!(&mut prompt, "    agent: \"worker\"").unwrap();
-    writeln!(&mut prompt, "    inject_context: true           # Enable context injection").unwrap();
+    writeln!(
+        &mut prompt,
+        "    inject_context: true           # Enable context injection"
+    )
+    .unwrap();
     writeln!(&mut prompt, "    context:").unwrap();
-    writeln!(&mut prompt, "      mode: automatic              # automatic|manual|none (default: automatic)").unwrap();
-    writeln!(&mut prompt, "      min_relevance: 0.5           # 0.0-1.0 filter threshold (default: 0.5)").unwrap();
-    writeln!(&mut prompt, "      max_bytes: 100000            # Override workflow limit").unwrap();
-    writeln!(&mut prompt, "      max_tasks: 5                 # Override workflow limit").unwrap();
+    writeln!(
+        &mut prompt,
+        "      mode: automatic              # automatic|manual|none (default: automatic)"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "      min_relevance: 0.5           # 0.0-1.0 filter threshold (default: 0.5)"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "      max_bytes: 100000            # Override workflow limit"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "      max_tasks: 5                 # Override workflow limit"
+    )
+    .unwrap();
     writeln!(&mut prompt, "      # Manual mode only:").unwrap();
-    writeln!(&mut prompt, "      include_tasks: [task1, task2] # Explicit task list").unwrap();
-    writeln!(&mut prompt, "      exclude_tasks: [noisy_task]   # Tasks to exclude").unwrap();
+    writeln!(
+        &mut prompt,
+        "      include_tasks: [task1, task2] # Explicit task list"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "      exclude_tasks: [noisy_task]   # Tasks to exclude"
+    )
+    .unwrap();
     writeln!(&mut prompt, "```").unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "### Context Modes").unwrap();
-    writeln!(&mut prompt, "- `automatic`: Dependency-based relevance scoring").unwrap();
+    writeln!(
+        &mut prompt,
+        "- `automatic`: Dependency-based relevance scoring"
+    )
+    .unwrap();
     writeln!(&mut prompt, "  - Direct dependency: relevance = 1.0").unwrap();
-    writeln!(&mut prompt, "  - Transitive dependency: relevance = 0.8 / depth").unwrap();
+    writeln!(
+        &mut prompt,
+        "  - Transitive dependency: relevance = 0.8 / depth"
+    )
+    .unwrap();
     writeln!(&mut prompt, "  - Same agent: relevance = 0.5").unwrap();
     writeln!(&mut prompt, "- `manual`: Explicit include/exclude lists").unwrap();
     writeln!(&mut prompt, "- `none`: Disable context injection").unwrap();
@@ -2032,14 +2401,30 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "    description: \"Task with custom limits\"").unwrap();
     writeln!(&mut prompt, "    agent: \"worker\"").unwrap();
     writeln!(&mut prompt, "    limits:").unwrap();
-    writeln!(&mut prompt, "      max_stdout_bytes: 10485760   # 10MB override").unwrap();
+    writeln!(
+        &mut prompt,
+        "      max_stdout_bytes: 10485760   # 10MB override"
+    )
+    .unwrap();
     writeln!(&mut prompt, "      truncation_strategy: both").unwrap();
     writeln!(&mut prompt, "```").unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "### Use Cases").unwrap();
-    writeln!(&mut prompt, "- **Long-running workflows**: Prevent memory exhaustion with cleanup strategies").unwrap();
-    writeln!(&mut prompt, "- **Data pipelines**: Smart context injection for processing chains").unwrap();
-    writeln!(&mut prompt, "- **Resource-constrained environments**: Minimal memory footprint").unwrap();
+    writeln!(
+        &mut prompt,
+        "- **Long-running workflows**: Prevent memory exhaustion with cleanup strategies"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "- **Data pipelines**: Smart context injection for processing chains"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "- **Resource-constrained environments**: Minimal memory footprint"
+    )
+    .unwrap();
     writeln!(&mut prompt).unwrap();
 
     writeln!(&mut prompt, "## Secrets Management").unwrap();
@@ -2080,17 +2465,21 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     )
     .unwrap();
     writeln!(&mut prompt).unwrap();
-    writeln!(
-        &mut prompt,
-        "Examples:"
-    )
-    .unwrap();
+    writeln!(&mut prompt, "Examples:").unwrap();
     writeln!(&mut prompt, "```yaml").unwrap();
     writeln!(&mut prompt, "# String variables:").unwrap();
-    writeln!(&mut prompt, "description: \"Deploy ${{workflow.project_name}} to production\"").unwrap();
+    writeln!(
+        &mut prompt,
+        "description: \"Deploy ${{workflow.project_name}} to production\""
+    )
+    .unwrap();
     writeln!(&mut prompt, "path: \"${{workflow.output_dir}}/result.txt\"").unwrap();
     writeln!(&mut prompt).unwrap();
-    writeln!(&mut prompt, "# Numeric variables (interpolated at runtime):").unwrap();
+    writeln!(
+        &mut prompt,
+        "# Numeric variables (interpolated at runtime):"
+    )
+    .unwrap();
     writeln!(&mut prompt, "inputs:").unwrap();
     writeln!(&mut prompt, "  retry_count:").unwrap();
     writeln!(&mut prompt, "    type: integer").unwrap();
@@ -2104,33 +2493,77 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "tasks:").unwrap();
     writeln!(&mut prompt, "  example_retry:").unwrap();
-    writeln!(&mut prompt, "    description: \"Task with configurable retry\"").unwrap();
+    writeln!(
+        &mut prompt,
+        "    description: \"Task with configurable retry\""
+    )
+    .unwrap();
     writeln!(&mut prompt, "    agent: \"worker\"").unwrap();
     writeln!(&mut prompt, "    on_error:").unwrap();
-    writeln!(&mut prompt, "      retry: ${{workflow.retry_count}}  # Numeric variable").unwrap();
-    writeln!(&mut prompt, "      retry_delay_secs: ${{workflow.timeout}}  # Numeric variable").unwrap();
+    writeln!(
+        &mut prompt,
+        "      retry: ${{workflow.retry_count}}  # Numeric variable"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "      retry_delay_secs: ${{workflow.timeout}}  # Numeric variable"
+    )
+    .unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "  example_loop:").unwrap();
-    writeln!(&mut prompt, "    description: \"Task with configurable loop count\"").unwrap();
+    writeln!(
+        &mut prompt,
+        "    description: \"Task with configurable loop count\""
+    )
+    .unwrap();
     writeln!(&mut prompt, "    agent: \"worker\"").unwrap();
     writeln!(&mut prompt, "    loop:").unwrap();
     writeln!(&mut prompt, "      type: repeat").unwrap();
-    writeln!(&mut prompt, "      count: ${{workflow.iterations}}  # Numeric variable for loop count").unwrap();
+    writeln!(
+        &mut prompt,
+        "      count: ${{workflow.iterations}}  # Numeric variable for loop count"
+    )
+    .unwrap();
     writeln!(&mut prompt, "      iterator: \"i\"").unwrap();
     writeln!(&mut prompt, "```").unwrap();
-    writeln!(&mut prompt, "IMPORTANT: Numeric/boolean variables must reference inputs with matching types.").unwrap();
+    writeln!(
+        &mut prompt,
+        "IMPORTANT: Numeric/boolean variables must reference inputs with matching types."
+    )
+    .unwrap();
     writeln!(&mut prompt, "Variables can be used in: on_error.retry, on_error.retry_delay_secs, loop.count, and other numeric fields.").unwrap();
     writeln!(&mut prompt).unwrap();
 
     writeln!(&mut prompt, "## Input Schema (CRITICAL)").unwrap();
-    writeln!(&mut prompt, "Input variables MUST include a 'type' field. Structure:").unwrap();
+    writeln!(
+        &mut prompt,
+        "Input variables MUST include a 'type' field. Structure:"
+    )
+    .unwrap();
     writeln!(&mut prompt, "```yaml").unwrap();
     writeln!(&mut prompt, "inputs:").unwrap();
     writeln!(&mut prompt, "  input_name:").unwrap();
-    writeln!(&mut prompt, "    type: string  # REQUIRED: string, number, integer, boolean, object, array").unwrap();
-    writeln!(&mut prompt, "    required: true  # Optional: whether input must be provided (default: false)").unwrap();
-    writeln!(&mut prompt, "    default: \"value\"  # Optional: default value if not provided").unwrap();
-    writeln!(&mut prompt, "    description: \"Input description\"  # Optional: what this input is for").unwrap();
+    writeln!(
+        &mut prompt,
+        "    type: string  # REQUIRED: string, number, integer, boolean, object, array"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "    required: true  # Optional: whether input must be provided (default: false)"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "    default: \"value\"  # Optional: default value if not provided"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "    description: \"Input description\"  # Optional: what this input is for"
+    )
+    .unwrap();
     writeln!(&mut prompt, "```").unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "Examples:").unwrap();
@@ -2151,22 +2584,50 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "    type: object").unwrap();
     writeln!(&mut prompt, "    required: false").unwrap();
     writeln!(&mut prompt, "```").unwrap();
-    writeln!(&mut prompt, "CRITICAL: 'type' field is REQUIRED for all inputs. Do NOT omit it.").unwrap();
+    writeln!(
+        &mut prompt,
+        "CRITICAL: 'type' field is REQUIRED for all inputs. Do NOT omit it."
+    )
+    .unwrap();
     writeln!(&mut prompt).unwrap();
 
     writeln!(&mut prompt, "## Output Schema (IMPORTANT)").unwrap();
-    writeln!(&mut prompt, "Output variables MUST use this exact structure:").unwrap();
+    writeln!(
+        &mut prompt,
+        "Output variables MUST use this exact structure:"
+    )
+    .unwrap();
     writeln!(&mut prompt, "```yaml").unwrap();
     writeln!(&mut prompt, "outputs:").unwrap();
     writeln!(&mut prompt, "  output_name:").unwrap();
     writeln!(&mut prompt, "    source:").unwrap();
-    writeln!(&mut prompt, "      type: file              # REQUIRED: file, state, or task_output").unwrap();
-    writeln!(&mut prompt, "      path: \"./result.txt\"    # For type: file").unwrap();
-    writeln!(&mut prompt, "      # key: \"result\"         # For type: state").unwrap();
-    writeln!(&mut prompt, "      # task: \"task_id\"      # For type: task_output").unwrap();
+    writeln!(
+        &mut prompt,
+        "      type: file              # REQUIRED: file, state, or task_output"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "      path: \"./result.txt\"    # For type: file"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "      # key: \"result\"         # For type: state"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "      # task: \"task_id\"      # For type: task_output"
+    )
+    .unwrap();
     writeln!(&mut prompt, "    description: \"Description\"  # Optional").unwrap();
     writeln!(&mut prompt, "```").unwrap();
-    writeln!(&mut prompt, "CRITICAL: 'source' is an OBJECT with a 'type' field, NOT a flat string.").unwrap();
+    writeln!(
+        &mut prompt,
+        "CRITICAL: 'source' is an OBJECT with a 'type' field, NOT a flat string."
+    )
+    .unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "## Agent Schema").unwrap();
     writeln!(&mut prompt, "```yaml").unwrap();
@@ -2215,9 +2676,17 @@ pub fn generate_nl_to_dsl_prompt() -> String {
         "CRITICAL: Tasks MUST use EXACTLY ONE execution type. Execution types are MUTUALLY EXCLUSIVE."
     )
     .unwrap();
-    writeln!(&mut prompt, "CRITICAL: Tasks must specify EXACTLY ONE execution type.").unwrap();
+    writeln!(
+        &mut prompt,
+        "CRITICAL: Tasks must specify EXACTLY ONE execution type."
+    )
+    .unwrap();
     writeln!(&mut prompt, "CRITICAL: Valid execution types: agent, subflow, uses, embed, script, command, http, mcp_tool").unwrap();
-    writeln!(&mut prompt, "CRITICAL: DO NOT combine multiple types (e.g., agent + script, script + command, etc.)").unwrap();
+    writeln!(
+        &mut prompt,
+        "CRITICAL: DO NOT combine multiple types (e.g., agent + script, script + command, etc.)"
+    )
+    .unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(
         &mut prompt,
@@ -2232,8 +2701,16 @@ pub fn generate_nl_to_dsl_prompt() -> String {
         "    description: \"What to accomplish\" # REQUIRED"
     )
     .unwrap();
-    writeln!(&mut prompt, "    # ===== CHOOSE EXACTLY ONE EXECUTION TYPE =====").unwrap();
-    writeln!(&mut prompt, "    # Option 1: AI agent execution (mutually exclusive with options 2-8)").unwrap();
+    writeln!(
+        &mut prompt,
+        "    # ===== CHOOSE EXACTLY ONE EXECUTION TYPE ====="
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "    # Option 1: AI agent execution (mutually exclusive with options 2-8)"
+    )
+    .unwrap();
     writeln!(&mut prompt, "    agent: \"agent_name\"").unwrap();
     writeln!(&mut prompt, "    # Option 2: Predefined task reference").unwrap();
     writeln!(
@@ -2261,8 +2738,16 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     .unwrap();
     writeln!(&mut prompt, "    # Option 5: Script execution").unwrap();
     writeln!(&mut prompt, "    # Variable interpolation in scripts:").unwrap();
-    writeln!(&mut prompt, "    #   - ${{workflow.var}} and ${{task.var}} are substituted").unwrap();
-    writeln!(&mut prompt, "    #   - Use \\${{...}} to escape (becomes literal ${{...}})").unwrap();
+    writeln!(
+        &mut prompt,
+        "    #   - ${{workflow.var}} and ${{task.var}} are substituted"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "    #   - Use \\${{...}} to escape (becomes literal ${{...}})"
+    )
+    .unwrap();
     writeln!(&mut prompt, "    # script:").unwrap();
     writeln!(
         &mut prompt,
@@ -2271,8 +2756,16 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     .unwrap();
     writeln!(&mut prompt, "#       content: |  # Inline script").unwrap();
     writeln!(&mut prompt, "#         import os").unwrap();
-    writeln!(&mut prompt, "#         project = \"${{workflow.project_name}}\"  # DSL var").unwrap();
-    writeln!(&mut prompt, "#         path = os.environ.get('PATH', \\${{PATH}})  # Escaped").unwrap();
+    writeln!(
+        &mut prompt,
+        "#         project = \"${{workflow.project_name}}\"  # DSL var"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "#         path = os.environ.get('PATH', \\${{PATH}})  # Escaped"
+    )
+    .unwrap();
     writeln!(
         &mut prompt,
         "#       # OR file: \"scripts/process.py\"  # External script"
@@ -2346,12 +2839,36 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     )
     .unwrap();
     writeln!(&mut prompt, "    # Hierarchical task decomposition:").unwrap();
-    writeln!(&mut prompt, "    # IMPORTANT: Parent tasks with subtasks DO NOT EXECUTE").unwrap();
-    writeln!(&mut prompt, "    # - Parent tasks serve only as grouping/template mechanisms").unwrap();
-    writeln!(&mut prompt, "    # - Parent tasks DON'T need an 'agent' if they have subtasks").unwrap();
-    writeln!(&mut prompt, "    # - Subtasks inherit parent attributes (agent, priority, on_error, etc.)").unwrap();
-    writeln!(&mut prompt, "    # - Subtasks can override any inherited attribute").unwrap();
-    writeln!(&mut prompt, "    # - If subtask has ANY execution type, it won't inherit parent's agent").unwrap();
+    writeln!(
+        &mut prompt,
+        "    # IMPORTANT: Parent tasks with subtasks DO NOT EXECUTE"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "    # - Parent tasks serve only as grouping/template mechanisms"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "    # - Parent tasks DON'T need an 'agent' if they have subtasks"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "    # - Subtasks inherit parent attributes (agent, priority, on_error, etc.)"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "    # - Subtasks can override any inherited attribute"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "    # - If subtask has ANY execution type, it won't inherit parent's agent"
+    )
+    .unwrap();
     writeln!(&mut prompt, "    subtasks:  # optional nested tasks").unwrap();
     writeln!(&mut prompt, "      - subtask_1:").unwrap();
     writeln!(
@@ -2359,17 +2876,29 @@ pub fn generate_nl_to_dsl_prompt() -> String {
         "          description: \"Subtask description\""
     )
     .unwrap();
-    writeln!(&mut prompt, "          # No execution type - inherits parent's agent/priority/etc").unwrap();
-    writeln!(&mut prompt, "      - subtask_2:").unwrap();
     writeln!(
         &mut prompt,
-        "          description: \"Another subtask\""
+        "          # No execution type - inherits parent's agent/priority/etc"
     )
     .unwrap();
-    writeln!(&mut prompt, "          agent: \"different_agent\"  # Override parent's agent").unwrap();
+    writeln!(&mut prompt, "      - subtask_2:").unwrap();
+    writeln!(&mut prompt, "          description: \"Another subtask\"").unwrap();
+    writeln!(
+        &mut prompt,
+        "          agent: \"different_agent\"  # Override parent's agent"
+    )
+    .unwrap();
     writeln!(&mut prompt, "      - subtask_3:").unwrap();
-    writeln!(&mut prompt, "          description: \"Script-based subtask\"").unwrap();
-    writeln!(&mut prompt, "          script:  # Different execution type - won't inherit parent's agent").unwrap();
+    writeln!(
+        &mut prompt,
+        "          description: \"Script-based subtask\""
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "          script:  # Different execution type - won't inherit parent's agent"
+    )
+    .unwrap();
     writeln!(&mut prompt, "            language: bash").unwrap();
     writeln!(&mut prompt, "            content: \"echo 'test'\"").unwrap();
     writeln!(&mut prompt, "    on_complete:  # optional").unwrap();
@@ -2389,9 +2918,21 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "      key: \"environment\"").unwrap();
     writeln!(&mut prompt, "      value: \"production\"").unwrap();
     writeln!(&mut prompt, "      # OR use combined conditions:").unwrap();
-    writeln!(&mut prompt, "      # and: [condition1, condition2]  # All must be true").unwrap();
-    writeln!(&mut prompt, "      # or: [condition1, condition2]   # Any can be true").unwrap();
-    writeln!(&mut prompt, "      # not: condition                 # Negate condition").unwrap();
+    writeln!(
+        &mut prompt,
+        "      # and: [condition1, condition2]  # All must be true"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "      # or: [condition1, condition2]   # Any can be true"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "      # not: condition                 # Negate condition"
+    )
+    .unwrap();
     writeln!(
         &mut prompt,
         "    definition_of_done:  # optional - quality criteria"
@@ -2427,15 +2968,31 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "      max_parallel: 5").unwrap();
     writeln!(&mut prompt, "      # LOOP TYPE: repeat (REQUIRES count)").unwrap();
     writeln!(&mut prompt, "      # type: repeat").unwrap();
-    writeln!(&mut prompt, "      # count: 10  # REQUIRED - can be number or variable like ${{workflow.iterations}}").unwrap();
+    writeln!(
+        &mut prompt,
+        "      # count: 10  # REQUIRED - can be number or variable like ${{workflow.iterations}}"
+    )
+    .unwrap();
     writeln!(&mut prompt, "      # iterator: \"i\"  # optional").unwrap();
     writeln!(&mut prompt, "      # LOOP TYPE: while (REQUIRES condition)").unwrap();
     writeln!(&mut prompt, "      # type: while").unwrap();
-    writeln!(&mut prompt, "      # condition: {{ type: state_equals, key: \"done\", value: false }}").unwrap();
+    writeln!(
+        &mut prompt,
+        "      # condition: {{ type: state_equals, key: \"done\", value: false }}"
+    )
+    .unwrap();
     writeln!(&mut prompt, "      # max_iterations: 100  # optional").unwrap();
-    writeln!(&mut prompt, "      # LOOP TYPE: repeat_until (REQUIRES condition)").unwrap();
+    writeln!(
+        &mut prompt,
+        "      # LOOP TYPE: repeat_until (REQUIRES condition)"
+    )
+    .unwrap();
     writeln!(&mut prompt, "      # type: repeat_until").unwrap();
-    writeln!(&mut prompt, "      # condition: {{ type: state_equals, key: \"done\", value: true }}").unwrap();
+    writeln!(
+        &mut prompt,
+        "      # condition: {{ type: state_equals, key: \"done\", value: true }}"
+    )
+    .unwrap();
     writeln!(&mut prompt, "    loop_control:  # optional - loop control").unwrap();
     writeln!(&mut prompt, "      break_condition:").unwrap();
     writeln!(&mut prompt, "        type: state_equals").unwrap();
@@ -2445,15 +3002,27 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "      checkpoint_interval: 50").unwrap();
     writeln!(&mut prompt, "      collect_results: true").unwrap();
     writeln!(&mut prompt, "      result_key: \"results\"").unwrap();
-    writeln!(&mut prompt, "    inputs:  # optional - task configuration (auto-injected into agent prompts)").unwrap();
+    writeln!(
+        &mut prompt,
+        "    inputs:  # optional - task configuration (auto-injected into agent prompts)"
+    )
+    .unwrap();
     writeln!(&mut prompt, "      config_file: \"config.yaml\"").unwrap();
     writeln!(&mut prompt, "      verbose: true").unwrap();
-    writeln!(&mut prompt, "    outputs:  # optional - define where task results are stored (auto-injected)").unwrap();
+    writeln!(
+        &mut prompt,
+        "    outputs:  # optional - define where task results are stored (auto-injected)"
+    )
+    .unwrap();
     writeln!(&mut prompt, "      result:").unwrap();
     writeln!(&mut prompt, "        source:").unwrap();
     writeln!(&mut prompt, "          type: file").unwrap();
     writeln!(&mut prompt, "          path: \"./output/result.json\"").unwrap();
-    writeln!(&mut prompt, "        description: \"Task execution result\"").unwrap();
+    writeln!(
+        &mut prompt,
+        "        description: \"Task execution result\""
+    )
+    .unwrap();
     writeln!(
         &mut prompt,
         "    inject_context: true  # optional - inject workflow execution context into agent"
@@ -2479,11 +3048,7 @@ pub fn generate_nl_to_dsl_prompt() -> String {
         "      min_relevance: 0.5  # Filter threshold (0.0-1.0)"
     )
     .unwrap();
-    writeln!(
-        &mut prompt,
-        "      max_bytes: 100000  # Context size limit"
-    )
-    .unwrap();
+    writeln!(&mut prompt, "      max_bytes: 100000  # Context size limit").unwrap();
     writeln!(
         &mut prompt,
         "      max_tasks: 5  # Max number of tasks to include"
@@ -2512,13 +3077,29 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "```").unwrap();
     writeln!(&mut prompt).unwrap();
 
-    writeln!(&mut prompt, "## Workflow Schema (CRITICAL - READ CAREFULLY)").unwrap();
+    writeln!(
+        &mut prompt,
+        "## Workflow Schema (CRITICAL - READ CAREFULLY)"
+    )
+    .unwrap();
     writeln!(&mut prompt, "⚠️ CRITICAL: DO NOT DUPLICATE TASKS ⚠️").unwrap();
     writeln!(&mut prompt).unwrap();
-    writeln!(&mut prompt, "Tasks MUST be defined in the top-level 'tasks:' section ONLY.").unwrap();
-    writeln!(&mut prompt, "The 'workflows:' section is OPTIONAL and used ONLY for lifecycle hooks.").unwrap();
+    writeln!(
+        &mut prompt,
+        "Tasks MUST be defined in the top-level 'tasks:' section ONLY."
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "The 'workflows:' section is OPTIONAL and used ONLY for lifecycle hooks."
+    )
+    .unwrap();
     writeln!(&mut prompt).unwrap();
-    writeln!(&mut prompt, "WRONG - Duplicates task definitions (DO NOT DO THIS):").unwrap();
+    writeln!(
+        &mut prompt,
+        "WRONG - Duplicates task definitions (DO NOT DO THIS):"
+    )
+    .unwrap();
     writeln!(&mut prompt, "```yaml").unwrap();
     writeln!(&mut prompt, "name: \"Bad Example\"").unwrap();
     writeln!(&mut prompt, "version: \"1.0.0\"").unwrap();
@@ -2530,12 +3111,24 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "  main:").unwrap();
     writeln!(&mut prompt, "    steps:").unwrap();
     writeln!(&mut prompt, "      - stage: \"processing\"").unwrap();
-    writeln!(&mut prompt, "        tasks:  # WRONG - This duplicates the tasks above!").unwrap();
+    writeln!(
+        &mut prompt,
+        "        tasks:  # WRONG - This duplicates the tasks above!"
+    )
+    .unwrap();
     writeln!(&mut prompt, "          - process_data:").unwrap();
-    writeln!(&mut prompt, "              description: \"Process data\"  # DUPLICATE - Don't do this!").unwrap();
+    writeln!(
+        &mut prompt,
+        "              description: \"Process data\"  # DUPLICATE - Don't do this!"
+    )
+    .unwrap();
     writeln!(&mut prompt, "```").unwrap();
     writeln!(&mut prompt).unwrap();
-    writeln!(&mut prompt, "CORRECT - Tasks defined once, workflows section only for hooks (RECOMMENDED):").unwrap();
+    writeln!(
+        &mut prompt,
+        "CORRECT - Tasks defined once, workflows section only for hooks (RECOMMENDED):"
+    )
+    .unwrap();
     writeln!(&mut prompt, "```yaml").unwrap();
     writeln!(&mut prompt, "name: \"Good Example\"").unwrap();
     writeln!(&mut prompt, "version: \"1.0.0\"").unwrap();
@@ -2550,16 +3143,28 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "  process_data:").unwrap();
     writeln!(&mut prompt, "    description: \"Process data\"").unwrap();
     writeln!(&mut prompt, "    agent: \"processor\"").unwrap();
-    writeln!(&mut prompt, "    depends_on: [fetch_data]  # Use depends_on for ordering").unwrap();
+    writeln!(
+        &mut prompt,
+        "    depends_on: [fetch_data]  # Use depends_on for ordering"
+    )
+    .unwrap();
     writeln!(&mut prompt, "  analyze_results:").unwrap();
     writeln!(&mut prompt, "    description: \"Analyze processed data\"").unwrap();
     writeln!(&mut prompt, "    agent: \"processor\"").unwrap();
     writeln!(&mut prompt, "    depends_on: [process_data]").unwrap();
-    writeln!(&mut prompt, "# workflows: section is OPTIONAL - only use for hooks").unwrap();
+    writeln!(
+        &mut prompt,
+        "# workflows: section is OPTIONAL - only use for hooks"
+    )
+    .unwrap();
     writeln!(&mut prompt, "workflows:").unwrap();
     writeln!(&mut prompt, "  main:").unwrap();
     writeln!(&mut prompt, "    description: \"Main workflow\"").unwrap();
-    writeln!(&mut prompt, "    hooks:  # Only use workflows for lifecycle hooks").unwrap();
+    writeln!(
+        &mut prompt,
+        "    hooks:  # Only use workflows for lifecycle hooks"
+    )
+    .unwrap();
     writeln!(&mut prompt, "      pre_workflow:").unwrap();
     writeln!(&mut prompt, "        - \"echo 'Starting workflow'\"").unwrap();
     writeln!(&mut prompt, "      post_workflow:").unwrap();
@@ -2567,21 +3172,45 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "```").unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "REMEMBER:").unwrap();
-    writeln!(&mut prompt, "- ✓ Define tasks ONCE in top-level 'tasks:' section").unwrap();
-    writeln!(&mut prompt, "- ✓ Use 'depends_on' in tasks for execution order").unwrap();
-    writeln!(&mut prompt, "- ✓ Use 'workflows:' ONLY for lifecycle hooks (pre_workflow, post_workflow, on_error)").unwrap();
-    writeln!(&mut prompt, "- ✗ DO NOT define tasks in both 'tasks:' and 'workflows.steps.tasks'").unwrap();
+    writeln!(
+        &mut prompt,
+        "- ✓ Define tasks ONCE in top-level 'tasks:' section"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "- ✓ Use 'depends_on' in tasks for execution order"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "- ✓ Use 'workflows:' ONLY for lifecycle hooks (pre_workflow, post_workflow, on_error)"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "- ✗ DO NOT define tasks in both 'tasks:' and 'workflows.steps.tasks'"
+    )
+    .unwrap();
     writeln!(&mut prompt, "- ✗ DO NOT duplicate task definitions").unwrap();
     writeln!(&mut prompt).unwrap();
 
     writeln!(&mut prompt, "## CRITICAL: Top-Level Tasks Format").unwrap();
     writeln!(&mut prompt).unwrap();
-    writeln!(&mut prompt, "Top-level 'tasks' field is a MAP (object), NOT an array.").unwrap();
+    writeln!(
+        &mut prompt,
+        "Top-level 'tasks' field is a MAP (object), NOT an array."
+    )
+    .unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "WRONG (will cause 'expected a map' error):").unwrap();
     writeln!(&mut prompt, "```yaml").unwrap();
     writeln!(&mut prompt, "tasks:  # Top-level in DSLWorkflow").unwrap();
-    writeln!(&mut prompt, "  - task_1:  # WRONG - this is an array (note the dash)").unwrap();
+    writeln!(
+        &mut prompt,
+        "  - task_1:  # WRONG - this is an array (note the dash)"
+    )
+    .unwrap();
     writeln!(&mut prompt, "      description: \"Do something\"").unwrap();
     writeln!(&mut prompt, "  - task_2:  # WRONG - array format").unwrap();
     writeln!(&mut prompt, "      description: \"Do another thing\"").unwrap();
@@ -2590,13 +3219,25 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "CORRECT (map/object format):").unwrap();
     writeln!(&mut prompt, "```yaml").unwrap();
     writeln!(&mut prompt, "tasks:  # Top-level in DSLWorkflow").unwrap();
-    writeln!(&mut prompt, "  task_1:  # Task ID as direct key (no dash before task name)").unwrap();
+    writeln!(
+        &mut prompt,
+        "  task_1:  # Task ID as direct key (no dash before task name)"
+    )
+    .unwrap();
     writeln!(&mut prompt, "    description: \"Do something\"").unwrap();
     writeln!(&mut prompt, "    agent: \"agent_id\"").unwrap();
-    writeln!(&mut prompt, "  task_2:  # Another task in the map (no dash before task name)").unwrap();
+    writeln!(
+        &mut prompt,
+        "  task_2:  # Another task in the map (no dash before task name)"
+    )
+    .unwrap();
     writeln!(&mut prompt, "    description: \"Do another thing\"").unwrap();
     writeln!(&mut prompt, "    agent: \"agent_id\"").unwrap();
-    writeln!(&mut prompt, "    depends_on: [task_1]  # Execute after task_1").unwrap();
+    writeln!(
+        &mut prompt,
+        "    depends_on: [task_1]  # Execute after task_1"
+    )
+    .unwrap();
     writeln!(&mut prompt, "```").unwrap();
     writeln!(&mut prompt).unwrap();
 
@@ -2604,27 +3245,51 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "Conditions control when tasks execute. ConditionSpec is an untagged enum with THREE formats:").unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "### 1. Single Condition").unwrap();
-    writeln!(&mut prompt, "A condition object with a 'type' field and type-specific fields:").unwrap();
+    writeln!(
+        &mut prompt,
+        "A condition object with a 'type' field and type-specific fields:"
+    )
+    .unwrap();
     writeln!(&mut prompt, "```yaml").unwrap();
     writeln!(&mut prompt, "condition:").unwrap();
     writeln!(&mut prompt, "  type: state_equals  # REQUIRED: state_equals, state_exists, task_status, always, or never").unwrap();
-    writeln!(&mut prompt, "  key: \"environment\"  # For state_equals/state_exists").unwrap();
+    writeln!(
+        &mut prompt,
+        "  key: \"environment\"  # For state_equals/state_exists"
+    )
+    .unwrap();
     writeln!(&mut prompt, "  value: \"production\" # For state_equals").unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "condition:").unwrap();
     writeln!(&mut prompt, "  type: task_status").unwrap();
     writeln!(&mut prompt, "  task: \"setup\"       # Task ID to check").unwrap();
-    writeln!(&mut prompt, "  status: completed    # completed, failed, running, pending, skipped").unwrap();
+    writeln!(
+        &mut prompt,
+        "  status: completed    # completed, failed, running, pending, skipped"
+    )
+    .unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "condition:").unwrap();
-    writeln!(&mut prompt, "  type: always         # Always execute (no other fields)").unwrap();
+    writeln!(
+        &mut prompt,
+        "  type: always         # Always execute (no other fields)"
+    )
+    .unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "condition:").unwrap();
-    writeln!(&mut prompt, "  type: never          # Never execute (no other fields)").unwrap();
+    writeln!(
+        &mut prompt,
+        "  type: never          # Never execute (no other fields)"
+    )
+    .unwrap();
     writeln!(&mut prompt, "```").unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "### 2. Combined Conditions (AND)").unwrap();
-    writeln!(&mut prompt, "All conditions must be true. Use 'and' field with array of ConditionSpecs:").unwrap();
+    writeln!(
+        &mut prompt,
+        "All conditions must be true. Use 'and' field with array of ConditionSpecs:"
+    )
+    .unwrap();
     writeln!(&mut prompt, "```yaml").unwrap();
     writeln!(&mut prompt, "condition:").unwrap();
     writeln!(&mut prompt, "  and:").unwrap();
@@ -2637,7 +3302,11 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "```").unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "### 3. Combined Conditions (OR)").unwrap();
-    writeln!(&mut prompt, "Any condition can be true. Use 'or' field with array of ConditionSpecs:").unwrap();
+    writeln!(
+        &mut prompt,
+        "Any condition can be true. Use 'or' field with array of ConditionSpecs:"
+    )
+    .unwrap();
     writeln!(&mut prompt, "```yaml").unwrap();
     writeln!(&mut prompt, "condition:").unwrap();
     writeln!(&mut prompt, "  or:").unwrap();
@@ -2647,7 +3316,11 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "```").unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "### 4. Negated Condition (NOT)").unwrap();
-    writeln!(&mut prompt, "Invert a condition. Use 'not' field with a single ConditionSpec:").unwrap();
+    writeln!(
+        &mut prompt,
+        "Invert a condition. Use 'not' field with a single ConditionSpec:"
+    )
+    .unwrap();
     writeln!(&mut prompt, "```yaml").unwrap();
     writeln!(&mut prompt, "condition:").unwrap();
     writeln!(&mut prompt, "  not:").unwrap();
@@ -2656,15 +3329,35 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "    status: failed").unwrap();
     writeln!(&mut prompt, "```").unwrap();
     writeln!(&mut prompt).unwrap();
-    writeln!(&mut prompt, "CRITICAL: Do NOT use non-existent types like 'state_contains', 'all_of', or 'any_of'.").unwrap();
-    writeln!(&mut prompt, "CRITICAL: Use 'and', 'or', 'not' fields for combining conditions, NOT as type values.").unwrap();
+    writeln!(
+        &mut prompt,
+        "CRITICAL: Do NOT use non-existent types like 'state_contains', 'all_of', or 'any_of'."
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "CRITICAL: Use 'and', 'or', 'not' fields for combining conditions, NOT as type values."
+    )
+    .unwrap();
     writeln!(&mut prompt).unwrap();
 
-    writeln!(&mut prompt, "## Notification Schema (CRITICAL - UNTAGGED ENUM)").unwrap();
-    writeln!(&mut prompt, "NotificationSpec is an UNTAGGED ENUM with TWO formats. Choose ONE:").unwrap();
+    writeln!(
+        &mut prompt,
+        "## Notification Schema (CRITICAL - UNTAGGED ENUM)"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "NotificationSpec is an UNTAGGED ENUM with TWO formats. Choose ONE:"
+    )
+    .unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "### JSON Schema (Precise Definition)").unwrap();
-    writeln!(&mut prompt, "The following JSON Schema defines the EXACT structure required:").unwrap();
+    writeln!(
+        &mut prompt,
+        "The following JSON Schema defines the EXACT structure required:"
+    )
+    .unwrap();
     writeln!(&mut prompt, "```json").unwrap();
     writeln!(&mut prompt, "{}", generate_notification_json_schema()).unwrap();
     writeln!(&mut prompt, "```").unwrap();
@@ -2672,28 +3365,56 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "### Format 1: Simple String").unwrap();
     writeln!(&mut prompt, "```yaml").unwrap();
     writeln!(&mut prompt, "on_complete:").unwrap();
-    writeln!(&mut prompt, "  notify: \"Task completed successfully\"  # Just a string").unwrap();
+    writeln!(
+        &mut prompt,
+        "  notify: \"Task completed successfully\"  # Just a string"
+    )
+    .unwrap();
     writeln!(&mut prompt, "```").unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "### Format 2: Structured Object").unwrap();
     writeln!(&mut prompt, "```yaml").unwrap();
     writeln!(&mut prompt, "on_complete:").unwrap();
     writeln!(&mut prompt, "  notify:  # Object with 'message' field").unwrap();
-    writeln!(&mut prompt, "    message: \"Task completed\"  # REQUIRED for structured format").unwrap();
+    writeln!(
+        &mut prompt,
+        "    message: \"Task completed\"  # REQUIRED for structured format"
+    )
+    .unwrap();
     writeln!(&mut prompt, "    title: \"Success\"  # Optional").unwrap();
-    writeln!(&mut prompt, "    priority: high  # Optional: low, normal, high, critical (NOT urgent)").unwrap();
-    writeln!(&mut prompt, "    channels:  # Optional - inline channel configs only").unwrap();
+    writeln!(
+        &mut prompt,
+        "    priority: high  # Optional: low, normal, high, critical (NOT urgent)"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "    channels:  # Optional - inline channel configs only"
+    )
+    .unwrap();
     writeln!(&mut prompt, "      - type: console").unwrap();
     writeln!(&mut prompt, "        colored: true").unwrap();
     writeln!(&mut prompt, "        timestamp: true").unwrap();
     writeln!(&mut prompt, "      - type: slack").unwrap();
-    writeln!(&mut prompt, "        credential: \"${{secret.slack_webhook}}\"").unwrap();
+    writeln!(
+        &mut prompt,
+        "        credential: \"${{secret.slack_webhook}}\""
+    )
+    .unwrap();
     writeln!(&mut prompt, "        channel: \"#notifications\"").unwrap();
-    writeln!(&mut prompt, "      - type: email  # Email channel with nested smtp config").unwrap();
+    writeln!(
+        &mut prompt,
+        "      - type: email  # Email channel with nested smtp config"
+    )
+    .unwrap();
     writeln!(&mut prompt, "        to:").unwrap();
     writeln!(&mut prompt, "          - \"user@example.com\"").unwrap();
     writeln!(&mut prompt, "        subject: \"Notification Subject\"").unwrap();
-    writeln!(&mut prompt, "        smtp:  # CRITICAL: SMTP fields must be nested under 'smtp:'").unwrap();
+    writeln!(
+        &mut prompt,
+        "        smtp:  # CRITICAL: SMTP fields must be nested under 'smtp:'"
+    )
+    .unwrap();
     writeln!(&mut prompt, "          host: \"smtp.gmail.com\"").unwrap();
     writeln!(&mut prompt, "          port: 587").unwrap();
     writeln!(&mut prompt, "          username: \"${{secret.smtp_user}}\"").unwrap();
@@ -2707,7 +3428,11 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "### Workflow-level Notification Settings").unwrap();
     writeln!(&mut prompt, "```yaml").unwrap();
     writeln!(&mut prompt, "notifications:").unwrap();
-    writeln!(&mut prompt, "  default_channels:  # Inline channel configs (NOT references)").unwrap();
+    writeln!(
+        &mut prompt,
+        "  default_channels:  # Inline channel configs (NOT references)"
+    )
+    .unwrap();
     writeln!(&mut prompt, "    - type: console").unwrap();
     writeln!(&mut prompt, "      colored: true").unwrap();
     writeln!(&mut prompt, "      timestamp: true").unwrap();
@@ -2717,8 +3442,16 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "  notify_on_workflow_completion: true").unwrap();
     writeln!(&mut prompt, "```").unwrap();
     writeln!(&mut prompt).unwrap();
-    writeln!(&mut prompt, "CRITICAL: You CANNOT mix formats. Either use a string OR an object with 'message'.").unwrap();
-    writeln!(&mut prompt, "CRITICAL: Channels must be INLINE definitions, NOT named references.").unwrap();
+    writeln!(
+        &mut prompt,
+        "CRITICAL: You CANNOT mix formats. Either use a string OR an object with 'message'."
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "CRITICAL: Channels must be INLINE definitions, NOT named references."
+    )
+    .unwrap();
     writeln!(&mut prompt, "CRITICAL: Priority must be one of: low, normal, high, critical. Do NOT use 'urgent' - use 'critical' instead.").unwrap();
     writeln!(&mut prompt, "CRITICAL: Email channels REQUIRE nested 'smtp:' object. Do NOT put host/port/username/password directly in channel.").unwrap();
     writeln!(&mut prompt, "Available channel types: console, email, slack, discord, teams, telegram, pagerduty, webhook, file, ntfy").unwrap();
@@ -2842,7 +3575,11 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "# Example with Hierarchical Tasks").unwrap();
     writeln!(&mut prompt).unwrap();
-    writeln!(&mut prompt, "Input: \"Create a workflow to organize files in stages: scan, validate, then process\"").unwrap();
+    writeln!(
+        &mut prompt,
+        "Input: \"Create a workflow to organize files in stages: scan, validate, then process\""
+    )
+    .unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "Output:").unwrap();
     writeln!(&mut prompt, "```yaml").unwrap();
@@ -2851,7 +3588,11 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "agents:").unwrap();
     writeln!(&mut prompt, "  file_worker:").unwrap();
-    writeln!(&mut prompt, "    description: \"Process and organize files\"").unwrap();
+    writeln!(
+        &mut prompt,
+        "    description: \"Process and organize files\""
+    )
+    .unwrap();
     writeln!(&mut prompt, "    tools:").unwrap();
     writeln!(&mut prompt, "      - Read").unwrap();
     writeln!(&mut prompt, "      - Write").unwrap();
@@ -2861,43 +3602,107 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "      mode: \"acceptEdits\"").unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "tasks:").unwrap();
-    writeln!(&mut prompt, "  # Parent task for grouping - NO agent field needed!").unwrap();
+    writeln!(
+        &mut prompt,
+        "  # Parent task for grouping - NO agent field needed!"
+    )
+    .unwrap();
     writeln!(&mut prompt, "  file_processing:").unwrap();
-    writeln!(&mut prompt, "    description: \"Process files in organized stages\"").unwrap();
-    writeln!(&mut prompt, "    # Note: No 'agent' specified here - parent task won't execute").unwrap();
-    writeln!(&mut prompt, "    # Subtasks without execution types will inherit:").unwrap();
-    writeln!(&mut prompt, "    agent: \"file_worker\"  # Inherited by subtasks without execution type").unwrap();
+    writeln!(
+        &mut prompt,
+        "    description: \"Process files in organized stages\""
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "    # Note: No 'agent' specified here - parent task won't execute"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "    # Subtasks without execution types will inherit:"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "    agent: \"file_worker\"  # Inherited by subtasks without execution type"
+    )
+    .unwrap();
     writeln!(&mut prompt, "    on_error:").unwrap();
     writeln!(&mut prompt, "      retry: 2").unwrap();
     writeln!(&mut prompt, "    subtasks:").unwrap();
     writeln!(&mut prompt, "      - scan:").unwrap();
-    writeln!(&mut prompt, "          description: \"Scan and catalog all files\"").unwrap();
-    writeln!(&mut prompt, "          # No execution type - inherits agent and on_error from parent").unwrap();
+    writeln!(
+        &mut prompt,
+        "          description: \"Scan and catalog all files\""
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "          # No execution type - inherits agent and on_error from parent"
+    )
+    .unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "      - validate:").unwrap();
-    writeln!(&mut prompt, "          description: \"Validate file formats using script\"").unwrap();
+    writeln!(
+        &mut prompt,
+        "          description: \"Validate file formats using script\""
+    )
+    .unwrap();
     writeln!(&mut prompt, "          depends_on:").unwrap();
     writeln!(&mut prompt, "            - scan  # Sibling dependency").unwrap();
-    writeln!(&mut prompt, "          # Uses script - won't inherit parent's agent").unwrap();
+    writeln!(
+        &mut prompt,
+        "          # Uses script - won't inherit parent's agent"
+    )
+    .unwrap();
     writeln!(&mut prompt, "          script:").unwrap();
     writeln!(&mut prompt, "            language: bash").unwrap();
     writeln!(&mut prompt, "            content: \"file *.txt\"").unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "      - process:").unwrap();
-    writeln!(&mut prompt, "          description: \"Process validated files\"").unwrap();
+    writeln!(
+        &mut prompt,
+        "          description: \"Process validated files\""
+    )
+    .unwrap();
     writeln!(&mut prompt, "          depends_on:").unwrap();
     writeln!(&mut prompt, "            - validate").unwrap();
-    writeln!(&mut prompt, "          # No execution type - inherits agent and on_error").unwrap();
-    writeln!(&mut prompt, "          # Inherits agent and on_error from parent").unwrap();
+    writeln!(
+        &mut prompt,
+        "          # No execution type - inherits agent and on_error"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "          # Inherits agent and on_error from parent"
+    )
+    .unwrap();
     writeln!(&mut prompt, "```").unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "## CRITICAL: Output Format Requirements").unwrap();
     writeln!(&mut prompt).unwrap();
-    writeln!(&mut prompt, "1. **ALWAYS** start your response with valid YAML").unwrap();
-    writeln!(&mut prompt, "2. **ALWAYS** include `name` and `version` as the first two fields").unwrap();
+    writeln!(
+        &mut prompt,
+        "1. **ALWAYS** start your response with valid YAML"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "2. **ALWAYS** include `name` and `version` as the first two fields"
+    )
+    .unwrap();
     writeln!(&mut prompt, "3. Wrap your YAML in ```yaml code blocks").unwrap();
-    writeln!(&mut prompt, "4. Do NOT add explanations before the YAML - provide the workflow first").unwrap();
-    writeln!(&mut prompt, "5. Ensure all YAML is properly indented (2 spaces per level)").unwrap();
+    writeln!(
+        &mut prompt,
+        "4. Do NOT add explanations before the YAML - provide the workflow first"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "5. Ensure all YAML is properly indented (2 spaces per level)"
+    )
+    .unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "Example response format:").unwrap();
     writeln!(&mut prompt, "```yaml").unwrap();
@@ -2963,7 +3768,8 @@ mod tests {
 
     #[test]
     fn test_dsl_grammar_version() {
-        assert!(!DSL_GRAMMAR_VERSION.is_empty());
+        // DSL_GRAMMAR_VERSION is a const, so we check it's a valid semantic version
+        assert!(DSL_GRAMMAR_VERSION.len() > 0);
         // Should be semantic version
         assert!(DSL_GRAMMAR_VERSION.contains('.'));
     }

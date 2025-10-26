@@ -8,7 +8,7 @@
 use periplon_sdk::dsl::state::{WorkflowState, WorkflowStatus};
 use periplon_sdk::tui::theme::Theme;
 use periplon_sdk::tui::views::state_browser::{
-    StateEntry, StateBrowserState, StateBrowserViewMode, StateSortMode,
+    StateBrowserState, StateBrowserViewMode, StateEntry, StateSortMode,
 };
 use ratatui::backend::TestBackend;
 use ratatui::Terminal;
@@ -37,9 +37,7 @@ fn render_state_browser(
     terminal
         .draw(|frame| {
             let area = frame.area();
-            periplon_sdk::tui::ui::state_browser::render_state_browser(
-                frame, area, state, theme,
-            );
+            periplon_sdk::tui::ui::state_browser::render_state_browser(frame, area, state, theme);
         })
         .unwrap();
 
@@ -128,9 +126,11 @@ fn test_state_browser_with_states() {
     state
         .states
         .push(create_test_entry("workflow1", WorkflowStatus::Running, 0.5));
-    state
-        .states
-        .push(create_test_entry("workflow2", WorkflowStatus::Completed, 1.0));
+    state.states.push(create_test_entry(
+        "workflow2",
+        WorkflowStatus::Completed,
+        1.0,
+    ));
 
     let theme = Theme::default();
     let terminal = render_state_browser(&mut state, &theme, 80, 24);
@@ -199,9 +199,11 @@ fn test_list_view_status_display() {
     state
         .states
         .push(create_test_entry("running", WorkflowStatus::Running, 0.3));
-    state
-        .states
-        .push(create_test_entry("completed", WorkflowStatus::Completed, 1.0));
+    state.states.push(create_test_entry(
+        "completed",
+        WorkflowStatus::Completed,
+        1.0,
+    ));
     state
         .states
         .push(create_test_entry("failed", WorkflowStatus::Failed, 0.6));
@@ -463,12 +465,16 @@ fn test_view_mode_enum_values() {
 #[test]
 fn test_filter_by_workflow_name() {
     let mut state = StateBrowserState::default();
-    state
-        .states
-        .push(create_test_entry("test_workflow", WorkflowStatus::Running, 0.5));
-    state
-        .states
-        .push(create_test_entry("other_workflow", WorkflowStatus::Completed, 1.0));
+    state.states.push(create_test_entry(
+        "test_workflow",
+        WorkflowStatus::Running,
+        0.5,
+    ));
+    state.states.push(create_test_entry(
+        "other_workflow",
+        WorkflowStatus::Completed,
+        1.0,
+    ));
 
     // No filter
     assert_eq!(state.filtered_states().len(), 2);
@@ -494,9 +500,11 @@ fn test_filter_by_status() {
     state
         .states
         .push(create_test_entry("workflow1", WorkflowStatus::Running, 0.5));
-    state
-        .states
-        .push(create_test_entry("workflow2", WorkflowStatus::Completed, 1.0));
+    state.states.push(create_test_entry(
+        "workflow2",
+        WorkflowStatus::Completed,
+        1.0,
+    ));
 
     // Filter for "running"
     state.filter_query = "running".to_string();
@@ -506,18 +514,17 @@ fn test_filter_by_status() {
     // Filter for "completed"
     state.filter_query = "completed".to_string();
     assert_eq!(state.filtered_states().len(), 1);
-    assert_eq!(
-        state.filtered_states()[0].status,
-        WorkflowStatus::Completed
-    );
+    assert_eq!(state.filtered_states()[0].status, WorkflowStatus::Completed);
 }
 
 #[test]
 fn test_filter_case_insensitive() {
     let mut state = StateBrowserState::default();
-    state
-        .states
-        .push(create_test_entry("TestWorkflow", WorkflowStatus::Running, 0.5));
+    state.states.push(create_test_entry(
+        "TestWorkflow",
+        WorkflowStatus::Running,
+        0.5,
+    ));
 
     // Lowercase filter
     state.filter_query = "test".to_string();
@@ -638,10 +645,7 @@ fn test_long_workflow_names() {
 
     // Should render without panicking
     assert!(count_border_chars(&terminal) > 0);
-    assert!(buffer_contains_text(
-        &terminal,
-        "very_long_workflow_name"
-    ));
+    assert!(buffer_contains_text(&terminal, "very_long_workflow_name"));
 }
 
 #[test]
@@ -743,9 +747,11 @@ fn test_select_next() {
     state
         .states
         .push(create_test_entry("workflow1", WorkflowStatus::Running, 0.5));
-    state
-        .states
-        .push(create_test_entry("workflow2", WorkflowStatus::Completed, 1.0));
+    state.states.push(create_test_entry(
+        "workflow2",
+        WorkflowStatus::Completed,
+        1.0,
+    ));
 
     assert_eq!(state.selected_index, 0);
 
@@ -763,9 +769,11 @@ fn test_select_previous() {
     state
         .states
         .push(create_test_entry("workflow1", WorkflowStatus::Running, 0.5));
-    state
-        .states
-        .push(create_test_entry("workflow2", WorkflowStatus::Completed, 1.0));
+    state.states.push(create_test_entry(
+        "workflow2",
+        WorkflowStatus::Completed,
+        1.0,
+    ));
     state.selected_index = 1;
 
     state.select_previous();

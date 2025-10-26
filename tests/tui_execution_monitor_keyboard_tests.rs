@@ -12,11 +12,11 @@
 
 #![cfg(feature = "tui")]
 
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use periplon_sdk::dsl::schema::DSLWorkflow;
 use periplon_sdk::tui::views::execution_monitor::{
     ExecutionMonitorState, ExecutionStatus, MonitorPanel, TaskExecutionState, TaskStatus,
 };
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use std::collections::HashMap;
 
 // ============================================================================
@@ -80,10 +80,7 @@ fn create_test_workflow() -> DSLWorkflow {
 }
 
 /// Create task execution state
-fn create_task_state(
-    task_id: &str,
-    status: TaskStatus,
-) -> TaskExecutionState {
+fn create_task_state(task_id: &str, status: TaskStatus) -> TaskExecutionState {
     TaskExecutionState {
         task_id: task_id.to_string(),
         description: format!("Task {}", task_id),
@@ -556,7 +553,8 @@ fn test_rapid_ctrl_s_presses() {
     let mut state = ExecutionMonitorState::new(workflow);
 
     for _ in 0..10 {
-        let action = handle_execution_monitor_key_simulation(&mut state, ctrl_key(KeyCode::Char('s')));
+        let action =
+            handle_execution_monitor_key_simulation(&mut state, ctrl_key(KeyCode::Char('s')));
         assert_eq!(action, MonitorAction::ConfirmStop);
     }
 }

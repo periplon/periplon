@@ -20,9 +20,7 @@ mod file_manager_tests {
         // Create test workflow files
         File::create(temp_dir.path().join("workflows/workflow1.yaml"))
             .unwrap()
-            .write_all(
-                b"name: Test Workflow 1\nversion: 1.0.0\ndescription: Test workflow",
-            )
+            .write_all(b"name: Test Workflow 1\nversion: 1.0.0\ndescription: Test workflow")
             .unwrap();
 
         File::create(temp_dir.path().join("workflows/workflow2.yml"))
@@ -49,12 +47,25 @@ mod file_manager_tests {
 
         // Count directories
         let dir_count = state.entries.iter().filter(|e| e.is_dir).count();
-        assert!(dir_count >= 2, "Should find at least 2 directories, found {}", dir_count);
+        assert!(
+            dir_count >= 2,
+            "Should find at least 2 directories, found {}",
+            dir_count
+        );
 
         // Verify we can see the directory structure
-        let has_workflows_dir = state.entries.iter().any(|e| e.name == "workflows" && e.is_dir);
-        let has_templates_dir = state.entries.iter().any(|e| e.name == "templates" && e.is_dir);
-        assert!(has_workflows_dir || has_templates_dir, "Should find workflow or template directories");
+        let has_workflows_dir = state
+            .entries
+            .iter()
+            .any(|e| e.name == "workflows" && e.is_dir);
+        let has_templates_dir = state
+            .entries
+            .iter()
+            .any(|e| e.name == "templates" && e.is_dir);
+        assert!(
+            has_workflows_dir || has_templates_dir,
+            "Should find workflow or template directories"
+        );
     }
 
     #[test]
@@ -202,7 +213,11 @@ mod file_manager_tests {
 
         // Test preview navigation
         state.scroll_preview_down(100);
-        assert!(state.preview_scroll > 0 || state.preview_content.as_ref().unwrap().lines().count() <= state.preview_page_size);
+        assert!(
+            state.preview_scroll > 0
+                || state.preview_content.as_ref().unwrap().lines().count()
+                    <= state.preview_page_size
+        );
 
         state.scroll_preview_up();
         // Should be back near the top
@@ -318,10 +333,7 @@ mod file_manager_tests {
         assert_eq!(state.entries.len(), 100);
 
         // All should be workflow files
-        assert_eq!(
-            state.entries.iter().filter(|e| e.is_workflow).count(),
-            100
-        );
+        assert_eq!(state.entries.iter().filter(|e| e.is_workflow).count(), 100);
     }
 
     #[test]

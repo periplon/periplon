@@ -19,23 +19,21 @@ async fn test_bash_commands_without_permission_prompts() {
     );
 
     // Parse the workflow
-    let yaml_content = fs::read_to_string(workflow_path)
-        .expect("Failed to read workflow file");
+    let yaml_content = fs::read_to_string(workflow_path).expect("Failed to read workflow file");
 
-    let workflow = parse_workflow(&yaml_content)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow(&yaml_content).expect("Failed to parse workflow");
 
     // Validate the workflow
-    validate_workflow(&workflow)
-        .expect("Workflow validation failed");
+    validate_workflow(&workflow).expect("Workflow validation failed");
 
     // Verify the agent has bypassPermissions mode
-    let bash_agent = workflow.agents.get("bash_agent")
+    let bash_agent = workflow
+        .agents
+        .get("bash_agent")
         .expect("bash_agent not found in workflow");
 
     assert_eq!(
-        bash_agent.permissions.mode,
-        "bypassPermissions",
+        bash_agent.permissions.mode, "bypassPermissions",
         "Agent should have bypassPermissions mode"
     );
 
@@ -81,15 +79,16 @@ tasks:
             mode
         );
 
-        let workflow = parse_workflow(&yaml)
-            .expect(&format!("Failed to parse workflow with mode: {}", mode));
+        let workflow =
+            parse_workflow(&yaml).unwrap_or_else(|_| panic!("Failed to parse workflow with mode: {}", mode));
 
-        let agent = workflow.agents.get("test_agent")
+        let agent = workflow
+            .agents
+            .get("test_agent")
             .expect("test_agent not found");
 
         assert_eq!(
-            agent.permissions.mode,
-            expected,
+            agent.permissions.mode, expected,
             "Permission mode mismatch for: {}",
             mode
         );
@@ -131,31 +130,47 @@ fn test_workflow_structure_for_bash_tasks() {
     use std::fs;
 
     // Load and parse the test workflow
-    let yaml_content = fs::read_to_string("test_bash_permissions.yaml")
-        .expect("Failed to read test workflow");
+    let yaml_content =
+        fs::read_to_string("test_bash_permissions.yaml").expect("Failed to read test workflow");
 
-    let workflow = parse_workflow(&yaml_content)
-        .expect("Failed to parse workflow");
+    let workflow = parse_workflow(&yaml_content).expect("Failed to parse workflow");
 
     // Verify workflow structure
     assert_eq!(workflow.name, "Test Bash Permissions");
     assert_eq!(workflow.version, "1.0.0");
 
     // Verify agent configuration
-    assert!(workflow.agents.contains_key("bash_agent"), "bash_agent not found");
+    assert!(
+        workflow.agents.contains_key("bash_agent"),
+        "bash_agent not found"
+    );
     let agent = &workflow.agents["bash_agent"];
     assert_eq!(agent.permissions.mode, "bypassPermissions");
-    assert!(agent.tools.contains(&"Bash".to_string()), "Bash tool not enabled");
+    assert!(
+        agent.tools.contains(&"Bash".to_string()),
+        "Bash tool not enabled"
+    );
 
     // Verify tasks exist
-    assert!(workflow.tasks.contains_key("test_basic_bash"), "test_basic_bash task not found");
+    assert!(
+        workflow.tasks.contains_key("test_basic_bash"),
+        "test_basic_bash task not found"
+    );
 
     // Verify the task has the bash_agent assigned
     let task = &workflow.tasks["test_basic_bash"];
-    assert_eq!(task.agent, Some("bash_agent".to_string()), "Task should use bash_agent");
+    assert_eq!(
+        task.agent,
+        Some("bash_agent".to_string()),
+        "Task should use bash_agent"
+    );
 
     // Verify the task has an output file configured
-    assert_eq!(task.output, Some("test_results.txt".to_string()), "Task should have output file configured");
+    assert_eq!(
+        task.output,
+        Some("test_results.txt".to_string()),
+        "Task should have output file configured"
+    );
 
     println!("✓ Workflow structure verified");
     println!("✓ All tasks configured with bash_agent");

@@ -5,7 +5,9 @@
 
 #![cfg(feature = "tui")]
 
-use periplon_sdk::dsl::{AgentSpec, DSLWorkflow, InputSpec, OutputDataSource, OutputSpec, TaskSpec};
+use periplon_sdk::dsl::{
+    AgentSpec, DSLWorkflow, InputSpec, OutputDataSource, OutputSpec, TaskSpec,
+};
 use periplon_sdk::tui::state::{ViewerState, WorkflowViewMode};
 use periplon_sdk::tui::theme::Theme;
 use ratatui::backend::TestBackend;
@@ -701,7 +703,8 @@ fn test_viewer_state_toggle() {
 #[test]
 fn test_workflow_with_long_names() {
     let mut workflow = create_minimal_workflow();
-    workflow.name = "This is a very long workflow name that might exceed typical display widths".to_string();
+    workflow.name =
+        "This is a very long workflow name that might exceed typical display widths".to_string();
 
     let state = ViewerState::new();
     let theme = Theme::default();

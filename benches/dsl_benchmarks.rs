@@ -2,11 +2,11 @@
 //!
 //! Run with: cargo bench
 
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use periplon_sdk::dsl::{
     parse_workflow, validate_workflow, DSLWorkflow, StatePersistence, TaskGraph, TaskSpec,
     TaskStatus, WorkflowState, WorkflowStatus,
 };
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::collections::HashMap;
 use std::time::SystemTime;
 use tempfile::TempDir;

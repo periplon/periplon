@@ -71,7 +71,10 @@ fn create_test_execution(workflow_id: Uuid, status: ExecutionStatus) -> Executio
         } else {
             None
         },
-        completed_at: if matches!(status_clone, ExecutionStatus::Completed | ExecutionStatus::Failed) {
+        completed_at: if matches!(
+            status_clone,
+            ExecutionStatus::Completed | ExecutionStatus::Failed
+        ) {
             Some(Utc::now())
         } else {
             None
@@ -224,9 +227,18 @@ async fn test_filesystem_list_workflows_with_filter() {
     let (workflow2, metadata2) = create_test_workflow("beta");
     let (workflow3, metadata3) = create_test_workflow("alpha");
 
-    storage.store_workflow(&workflow1, &metadata1).await.unwrap();
-    storage.store_workflow(&workflow2, &metadata2).await.unwrap();
-    storage.store_workflow(&workflow3, &metadata3).await.unwrap();
+    storage
+        .store_workflow(&workflow1, &metadata1)
+        .await
+        .unwrap();
+    storage
+        .store_workflow(&workflow2, &metadata2)
+        .await
+        .unwrap();
+    storage
+        .store_workflow(&workflow3, &metadata3)
+        .await
+        .unwrap();
 
     // Filter by name
     let filter = WorkflowFilter {
@@ -359,7 +371,9 @@ async fn test_filesystem_list_executions_by_status() {
     };
     let executions = storage.list_executions(&filter).await.unwrap();
     assert_eq!(executions.len(), 3);
-    assert!(executions.iter().all(|e| e.status == ExecutionStatus::Completed));
+    assert!(executions
+        .iter()
+        .all(|e| e.status == ExecutionStatus::Completed));
 }
 
 #[tokio::test]
@@ -404,7 +418,10 @@ async fn test_filesystem_execution_logs() {
     }
 
     // Retrieve logs
-    let logs = storage.get_execution_logs(execution_id, None).await.unwrap();
+    let logs = storage
+        .get_execution_logs(execution_id, None)
+        .await
+        .unwrap();
     assert_eq!(logs.len(), 5);
 }
 
@@ -453,9 +470,7 @@ async fn test_filesystem_list_checkpoints_for_execution() {
     // List checkpoints for target execution
     let checkpoints = storage.list_checkpoints(execution_id).await.unwrap();
     assert_eq!(checkpoints.len(), 3);
-    assert!(checkpoints
-        .iter()
-        .all(|c| c.execution_id == execution_id));
+    assert!(checkpoints.iter().all(|c| c.execution_id == execution_id));
 }
 
 #[tokio::test]

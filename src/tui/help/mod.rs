@@ -67,11 +67,9 @@ impl HelpContext {
                 "natural_language",
                 "keyboard_shortcuts_generator",
             ],
-            HelpContext::General => vec![
-                "overview",
-                "getting_started",
-                "keyboard_shortcuts_global",
-            ],
+            HelpContext::General => {
+                vec!["overview", "getting_started", "keyboard_shortcuts_global"]
+            }
         }
     }
 

@@ -74,7 +74,7 @@ async fn main() -> Result<()> {
                     );
                     println!(
                         "  Skipped (continue): {}",
-                        loop_state.total_iterations.unwrap_or(0) as usize
+                        loop_state.total_iterations.unwrap_or(0)
                             - loop_state.iteration_statuses.len()
                     );
                 }

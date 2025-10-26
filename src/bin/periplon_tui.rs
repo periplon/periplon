@@ -30,8 +30,8 @@
 //! dsl-tui --theme dark
 //! ```
 
-use periplon_sdk::tui::{AppConfig, TuiApp};
 use clap::Parser;
+use periplon_sdk::tui::{AppConfig, TuiApp};
 use std::path::PathBuf;
 use std::process;
 
@@ -80,8 +80,7 @@ async fn main() {
 
     // Setup logging if debug mode enabled
     if cli.debug {
-        env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
-            .init();
+        env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug")).init();
         log::info!("Debug logging enabled");
     }
 

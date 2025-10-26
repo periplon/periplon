@@ -9,8 +9,7 @@ use std::collections::HashMap;
 use std::fmt;
 
 /// API version for predefined task format
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum TaskApiVersion {
     /// Version 1 of the task API
     #[serde(rename = "task/v1")]
@@ -18,16 +17,13 @@ pub enum TaskApiVersion {
     V1,
 }
 
-
 /// Kind identifier for predefined tasks
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum TaskKind {
     /// Predefined task definition
     #[default]
     PredefinedTask,
 }
-
 
 /// Complete predefined task definition
 #[derive(Debug, Clone, Serialize, Deserialize)]

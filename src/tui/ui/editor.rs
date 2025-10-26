@@ -9,11 +9,8 @@ use ratatui::Frame;
 
 // Re-export types and functions from the views module
 pub use crate::tui::views::editor::{
-    EditorMode,
+    get_autocomplete_suggestions, validate_and_get_feedback, AutoCompletionSuggestion, EditorMode,
     ValidationFeedback,
-    AutoCompletionSuggestion,
-    get_autocomplete_suggestions,
-    validate_and_get_feedback,
 };
 
 /// Workflow editor component

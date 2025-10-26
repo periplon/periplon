@@ -189,7 +189,9 @@ impl WorkQueue for MockQueue {
 
         if let Some(mut job) = state.pending.pop_front() {
             job.attempts += 1;
-            state.processing.insert(job.id, (job.clone(), worker_id.to_string()));
+            state
+                .processing
+                .insert(job.id, (job.clone(), worker_id.to_string()));
             Ok(Some(job))
         } else {
             Ok(None)
@@ -355,7 +357,10 @@ mod tests {
         let queue = MockQueue::new();
 
         for _ in 0..3 {
-            queue.enqueue(Job::new(Uuid::new_v4(), Uuid::new_v4(), json!({}))).await.unwrap();
+            queue
+                .enqueue(Job::new(Uuid::new_v4(), Uuid::new_v4(), json!({})))
+                .await
+                .unwrap();
         }
 
         let job = queue.dequeue("worker-1").await.unwrap().unwrap();

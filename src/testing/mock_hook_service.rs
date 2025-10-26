@@ -54,9 +54,7 @@ pub struct MockHookService {
     execution_log: Arc<Mutex<Vec<HookExecution>>>,
 }
 
-type HookHandler = Arc<
-    dyn Fn(&HookInput, &HookContext) -> HookJSONOutput + Send + Sync,
->;
+type HookHandler = Arc<dyn Fn(&HookInput, &HookContext) -> HookJSONOutput + Send + Sync>;
 
 /// Record of a hook execution for testing verification
 #[derive(Debug, Clone)]
@@ -78,19 +76,21 @@ impl MockHookService {
     /// Create a hook service that always continues
     pub fn continue_all() -> Self {
         let service = Self::new();
-        let handler: HookHandler = Arc::new(|_, _| {
-            HookJSONOutput::Sync {
-                should_continue: Some(true),
-                suppress_output: None,
-                stop_reason: None,
-                decision: None,
-                system_message: None,
-                reason: None,
-                hook_specific_output: None,
-            }
+        let handler: HookHandler = Arc::new(|_, _| HookJSONOutput::Sync {
+            should_continue: Some(true),
+            suppress_output: None,
+            stop_reason: None,
+            decision: None,
+            system_message: None,
+            reason: None,
+            hook_specific_output: None,
         });
 
-        service.handlers.lock().unwrap().insert("*".to_string(), handler);
+        service
+            .handlers
+            .lock()
+            .unwrap()
+            .insert("*".to_string(), handler);
         service
     }
 
@@ -98,19 +98,21 @@ impl MockHookService {
     pub fn stop_all(reason: impl Into<String>) -> Self {
         let reason = reason.into();
         let service = Self::new();
-        let handler: HookHandler = Arc::new(move |_, _| {
-            HookJSONOutput::Sync {
-                should_continue: Some(false),
-                suppress_output: None,
-                stop_reason: Some(reason.clone()),
-                decision: None,
-                system_message: None,
-                reason: None,
-                hook_specific_output: None,
-            }
+        let handler: HookHandler = Arc::new(move |_, _| HookJSONOutput::Sync {
+            should_continue: Some(false),
+            suppress_output: None,
+            stop_reason: Some(reason.clone()),
+            decision: None,
+            system_message: None,
+            reason: None,
+            hook_specific_output: None,
         });
 
-        service.handlers.lock().unwrap().insert("*".to_string(), handler);
+        service
+            .handlers
+            .lock()
+            .unwrap()
+            .insert("*".to_string(), handler);
         service
     }
 
@@ -156,7 +158,10 @@ impl MockHookService {
         F: Fn(&HookInput, &HookContext) -> HookJSONOutput + Send + Sync + 'static,
     {
         let event_name = Self::event_to_string(&event);
-        self.handlers.lock().unwrap().insert(event_name, Arc::new(handler));
+        self.handlers
+            .lock()
+            .unwrap()
+            .insert(event_name, Arc::new(handler));
         self
     }
 
@@ -167,36 +172,28 @@ impl MockHookService {
         message: impl Into<String>,
     ) -> &mut Self {
         let msg = message.into();
-        self.with_hook(event, move |_, _| {
-            HookJSONOutput::Sync {
-                should_continue: Some(true),
-                suppress_output: None,
-                stop_reason: None,
-                decision: None,
-                system_message: Some(msg.clone()),
-                reason: None,
-                hook_specific_output: None,
-            }
+        self.with_hook(event, move |_, _| HookJSONOutput::Sync {
+            should_continue: Some(true),
+            suppress_output: None,
+            stop_reason: None,
+            decision: None,
+            system_message: Some(msg.clone()),
+            reason: None,
+            hook_specific_output: None,
         })
     }
 
     /// Add a hook that stops with a reason
-    pub fn stop_with_reason(
-        &mut self,
-        event: HookEvent,
-        reason: impl Into<String>,
-    ) -> &mut Self {
+    pub fn stop_with_reason(&mut self, event: HookEvent, reason: impl Into<String>) -> &mut Self {
         let r = reason.into();
-        self.with_hook(event, move |_, _| {
-            HookJSONOutput::Sync {
-                should_continue: Some(false),
-                suppress_output: None,
-                stop_reason: Some(r.clone()),
-                decision: None,
-                system_message: None,
-                reason: None,
-                hook_specific_output: None,
-            }
+        self.with_hook(event, move |_, _| HookJSONOutput::Sync {
+            should_continue: Some(false),
+            suppress_output: None,
+            stop_reason: Some(r.clone()),
+            decision: None,
+            system_message: None,
+            reason: None,
+            hook_specific_output: None,
         })
     }
 
@@ -245,7 +242,8 @@ impl MockHookService {
             HookInput::Stop { .. } => "Stop",
             HookInput::SubagentStop { .. } => "SubagentStop",
             HookInput::PreCompact { .. } => "PreCompact",
-        }.to_string()
+        }
+        .to_string()
     }
 }
 
@@ -312,9 +310,15 @@ mod tests {
         };
         let ctx = HookContext { signal: None };
 
-        let result = service.execute_hook(HookEvent::PreToolUse, input, ctx).await.unwrap();
+        let result = service
+            .execute_hook(HookEvent::PreToolUse, input, ctx)
+            .await
+            .unwrap();
 
-        if let HookJSONOutput::Sync { should_continue, .. } = result {
+        if let HookJSONOutput::Sync {
+            should_continue, ..
+        } = result
+        {
             assert_eq!(should_continue, Some(true));
         } else {
             panic!("Expected Sync output");
@@ -334,9 +338,17 @@ mod tests {
         };
         let ctx = HookContext { signal: None };
 
-        let result = service.execute_hook(HookEvent::PreToolUse, input, ctx).await.unwrap();
+        let result = service
+            .execute_hook(HookEvent::PreToolUse, input, ctx)
+            .await
+            .unwrap();
 
-        if let HookJSONOutput::Sync { should_continue, stop_reason, .. } = result {
+        if let HookJSONOutput::Sync {
+            should_continue,
+            stop_reason,
+            ..
+        } = result
+        {
             assert_eq!(should_continue, Some(false));
             assert_eq!(stop_reason, Some("Test stop".to_string()));
         } else {
@@ -383,8 +395,14 @@ mod tests {
             tool_input: serde_json::json!({}),
         };
         let ctx2 = HookContext { signal: None };
-        let result = service.execute_hook(HookEvent::PreToolUse, bash_input, ctx2).await.unwrap();
-        if let HookJSONOutput::Sync { should_continue, .. } = result {
+        let result = service
+            .execute_hook(HookEvent::PreToolUse, bash_input, ctx2)
+            .await
+            .unwrap();
+        if let HookJSONOutput::Sync {
+            should_continue, ..
+        } = result
+        {
             assert_eq!(should_continue, Some(false));
         }
 
@@ -398,8 +416,14 @@ mod tests {
             tool_input: serde_json::json!({}),
         };
         let ctx3 = HookContext { signal: None };
-        let result = service.execute_hook(HookEvent::PreToolUse, read_input, ctx3).await.unwrap();
-        if let HookJSONOutput::Sync { should_continue, .. } = result {
+        let result = service
+            .execute_hook(HookEvent::PreToolUse, read_input, ctx3)
+            .await
+            .unwrap();
+        if let HookJSONOutput::Sync {
+            should_continue, ..
+        } = result
+        {
             assert_eq!(should_continue, Some(true));
         }
     }
@@ -430,9 +454,15 @@ mod tests {
         };
 
         let ctx2 = HookContext { signal: None };
-        service.execute_hook(HookEvent::PreToolUse, input1, ctx2).await.unwrap();
+        service
+            .execute_hook(HookEvent::PreToolUse, input1, ctx2)
+            .await
+            .unwrap();
         let ctx3 = HookContext { signal: None };
-        service.execute_hook(HookEvent::PostToolUse, input2, ctx3).await.unwrap();
+        service
+            .execute_hook(HookEvent::PostToolUse, input2, ctx3)
+            .await
+            .unwrap();
 
         let log = service.execution_log();
         assert_eq!(log.len(), 2);

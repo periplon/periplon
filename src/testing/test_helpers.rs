@@ -4,9 +4,8 @@
 //! test data and configuring test scenarios.
 
 use crate::domain::{
-    AssistantMessage, AssistantMessageContent, ContentBlock, ContentValue,
-    HookContext, HookInput, Message, ToolPermissionContext, UserMessage,
-    UserMessageContent,
+    AssistantMessage, AssistantMessageContent, ContentBlock, ContentValue, HookContext, HookInput,
+    Message, ToolPermissionContext, UserMessage, UserMessageContent,
 };
 use crate::dsl::{FileNotificationFormat, NotificationChannel, NotificationSpec};
 use serde_json::Value;
@@ -27,7 +26,9 @@ pub struct MessageBuilder {
 
 impl MessageBuilder {
     pub fn new() -> Self {
-        Self { content: Vec::new() }
+        Self {
+            content: Vec::new(),
+        }
     }
 
     /// Add a text block
@@ -46,7 +47,12 @@ impl MessageBuilder {
     }
 
     /// Add a tool use block
-    pub fn tool_use(mut self, id: impl Into<String>, name: impl Into<String>, input: Value) -> Self {
+    pub fn tool_use(
+        mut self,
+        id: impl Into<String>,
+        name: impl Into<String>,
+        input: Value,
+    ) -> Self {
         self.content.push(ContentBlock::ToolUse {
             id: id.into(),
             name: name.into(),
@@ -56,7 +62,12 @@ impl MessageBuilder {
     }
 
     /// Add a tool result block
-    pub fn tool_result(mut self, tool_use_id: impl Into<String>, content: Value, is_error: Option<bool>) -> Self {
+    pub fn tool_result(
+        mut self,
+        tool_use_id: impl Into<String>,
+        content: Value,
+        is_error: Option<bool>,
+    ) -> Self {
         self.content.push(ContentBlock::ToolResult {
             tool_use_id: tool_use_id.into(),
             content: Some(content),
@@ -158,7 +169,9 @@ pub struct PermissionContextBuilder {
 
 impl PermissionContextBuilder {
     pub fn new() -> Self {
-        Self { suggestions: Vec::new() }
+        Self {
+            suggestions: Vec::new(),
+        }
     }
 
     pub fn build(self) -> ToolPermissionContext {
@@ -236,11 +249,7 @@ impl NotificationBuilder {
         self
     }
 
-    pub fn ntfy(
-        mut self,
-        server: impl Into<String>,
-        topic: impl Into<String>,
-    ) -> Self {
+    pub fn ntfy(mut self, server: impl Into<String>, topic: impl Into<String>) -> Self {
         self.channels.push(NotificationChannel::Ntfy {
             server: server.into(),
             topic: topic.into(),
@@ -310,7 +319,14 @@ mod tests {
             .console()
             .build();
 
-        if let NotificationSpec::Structured { message, channels, title, priority, .. } = notification {
+        if let NotificationSpec::Structured {
+            message,
+            channels,
+            title,
+            priority,
+            ..
+        } = notification
+        {
             assert_eq!(message, "Test message");
             assert_eq!(channels.len(), 1);
             assert_eq!(title, Some("Test Title".to_string()));

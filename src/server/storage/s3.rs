@@ -11,8 +11,8 @@ use uuid::Uuid;
 use super::traits::{
     ApiKey, ApiKeyFilter, ApiKeyStorage, Checkpoint, CheckpointStorage, Execution, ExecutionFilter,
     ExecutionLog, ExecutionStorage, Organization, OrganizationFilter, OrganizationStorage, Result,
-    Schedule, ScheduleFilter, ScheduleRun, ScheduleStorage, StorageError, Team,
-    TeamFilter, TeamMember, TeamStorage, WorkflowFilter, WorkflowMetadata, WorkflowStorage,
+    Schedule, ScheduleFilter, ScheduleRun, ScheduleStorage, StorageError, Team, TeamFilter,
+    TeamMember, TeamStorage, WorkflowFilter, WorkflowMetadata, WorkflowStorage,
 };
 #[cfg(feature = "server")]
 use crate::dsl::schema::DSLWorkflow;
@@ -827,7 +827,6 @@ impl ApiKeyStorage for S3Storage {
 
 #[cfg(all(test, feature = "server"))]
 mod tests {
-    
 
     #[tokio::test]
     #[ignore] // Requires S3 credentials and bucket

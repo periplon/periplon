@@ -46,29 +46,28 @@ fn format_message_interactive(msg: &Message, prefix: Option<&str>) -> String {
     };
 
     match msg {
-        Message::Assistant(assistant_msg) => {
-            format_assistant_message(assistant_msg, &prefix_str)
-        }
+        Message::Assistant(assistant_msg) => format_assistant_message(assistant_msg, &prefix_str),
         Message::User(user_msg) => {
-            format!("{}{}  {}",
+            format!(
+                "{}{}  {}",
                 prefix_str,
                 "User:".cyan().bold(),
                 truncate_and_format(&format!("{:?}", user_msg.message.content), 80)
             )
         }
         Message::System(system_msg) => {
-            format!("{}{}  {}: {}",
+            format!(
+                "{}{}  {}: {}",
                 prefix_str,
                 "System".blue().bold(),
                 system_msg.subtype.dimmed(),
                 format_json_value(&system_msg.data, 60)
             )
         }
-        Message::Result(result_msg) => {
-            format_result_message(result_msg, &prefix_str)
-        }
+        Message::Result(result_msg) => format_result_message(result_msg, &prefix_str),
         Message::StreamEvent(stream_msg) => {
-            format!("{}{}  {}",
+            format!(
+                "{}{}  {}",
                 prefix_str,
                 "Stream".magenta().bold(),
                 format_json_value(&stream_msg.event, 80)
@@ -78,7 +77,10 @@ fn format_message_interactive(msg: &Message, prefix: Option<&str>) -> String {
 }
 
 /// Format assistant message with content blocks
-fn format_assistant_message(msg: &crate::domain::message::AssistantMessage, prefix: &str) -> String {
+fn format_assistant_message(
+    msg: &crate::domain::message::AssistantMessage,
+    prefix: &str,
+) -> String {
     let mut output = String::new();
 
     for (idx, block) in msg.message.content.iter().enumerate() {
@@ -88,28 +90,35 @@ fn format_assistant_message(msg: &crate::domain::message::AssistantMessage, pref
 
         let block_str = match block {
             ContentBlock::Text { text } => {
-                format!("{}{}  {}",
+                format!(
+                    "{}{}  {}",
                     prefix,
                     "Assistant:".green().bold(),
                     truncate_and_format(text, 100)
                 )
             }
             ContentBlock::Thinking { thinking, .. } => {
-                format!("{}{}  {}",
+                format!(
+                    "{}{}  {}",
                     prefix,
                     "Thinking:".yellow().bold(),
                     truncate_and_format(thinking, 100).dimmed()
                 )
             }
             ContentBlock::ToolUse { name, input, .. } => {
-                format!("{}{}  {} {}",
+                format!(
+                    "{}{}  {} {}",
                     prefix,
                     "Tool:".cyan().bold(),
                     name.bright_white(),
                     format_json_value(input, 70).dimmed()
                 )
             }
-            ContentBlock::ToolResult { tool_use_id, content, is_error } => {
+            ContentBlock::ToolResult {
+                tool_use_id,
+                content,
+                is_error,
+            } => {
                 let status = if is_error.unwrap_or(false) {
                     "Error".red()
                 } else {
@@ -122,7 +131,8 @@ fn format_assistant_message(msg: &crate::domain::message::AssistantMessage, pref
                     "(empty)".dimmed().to_string()
                 };
 
-                format!("{}{}  [{}] {}",
+                format!(
+                    "{}{}  [{}] {}",
                     prefix,
                     status.bold(),
                     tool_use_id.chars().take(8).collect::<String>().dimmed(),
@@ -137,7 +147,8 @@ fn format_assistant_message(msg: &crate::domain::message::AssistantMessage, pref
     // Ensure we don't exceed 2 lines
     let lines: Vec<&str> = output.lines().collect();
     if lines.len() > 2 {
-        format!("{}\n{} {}",
+        format!(
+            "{}\n{} {}",
             lines[0],
             lines[1],
             format!("(+{} more blocks)", lines.len() - 2).dimmed()
@@ -170,7 +181,8 @@ fn format_result_message(msg: &crate::domain::message::ResultMessage, prefix: &s
         String::new()
     };
 
-    format!("{}{}  {} | {} | {}{}{}",
+    format!(
+        "{}{}  {} | {} | {}{}{}",
         prefix,
         status.bold(),
         duration.bright_white(),
@@ -215,8 +227,9 @@ fn format_json_value(value: &Value, max_len: usize) -> String {
                     format!("{{{} fields}}", obj.len())
                 }
             } else {
-                let parts: Vec<String> = relevant_keys.iter()
-                    .take(2)  // Only show up to 2 fields
+                let parts: Vec<String> = relevant_keys
+                    .iter()
+                    .take(2) // Only show up to 2 fields
                     .filter_map(|key| {
                         obj.get(key).map(|val| {
                             let val_str = match val {
@@ -235,7 +248,8 @@ fn format_json_value(value: &Value, max_len: usize) -> String {
                 let result = parts.join(", ");
                 if result.len() > max_len {
                     // Safe UTF-8 truncation using char boundaries
-                    let truncated: String = result.chars().take(max_len.saturating_sub(3)).collect();
+                    let truncated: String =
+                        result.chars().take(max_len.saturating_sub(3)).collect();
                     format!("{}...", truncated)
                 } else {
                     result
@@ -249,9 +263,8 @@ fn format_json_value(value: &Value, max_len: usize) -> String {
 /// Priority order: error, message, result, status, name, type, data, content, value
 fn extract_relevant_fields(obj: &serde_json::Map<String, Value>) -> Vec<String> {
     let priority_keys = [
-        "error", "message", "result", "status",
-        "name", "type", "data", "content", "value",
-        "text", "output", "response", "id"
+        "error", "message", "result", "status", "name", "type", "data", "content", "value", "text",
+        "output", "response", "id",
     ];
 
     let mut found = Vec::new();
@@ -269,10 +282,7 @@ fn extract_relevant_fields(obj: &serde_json::Map<String, Value>) -> Vec<String> 
     }
 
     // Otherwise, return first few keys
-    obj.keys()
-        .take(3)
-        .cloned()
-        .collect()
+    obj.keys().take(3).cloned().collect()
 }
 
 /// Truncate text and add ellipsis if needed

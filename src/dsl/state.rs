@@ -632,7 +632,11 @@ impl WorkflowState {
             .count();
 
         let avg_relevance = if task_count > 0 {
-            self.task_outputs.values().map(|o| o.relevance_score).sum::<f64>() / task_count as f64
+            self.task_outputs
+                .values()
+                .map(|o| o.relevance_score)
+                .sum::<f64>()
+                / task_count as f64
         } else {
             0.0
         };

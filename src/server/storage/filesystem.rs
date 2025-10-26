@@ -216,9 +216,10 @@ impl WorkflowStorage for FilesystemStorage {
                     }
 
                     if !filter.tags.is_empty()
-                        && !filter.tags.iter().any(|tag| metadata.tags.contains(tag)) {
-                            matches = false;
-                        }
+                        && !filter.tags.iter().any(|tag| metadata.tags.contains(tag))
+                    {
+                        matches = false;
+                    }
 
                     if let Some(ref created_by) = filter.created_by {
                         if metadata.created_by.as_ref() != Some(created_by) {

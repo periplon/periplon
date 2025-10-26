@@ -111,7 +111,7 @@ fn test_group_list_empty_directory() {
     fs::create_dir_all(&groups_dir).unwrap();
 
     let output = Command::new(get_dsl_executor_path())
-        .args(&["group", "list", "--path", groups_dir.to_str().unwrap()])
+        .args(["group", "list", "--path", groups_dir.to_str().unwrap()])
         .output()
         .expect("Failed to execute command");
 
@@ -154,7 +154,7 @@ fn test_group_list_with_groups() {
     );
 
     let output = Command::new(get_dsl_executor_path())
-        .args(&["group", "list", "--path", groups_dir.to_str().unwrap()])
+        .args(["group", "list", "--path", groups_dir.to_str().unwrap()])
         .output()
         .expect("Failed to execute command");
 
@@ -182,7 +182,7 @@ fn test_group_list_json_output() {
     create_test_group(&groups_dir, "json-test", "1.0.0", vec![("task1", "1.0.0")]);
 
     let output = Command::new(get_dsl_executor_path())
-        .args(&[
+        .args([
             "group",
             "list",
             "--path",
@@ -229,7 +229,7 @@ fn test_group_list_verbose() {
     );
 
     let output = Command::new(get_dsl_executor_path())
-        .args(&[
+        .args([
             "group",
             "list",
             "--path",
@@ -274,7 +274,7 @@ fn test_group_validate_valid_group() {
 
     // Set up task path environment (if needed by loader)
     let output = Command::new(get_dsl_executor_path())
-        .args(&["group", "validate", group_file.to_str().unwrap()])
+        .args(["group", "validate", group_file.to_str().unwrap()])
         .output()
         .expect("Failed to execute command");
 
@@ -320,7 +320,7 @@ spec:
     .unwrap();
 
     let output = Command::new(get_dsl_executor_path())
-        .args(&["group", "validate", invalid_file.to_str().unwrap()])
+        .args(["group", "validate", invalid_file.to_str().unwrap()])
         .output()
         .expect("Failed to execute command");
 
@@ -347,7 +347,7 @@ fn test_group_validate_json_output() {
     );
 
     let output = Command::new(get_dsl_executor_path())
-        .args(&["group", "validate", group_file.to_str().unwrap(), "--json"])
+        .args(["group", "validate", group_file.to_str().unwrap(), "--json"])
         .output()
         .expect("Failed to execute command");
 
@@ -377,7 +377,7 @@ fn test_group_install_invalid_reference() {
     }
 
     let output = Command::new(get_dsl_executor_path())
-        .args(&["group", "install", "invalid-ref-format"])
+        .args(["group", "install", "invalid-ref-format"])
         .output()
         .expect("Failed to execute command");
 
@@ -396,7 +396,7 @@ fn test_group_install_nonexistent_group() {
     }
 
     let output = Command::new(get_dsl_executor_path())
-        .args(&["group", "install", "nonexistent-group@1.0.0"])
+        .args(["group", "install", "nonexistent-group@1.0.0"])
         .output()
         .expect("Failed to execute command");
 
@@ -420,7 +420,7 @@ fn test_group_update_all() {
 
     // Update all groups (even if none exist, should not fail)
     let output = Command::new(get_dsl_executor_path())
-        .args(&["group", "update"])
+        .args(["group", "update"])
         .output()
         .expect("Failed to execute command");
 
@@ -444,7 +444,7 @@ fn test_group_update_json_output() {
     }
 
     let output = Command::new(get_dsl_executor_path())
-        .args(&["group", "update", "--json"])
+        .args(["group", "update", "--json"])
         .output()
         .expect("Failed to execute command");
 
@@ -469,7 +469,7 @@ fn test_group_update_force() {
     }
 
     let output = Command::new(get_dsl_executor_path())
-        .args(&["group", "update", "--force"])
+        .args(["group", "update", "--force"])
         .output()
         .expect("Failed to execute command");
 
@@ -496,7 +496,7 @@ fn test_group_command_help() {
     }
 
     let output = Command::new(get_dsl_executor_path())
-        .args(&["group", "--help"])
+        .args(["group", "--help"])
         .output()
         .expect("Failed to execute command");
 
@@ -517,7 +517,7 @@ fn test_group_list_help() {
     }
 
     let output = Command::new(get_dsl_executor_path())
-        .args(&["group", "list", "--help"])
+        .args(["group", "list", "--help"])
         .output()
         .expect("Failed to execute command");
 
@@ -537,7 +537,7 @@ fn test_group_validate_help() {
     }
 
     let output = Command::new(get_dsl_executor_path())
-        .args(&["group", "validate", "--help"])
+        .args(["group", "validate", "--help"])
         .output()
         .expect("Failed to execute command");
 
@@ -578,7 +578,7 @@ fn test_group_workflow_list_validate_sequence() {
 
     // Step 1: List groups
     let list_output = Command::new(get_dsl_executor_path())
-        .args(&["group", "list", "--path", groups_dir.to_str().unwrap()])
+        .args(["group", "list", "--path", groups_dir.to_str().unwrap()])
         .output()
         .expect("Failed to list groups");
 
@@ -588,7 +588,7 @@ fn test_group_workflow_list_validate_sequence() {
 
     // Step 2: Validate the group
     let validate_output = Command::new(get_dsl_executor_path())
-        .args(&["group", "validate", group_file.to_str().unwrap()])
+        .args(["group", "validate", group_file.to_str().unwrap()])
         .output()
         .expect("Failed to validate group");
 
@@ -641,7 +641,7 @@ fn test_multiple_groups_discovery() {
     );
 
     let output = Command::new(get_dsl_executor_path())
-        .args(&["group", "list", "--path", groups_dir.to_str().unwrap()])
+        .args(["group", "list", "--path", groups_dir.to_str().unwrap()])
         .output()
         .expect("Failed to execute command");
 

@@ -5,12 +5,10 @@
 
 #![cfg(feature = "tui")]
 
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use periplon_sdk::dsl::state::{WorkflowState, WorkflowStatus};
 use periplon_sdk::tui::state::{AppState, ViewMode};
-use periplon_sdk::tui::views::state_browser::{
-    StateEntry, StateBrowserViewMode, StateSortMode,
-};
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use periplon_sdk::tui::views::state_browser::{StateBrowserViewMode, StateEntry, StateSortMode};
 use std::path::PathBuf;
 use std::time::SystemTime;
 
@@ -40,10 +38,7 @@ fn create_test_entry(name: &str, status: WorkflowStatus, progress: f64) -> State
 }
 
 /// Simulate state browser keyboard handling in list view
-async fn handle_list_key_simulation(
-    state: &mut AppState,
-    key_event: KeyEvent,
-) -> ViewMode {
+async fn handle_list_key_simulation(state: &mut AppState, key_event: KeyEvent) -> ViewMode {
     // Simulate the logic from handle_state_browser_key in app.rs
     let browser_state = &mut state.state_browser;
 
@@ -133,10 +128,11 @@ async fn test_up_arrow_selects_previous() {
         .state_browser
         .states
         .push(create_test_entry("workflow1", WorkflowStatus::Running, 0.5));
-    state
-        .state_browser
-        .states
-        .push(create_test_entry("workflow2", WorkflowStatus::Completed, 1.0));
+    state.state_browser.states.push(create_test_entry(
+        "workflow2",
+        WorkflowStatus::Completed,
+        1.0,
+    ));
     state.state_browser.selected_index = 1;
 
     handle_list_key_simulation(&mut state, key(KeyCode::Up)).await;
@@ -169,10 +165,11 @@ async fn test_down_arrow_selects_next() {
         .state_browser
         .states
         .push(create_test_entry("workflow1", WorkflowStatus::Running, 0.5));
-    state
-        .state_browser
-        .states
-        .push(create_test_entry("workflow2", WorkflowStatus::Completed, 1.0));
+    state.state_browser.states.push(create_test_entry(
+        "workflow2",
+        WorkflowStatus::Completed,
+        1.0,
+    ));
     state.state_browser.selected_index = 0;
 
     handle_list_key_simulation(&mut state, key(KeyCode::Down)).await;
@@ -189,10 +186,11 @@ async fn test_down_arrow_stops_at_last() {
         .state_browser
         .states
         .push(create_test_entry("workflow1", WorkflowStatus::Running, 0.5));
-    state
-        .state_browser
-        .states
-        .push(create_test_entry("workflow2", WorkflowStatus::Completed, 1.0));
+    state.state_browser.states.push(create_test_entry(
+        "workflow2",
+        WorkflowStatus::Completed,
+        1.0,
+    ));
     state.state_browser.selected_index = 1;
 
     handle_list_key_simulation(&mut state, key(KeyCode::Down)).await;
@@ -455,10 +453,11 @@ async fn test_selection_persists_between_keys() {
         .state_browser
         .states
         .push(create_test_entry("workflow1", WorkflowStatus::Running, 0.5));
-    state
-        .state_browser
-        .states
-        .push(create_test_entry("workflow2", WorkflowStatus::Completed, 1.0));
+    state.state_browser.states.push(create_test_entry(
+        "workflow2",
+        WorkflowStatus::Completed,
+        1.0,
+    ));
     state
         .state_browser
         .states
@@ -480,10 +479,11 @@ async fn test_view_mode_preserved_during_navigation() {
         .state_browser
         .states
         .push(create_test_entry("workflow1", WorkflowStatus::Running, 0.5));
-    state
-        .state_browser
-        .states
-        .push(create_test_entry("workflow2", WorkflowStatus::Completed, 1.0));
+    state.state_browser.states.push(create_test_entry(
+        "workflow2",
+        WorkflowStatus::Completed,
+        1.0,
+    ));
 
     handle_list_key_simulation(&mut state, key(KeyCode::Down)).await;
     handle_list_key_simulation(&mut state, key(KeyCode::Up)).await;
@@ -516,10 +516,11 @@ async fn test_navigation_sequence() {
     state.view_mode = ViewMode::StateBrowser;
     state.state_browser.view_mode = StateBrowserViewMode::List;
     for i in 0..10 {
-        state
-            .state_browser
-            .states
-            .push(create_test_entry(&format!("workflow{}", i), WorkflowStatus::Running, 0.5));
+        state.state_browser.states.push(create_test_entry(
+            &format!("workflow{}", i),
+            WorkflowStatus::Running,
+            0.5,
+        ));
     }
 
     // Navigate down 5 times
@@ -652,10 +653,11 @@ async fn test_alternating_navigation() {
         .state_browser
         .states
         .push(create_test_entry("workflow1", WorkflowStatus::Running, 0.5));
-    state
-        .state_browser
-        .states
-        .push(create_test_entry("workflow2", WorkflowStatus::Completed, 1.0));
+    state.state_browser.states.push(create_test_entry(
+        "workflow2",
+        WorkflowStatus::Completed,
+        1.0,
+    ));
     state.state_browser.selected_index = 0;
 
     // Alternate up and down

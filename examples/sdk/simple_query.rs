@@ -1,5 +1,5 @@
-use periplon_sdk::{query, AgentOptions, ContentBlock, Message};
 use futures::StreamExt;
+use periplon_sdk::{query, AgentOptions, ContentBlock, Message};
 use std::path::PathBuf;
 
 #[tokio::main]

@@ -61,7 +61,9 @@ tasks:
     println!("Tasks in execution graph: {:?}", all_tasks);
 
     // Should have exactly 3 tasks
-    assert_eq!(all_tasks.len(), 3,
+    assert_eq!(
+        all_tasks.len(),
+        3,
         "Expected 3 executable tasks (2 children + 1 standalone), got {}",
         all_tasks.len()
     );
@@ -130,7 +132,9 @@ tasks:
     println!("Tasks in execution graph: {:?}", all_tasks);
 
     // Should have exactly 1 task (only the leaf child task)
-    assert_eq!(all_tasks.len(), 1,
+    assert_eq!(
+        all_tasks.len(),
+        1,
         "Expected 1 executable task (only the leaf child), got {}",
         all_tasks.len()
     );
@@ -203,7 +207,9 @@ tasks:
     println!("Tasks in execution graph: {:?}", all_tasks);
 
     // Should have exactly 2 tasks (the 2 children)
-    assert_eq!(all_tasks.len(), 2,
+    assert_eq!(
+        all_tasks.len(),
+        2,
         "Expected 2 executable tasks (2 children), got {}",
         all_tasks.len()
     );
@@ -226,17 +232,29 @@ tasks:
 
     // Verify inheritance by checking the task specs in the graph
     let child_inherits_node = task_graph.get_task("parent.child_inherits").unwrap();
-    assert_eq!(child_inherits_node.spec.agent, Some("test_agent".to_string()),
-        "Child should inherit agent from parent");
-    assert_eq!(child_inherits_node.spec.priority, 10,
-        "Child should inherit priority from parent");
-    assert_eq!(child_inherits_node.spec.inject_context, true,
-        "Child should inherit inject_context from parent");
-    assert!(child_inherits_node.spec.on_error.is_some(),
-        "Child should inherit on_error from parent");
+    assert_eq!(
+        child_inherits_node.spec.agent,
+        Some("test_agent".to_string()),
+        "Child should inherit agent from parent"
+    );
+    assert_eq!(
+        child_inherits_node.spec.priority, 10,
+        "Child should inherit priority from parent"
+    );
+    assert!(
+        child_inherits_node.spec.inject_context,
+        "Child should inherit inject_context from parent"
+    );
+    assert!(
+        child_inherits_node.spec.on_error.is_some(),
+        "Child should inherit on_error from parent"
+    );
 
     // Verify override
     let child_overrides_node = task_graph.get_task("parent.child_overrides").unwrap();
-    assert_eq!(child_overrides_node.spec.agent, Some("fallback_agent".to_string()),
-        "Child should override agent from parent");
+    assert_eq!(
+        child_overrides_node.spec.agent,
+        Some("fallback_agent".to_string()),
+        "Child should override agent from parent"
+    );
 }

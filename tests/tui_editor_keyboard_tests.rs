@@ -5,9 +5,9 @@
 
 #![cfg(feature = "tui")]
 
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use periplon_sdk::tui::state::EditorState;
 use periplon_sdk::tui::views::editor::EditorMode;
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 // ============================================================================
 // Test Utilities

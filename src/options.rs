@@ -120,13 +120,22 @@ impl std::fmt::Debug for AgentOptions {
             .field("mcp_servers", &self.mcp_servers)
             .field("continue_conversation", &self.continue_conversation)
             .field("resume", &self.resume)
-            .field("permission_prompt_tool_name", &self.permission_prompt_tool_name)
+            .field(
+                "permission_prompt_tool_name",
+                &self.permission_prompt_tool_name,
+            )
             .field("add_dirs", &self.add_dirs)
             .field("env", &self.env)
             .field("extra_args", &self.extra_args)
             .field("max_buffer_size", &self.max_buffer_size)
-            .field("can_use_tool", &self.can_use_tool.as_ref().map(|_| "<callback>"))
-            .field("hooks", &self.hooks.as_ref().map(|h| format!("{} hooks", h.len())))
+            .field(
+                "can_use_tool",
+                &self.can_use_tool.as_ref().map(|_| "<callback>"),
+            )
+            .field(
+                "hooks",
+                &self.hooks.as_ref().map(|h| format!("{} hooks", h.len())),
+            )
             .field("stderr", &self.stderr.as_ref().map(|_| "<callback>"))
             .field("include_partial_messages", &self.include_partial_messages)
             .field("fork_session", &self.fork_session)

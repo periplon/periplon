@@ -81,7 +81,9 @@ fn test_workflow_entry_with_errors() {
 
     assert!(!entry.valid);
     assert_eq!(entry.errors.len(), 2);
-    assert!(entry.errors.contains(&"Missing required field: agents".to_string()));
+    assert!(entry
+        .errors
+        .contains(&"Missing required field: agents".to_string()));
 }
 
 #[test]
@@ -109,13 +111,11 @@ fn test_execution_state_creation() {
 
 #[test]
 fn test_execution_status_transitions() {
-    let statuses = vec![
-        ExecutionStatus::Preparing,
+    let statuses = [ExecutionStatus::Preparing,
         ExecutionStatus::Running,
         ExecutionStatus::Paused,
         ExecutionStatus::Completed,
-        ExecutionStatus::Failed,
-    ];
+        ExecutionStatus::Failed];
 
     // Verify all statuses are distinct from each other
     assert_eq!(statuses.len(), 5);
@@ -175,11 +175,9 @@ fn test_editor_error_creation() {
 
 #[test]
 fn test_error_severity_levels() {
-    let severities = vec![
-        ErrorSeverity::Error,
+    let severities = [ErrorSeverity::Error,
         ErrorSeverity::Warning,
-        ErrorSeverity::Info,
-    ];
+        ErrorSeverity::Info];
 
     assert_eq!(severities.len(), 3);
     assert_ne!(ErrorSeverity::Error, ErrorSeverity::Warning);
@@ -187,12 +185,10 @@ fn test_error_severity_levels() {
 
 #[test]
 fn test_viewer_section_navigation() {
-    let sections = vec![
-        ViewerSection::Overview,
+    let sections = [ViewerSection::Overview,
         ViewerSection::Agents,
         ViewerSection::Tasks,
-        ViewerSection::Variables,
-    ];
+        ViewerSection::Variables];
 
     assert_eq!(sections[0], ViewerSection::Overview);
     assert_eq!(sections[1], ViewerSection::Agents);
@@ -263,23 +259,19 @@ fn test_state_workflow_selection() {
 
 #[test]
 fn test_confirm_action_variants() {
-    let actions = vec![
-        ConfirmAction::DeleteWorkflow(PathBuf::from("test.yaml")),
+    let actions = [ConfirmAction::DeleteWorkflow(PathBuf::from("test.yaml")),
         ConfirmAction::ExecuteWorkflow(PathBuf::from("test.yaml")),
         ConfirmAction::DiscardChanges,
-        ConfirmAction::Exit,
-    ];
+        ConfirmAction::Exit];
 
     assert_eq!(actions.len(), 4);
 }
 
 #[test]
 fn test_input_action_variants() {
-    let actions = vec![
-        InputAction::CreateWorkflow,
+    let actions = [InputAction::CreateWorkflow,
         InputAction::RenameWorkflow(PathBuf::from("old.yaml")),
-        InputAction::GenerateWorkflow,
-    ];
+        InputAction::GenerateWorkflow];
 
     assert_eq!(actions.len(), 3);
 }
@@ -438,7 +430,10 @@ fn test_editor_state_error_tracking() {
 
     assert_eq!(state.editor_state.errors.len(), 2);
     assert_eq!(state.editor_state.errors[0].severity, ErrorSeverity::Error);
-    assert_eq!(state.editor_state.errors[1].severity, ErrorSeverity::Warning);
+    assert_eq!(
+        state.editor_state.errors[1].severity,
+        ErrorSeverity::Warning
+    );
 }
 
 #[test]
@@ -577,10 +572,16 @@ fn test_multiple_workflows_management() {
 
     // Test navigation
     state.selected_workflow = 0;
-    assert_eq!(state.workflows[state.selected_workflow].name, "workflow1.yaml");
+    assert_eq!(
+        state.workflows[state.selected_workflow].name,
+        "workflow1.yaml"
+    );
 
     state.selected_workflow = 4;
-    assert_eq!(state.workflows[state.selected_workflow].name, "workflow5.yaml");
+    assert_eq!(
+        state.workflows[state.selected_workflow].name,
+        "workflow5.yaml"
+    );
 }
 
 // ============================================================================
@@ -652,8 +653,7 @@ fn test_view_mode_transitions_all_combinations() {
 
 #[test]
 fn test_error_severity_ordering() {
-    let errors = vec![
-        EditorError {
+    let errors = [EditorError {
             line: 1,
             column: None,
             message: "Info".to_string(),
@@ -670,8 +670,7 @@ fn test_error_severity_ordering() {
             column: None,
             message: "Error".to_string(),
             severity: ErrorSeverity::Error,
-        },
-    ];
+        }];
 
     // Errors should be prioritized highest
     let critical: Vec<_> = errors
@@ -725,10 +724,7 @@ tasks:
     // Verify dependencies
     let write_task = workflow.tasks.get("write").unwrap();
     assert!(!write_task.depends_on.is_empty());
-    assert_eq!(
-        write_task.depends_on,
-        vec!["research".to_string()]
-    );
+    assert_eq!(write_task.depends_on, vec!["research".to_string()]);
 }
 
 #[test]
@@ -840,8 +836,7 @@ fn test_execution_state_detailed_tracking() {
     exec.current_task = Some("task1".to_string());
     exec.progress = 0.2;
 
-    exec.log
-        .push("[00:10] Agent1 started task1".to_string());
+    exec.log.push("[00:10] Agent1 started task1".to_string());
     exec.progress = 0.4;
 
     exec.log
@@ -850,8 +845,7 @@ fn test_execution_state_detailed_tracking() {
     exec.progress = 0.6;
 
     exec.current_task = Some("task2".to_string());
-    exec.log
-        .push("[00:30] Agent1 started task2".to_string());
+    exec.log.push("[00:30] Agent1 started task2".to_string());
     exec.progress = 0.8;
 
     exec.log
@@ -963,18 +957,18 @@ fn test_theme_color_consistency() {
         let _ = theme.error;
 
         // Colors should be distinct
-        assert_ne!(theme.success, theme.error,
-                   "Theme has same success and error colors");
+        assert_ne!(
+            theme.success, theme.error,
+            "Theme has same success and error colors"
+        );
     }
 }
 
 #[test]
 fn test_concurrent_workflow_execution_states() {
-    let workflows = vec![
-        ("workflow1.yaml", ExecutionStatus::Running),
+    let workflows = [("workflow1.yaml", ExecutionStatus::Running),
         ("workflow2.yaml", ExecutionStatus::Completed),
-        ("workflow3.yaml", ExecutionStatus::Failed),
-    ];
+        ("workflow3.yaml", ExecutionStatus::Failed)];
 
     let states: Vec<ExecutionState> = workflows
         .iter()

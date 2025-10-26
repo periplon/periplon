@@ -49,20 +49,13 @@ impl MarkdownRenderer {
                 Style::default()
                     .fg(Color::Blue)
                     .add_modifier(Modifier::BOLD),
-                Style::default()
-                    .fg(Color::Blue),
-                Style::default()
-                    .fg(Color::LightBlue),
-                Style::default()
-                    .fg(Color::LightBlue),
+                Style::default().fg(Color::Blue),
+                Style::default().fg(Color::LightBlue),
+                Style::default().fg(Color::LightBlue),
             ],
-            code_style: Style::default()
-                .fg(Color::Green)
-                .bg(Color::DarkGray),
-            bold_style: Style::default()
-                .add_modifier(Modifier::BOLD),
-            italic_style: Style::default()
-                .add_modifier(Modifier::ITALIC),
+            code_style: Style::default().fg(Color::Green).bg(Color::DarkGray),
+            bold_style: Style::default().add_modifier(Modifier::BOLD),
+            italic_style: Style::default().add_modifier(Modifier::ITALIC),
             link_style: Style::default()
                 .fg(Color::LightCyan)
                 .add_modifier(Modifier::UNDERLINED),
@@ -197,7 +190,10 @@ impl MarkdownRenderer {
         let trimmed = line.trim();
 
         // Skip separator rows (|---|---|)
-        if trimmed.chars().all(|c| c == '|' || c == '-' || c == ':' || c.is_whitespace()) {
+        if trimmed
+            .chars()
+            .all(|c| c == '|' || c == '-' || c == ':' || c.is_whitespace())
+        {
             return Some(Line::from(Span::styled(
                 trimmed.to_string(),
                 Style::default().fg(Color::DarkGray),
@@ -231,10 +227,7 @@ impl MarkdownRenderer {
 
     /// Render a code block line
     fn render_code_line(&self, line: &str) -> Line<'static> {
-        Line::from(Span::styled(
-            format!("  {}", line),
-            self.code_style,
-        ))
+        Line::from(Span::styled(format!("  {}", line), self.code_style))
     }
 
     /// Parse inline styles like **bold**, *italic*, `code`, [links]

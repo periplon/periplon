@@ -91,7 +91,10 @@ fn test_confirm_modal_basic_rendering() {
     let terminal = render_modal(&modal, "", &theme, 80, 24);
 
     // Modal should have a border
-    assert!(count_border_chars(&terminal) > 0, "Modal should have borders");
+    assert!(
+        count_border_chars(&terminal) > 0,
+        "Modal should have borders"
+    );
 
     // Title should be visible
     assert!(
@@ -132,12 +135,10 @@ fn test_confirm_modal_centering() {
     let buffer = terminal.backend().buffer();
 
     // First few columns should be empty (left margin)
-    let left_empty = (0..10)
-        .all(|x| buffer.cell((x, 15)).unwrap().symbol().trim().is_empty());
+    let left_empty = (0..10).all(|x| buffer.cell((x, 15)).unwrap().symbol().trim().is_empty());
 
     // Last few columns should be empty (right margin)
-    let right_empty = (90..100)
-        .all(|x| buffer.cell((x, 15)).unwrap().symbol().trim().is_empty());
+    let right_empty = (90..100).all(|x| buffer.cell((x, 15)).unwrap().symbol().trim().is_empty());
 
     assert!(
         left_empty && right_empty,
@@ -319,8 +320,7 @@ fn test_error_modal_rendering() {
 fn test_error_modal_multiline() {
     let modal = Modal::Error {
         title: "Validation Error".to_string(),
-        message: "Multiple errors:\n- Invalid syntax\n- Missing field\n- Type mismatch"
-            .to_string(),
+        message: "Multiple errors:\n- Invalid syntax\n- Missing field\n- Type mismatch".to_string(),
     };
 
     let theme = Theme::default();

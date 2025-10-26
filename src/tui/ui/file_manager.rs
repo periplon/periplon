@@ -8,11 +8,7 @@ use ratatui::Frame;
 
 // Re-export types from the views module
 pub use crate::tui::views::file_manager::{
-    FileManagerState,
-    FileManagerViewMode,
-    FileActionMode,
-    FileSortMode,
-    FileEntry,
+    FileActionMode, FileEntry, FileManagerState, FileManagerViewMode, FileSortMode,
 };
 
 /// File manager view component

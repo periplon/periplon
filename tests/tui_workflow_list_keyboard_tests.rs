@@ -278,12 +278,10 @@ fn test_rapid_navigation_keys() {
 #[test]
 fn test_mixed_navigation_keys() {
     // Mix arrow keys and vim keys
-    let actions = vec![
-        handle_workflow_list_key_simulation(key(KeyCode::Down)),
+    let actions = [handle_workflow_list_key_simulation(key(KeyCode::Down)),
         handle_workflow_list_key_simulation(key(KeyCode::Char('j'))),
         handle_workflow_list_key_simulation(key(KeyCode::Up)),
-        handle_workflow_list_key_simulation(key(KeyCode::Char('k'))),
-    ];
+        handle_workflow_list_key_simulation(key(KeyCode::Char('k')))];
 
     assert_eq!(actions[0], WorkflowListAction::SelectDown);
     assert_eq!(actions[1], WorkflowListAction::SelectDown);
@@ -366,7 +364,10 @@ fn test_uppercase_keys_different_from_lowercase() {
         // For this implementation, we test that they work the same way
         assert!(
             action == WorkflowListAction::None
-                || action == handle_workflow_list_key_simulation(key(KeyCode::Char(ch.to_ascii_lowercase())))
+                || action
+                    == handle_workflow_list_key_simulation(key(KeyCode::Char(
+                        ch.to_ascii_lowercase()
+                    )))
         );
     }
 }
@@ -378,8 +379,7 @@ fn test_uppercase_keys_different_from_lowercase() {
 #[test]
 fn test_all_defined_actions_have_keys() {
     // Ensure all actions can be triggered
-    let actions = vec![
-        WorkflowListAction::SelectUp,
+    let actions = [WorkflowListAction::SelectUp,
         WorkflowListAction::SelectDown,
         WorkflowListAction::ViewWorkflow,
         WorkflowListAction::EditWorkflow,
@@ -389,8 +389,7 @@ fn test_all_defined_actions_have_keys() {
         WorkflowListAction::ShowGenerator,
         WorkflowListAction::ShowStates,
         WorkflowListAction::StartSearch,
-        WorkflowListAction::ConfirmQuit,
-    ];
+        WorkflowListAction::ConfirmQuit];
 
     // Each action should have at least one key that triggers it
     assert_eq!(actions.len(), 11); // All actions accounted for

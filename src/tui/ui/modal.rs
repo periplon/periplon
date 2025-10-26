@@ -25,13 +25,7 @@ impl ModalView {
     }
 
     /// Render a modal dialog (static method)
-    pub fn render(
-        frame: &mut Frame,
-        area: Rect,
-        modal: &Modal,
-        input_buffer: &str,
-        theme: &Theme,
-    ) {
+    pub fn render(frame: &mut Frame, area: Rect, modal: &Modal, input_buffer: &str, theme: &Theme) {
         render_modal_impl(frame, area, modal, input_buffer, theme);
     }
 }
@@ -43,13 +37,7 @@ impl Default for ModalView {
 }
 
 /// Legacy render function for backward compatibility
-pub fn render(
-    frame: &mut Frame,
-    area: Rect,
-    modal: &Modal,
-    input_buffer: &str,
-    theme: &Theme,
-) {
+pub fn render(frame: &mut Frame, area: Rect, modal: &Modal, input_buffer: &str, theme: &Theme) {
     render_modal_impl(frame, area, modal, input_buffer, theme);
 }
 
@@ -66,18 +54,18 @@ fn render_modal_impl(
         let vertical = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Percentage(25),  // Top margin
-                Constraint::Min(10),         // Modal content (min 10 lines)
-                Constraint::Percentage(25),  // Bottom margin
+                Constraint::Percentage(25), // Top margin
+                Constraint::Min(10),        // Modal content (min 10 lines)
+                Constraint::Percentage(25), // Bottom margin
             ])
             .split(area);
 
         Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Percentage(15),  // Left margin
-                Constraint::Min(40),         // Modal content (min 40 chars)
-                Constraint::Percentage(15),  // Right margin
+                Constraint::Percentage(15), // Left margin
+                Constraint::Min(40),        // Modal content (min 40 chars)
+                Constraint::Percentage(15), // Right margin
             ])
             .split(vertical[1])[1]
     };
@@ -97,9 +85,19 @@ fn render_modal_impl(
                 Line::from(message.as_str()),
                 Line::from(""),
                 Line::from(vec![
-                    Span::styled("y", Style::default().fg(theme.success).add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        "y",
+                        Style::default()
+                            .fg(theme.success)
+                            .add_modifier(Modifier::BOLD),
+                    ),
                     Span::raw(": Yes  "),
-                    Span::styled("n", Style::default().fg(theme.error).add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        "n",
+                        Style::default()
+                            .fg(theme.error)
+                            .add_modifier(Modifier::BOLD),
+                    ),
                     Span::raw(": No"),
                 ]),
             ];
@@ -126,13 +124,28 @@ fn render_modal_impl(
                 Line::from(vec![
                     Span::styled("> ", Style::default().fg(theme.accent)),
                     Span::styled(input_buffer, Style::default().fg(theme.fg)),
-                    Span::styled(cursor, Style::default().fg(theme.accent).add_modifier(Modifier::SLOW_BLINK)),
+                    Span::styled(
+                        cursor,
+                        Style::default()
+                            .fg(theme.accent)
+                            .add_modifier(Modifier::SLOW_BLINK),
+                    ),
                 ]),
                 Line::from(""),
                 Line::from(vec![
-                    Span::styled("Enter", Style::default().fg(theme.success).add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        "Enter",
+                        Style::default()
+                            .fg(theme.success)
+                            .add_modifier(Modifier::BOLD),
+                    ),
                     Span::raw(": Submit  "),
-                    Span::styled("Esc", Style::default().fg(theme.error).add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        "Esc",
+                        Style::default()
+                            .fg(theme.error)
+                            .add_modifier(Modifier::BOLD),
+                    ),
                     Span::raw(": Cancel"),
                 ]),
             ];
@@ -152,10 +165,18 @@ fn render_modal_impl(
 
             let text = vec![
                 Line::from(""),
-                Line::from(Span::styled(message.as_str(), Style::default().fg(theme.error))),
+                Line::from(Span::styled(
+                    message.as_str(),
+                    Style::default().fg(theme.error),
+                )),
                 Line::from(""),
                 Line::from(vec![
-                    Span::styled("Enter", Style::default().fg(theme.success).add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        "Enter",
+                        Style::default()
+                            .fg(theme.success)
+                            .add_modifier(Modifier::BOLD),
+                    ),
                     Span::raw(": Close"),
                 ]),
             ];
@@ -178,7 +199,12 @@ fn render_modal_impl(
                 Line::from(message.as_str()),
                 Line::from(""),
                 Line::from(vec![
-                    Span::styled("Enter", Style::default().fg(theme.success).add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        "Enter",
+                        Style::default()
+                            .fg(theme.success)
+                            .add_modifier(Modifier::BOLD),
+                    ),
                     Span::raw(": Close"),
                 ]),
             ];
@@ -198,10 +224,18 @@ fn render_modal_impl(
 
             let text = vec![
                 Line::from(""),
-                Line::from(Span::styled(message.as_str(), Style::default().fg(theme.success))),
+                Line::from(Span::styled(
+                    message.as_str(),
+                    Style::default().fg(theme.success),
+                )),
                 Line::from(""),
                 Line::from(vec![
-                    Span::styled("Enter", Style::default().fg(theme.success).add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        "Enter",
+                        Style::default()
+                            .fg(theme.success)
+                            .add_modifier(Modifier::BOLD),
+                    ),
                     Span::raw(": Close"),
                 ]),
             ];
