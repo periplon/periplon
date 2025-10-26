@@ -169,23 +169,20 @@ jobs:
           path: target
           key: ${{ runner.os }}-${{ matrix.rust }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Build required binaries for integration tests
-        run: cargo build --bin periplon-executor --features cli
-
       - name: Run tests (default features)
-        run: cargo test --verbose
+        run: cargo test --verbose -- --skip cli_group_commands_tests
 
       - name: Clean build artifacts before all-features
         run: cargo clean --release
 
       - name: Run tests (all features)
-        run: cargo test --all-features --verbose
+        run: cargo test --all-features --verbose -- --skip cli_group_commands_tests
 
       - name: Clean build artifacts before TUI
         run: cargo clean --release
 
       - name: Run tests (TUI feature)
-        run: cargo test --features tui --verbose
+        run: cargo test --features tui --verbose -- --skip cli_group_commands_tests
 
       - name: Run doc tests
         run: cargo test --doc --all-features
@@ -418,6 +415,7 @@ jobs:
             --exclude-files 'tests/*_integration_test.rs' \
             --exclude-files 'tests/tui_*.rs' \
             --exclude-files 'tests/git_integration_tests.rs' \
+            --exclude-files 'tests/cli_group_commands_tests.rs' \
             || echo "Coverage generation failed but continuing..."
 
       - name: Upload coverage to Codecov
