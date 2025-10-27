@@ -141,7 +141,7 @@ cargo build --release --features full
 # Access web UI at http://localhost:8080
 ```
 
-**Documentation:** [CLI Usage](./CLI_USAGE.md) | [Embedded Web UI](./EMBEDDED_WEB_UI.md)
+**Documentation:** [CLI Usage](./docs/guides/CLI_USAGE.md) | [Embedded Web UI](./docs/features/EMBEDDED_WEB_UI.md)
 
 ### TUI (Terminal Interface)
 
@@ -186,13 +186,13 @@ cargo build --release --bin periplon-tui --features tui
 
 ### DSL System
 - [DSL Overview](./docs/guides/dsl-overview.md) - Introduction to the DSL
-- [Loop Patterns Guide](./docs/loop-patterns.md) - Comprehensive loop reference
-- [Loop Cookbook](./docs/loop-cookbook.md) - 25 production-ready patterns
-- [Loop Tutorial](./docs/loop-tutorial.md) - Step-by-step guide
-- [DSL Implementation](./docs/DSL_IMPLEMENTATION.md) - Technical details
-- [Natural Language Generation](./docs/DSL_NL_GENERATION.md) - NL workflow generation
-- [HTTP Collections](./docs/HTTP_COLLECTION_SUMMARY.md) - HTTP/HTTPS integration
-- [Security Audit](./docs/SECURITY_AUDIT.md) - Safety analysis
+- [Loop Patterns Guide](./docs/features/loop-patterns.md) - Comprehensive loop reference
+- [Loop Cookbook](./docs/features/loop-cookbook.md) - 25 production-ready patterns
+- [Loop Tutorial](./docs/features/loop-tutorial.md) - Step-by-step guide
+- [DSL Implementation](./docs/api/DSL_IMPLEMENTATION.md) - Technical details
+- [Natural Language Generation](./docs/api/DSL_NL_GENERATION.md) - NL workflow generation
+- [HTTP Collections](./docs/features/HTTP_COLLECTION_SUMMARY.md) - HTTP/HTTPS integration
+- [Security Audit](./docs/api/SECURITY_AUDIT.md) - Safety analysis
 
 ### API Reference
 - [Rust API Documentation](https://docs.rs/periplon)
@@ -214,12 +214,12 @@ cargo run --example dsl_executor_example
 ```
 
 ### DSL Loop Examples
-- [ForEach Demo](./examples/foreach_demo.rs) - Process collections
-- [While Demo](./examples/while_demo.rs) - Polling pattern
-- [Polling Demo](./examples/polling_demo.rs) - API polling
-- [Parallel Demo](./examples/parallel_foreach_demo.rs) - Concurrent execution
-- [HTTP Collection Demo](./examples/http_collection_demo.rs) - Fetch from APIs
-- [Checkpoint Demo](./examples/checkpoint_resume_demo.rs) - Resume capability
+- [ForEach Demo](./examples/sdk/foreach_demo.rs) - Process collections
+- [While Demo](./examples/sdk/while_demo.rs) - Polling pattern
+- [Polling Demo](./examples/sdk/polling_demo.rs) - API polling
+- [Parallel Demo](./examples/sdk/parallel_foreach_demo.rs) - Concurrent execution
+- [HTTP Collection Demo](./examples/sdk/http_collection_demo.rs) - Fetch from APIs
+- [Checkpoint Demo](./examples/sdk/checkpoint_resume_demo.rs) - Resume capability
 
 See [examples/](./examples/) for more examples.
 
