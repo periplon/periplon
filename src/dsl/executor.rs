@@ -4441,11 +4441,11 @@ mod tests {
         use crate::dsl::schema::DoneCriterion;
 
         // Create a temp file
-        let temp_file = "/tmp/test_dod_file_exists.txt";
-        std::fs::write(temp_file, "test content").unwrap();
+        let temp_file = std::env::temp_dir().join("test_dod_file_exists.txt");
+        std::fs::write(&temp_file, "test content").unwrap();
 
         let criterion = DoneCriterion::FileExists {
-            path: temp_file.to_string(),
+            path: temp_file.to_string_lossy().to_string(),
             description: "Test file must exist".to_string(),
         };
 
@@ -4462,8 +4462,9 @@ mod tests {
     async fn test_dod_file_exists_not_met() {
         use crate::dsl::schema::DoneCriterion;
 
+        let nonexistent_file = std::env::temp_dir().join("nonexistent_file_xyz.txt");
         let criterion = DoneCriterion::FileExists {
-            path: "/tmp/nonexistent_file_xyz.txt".to_string(),
+            path: nonexistent_file.to_string_lossy().to_string(),
             description: "Nonexistent file".to_string(),
         };
 
@@ -4477,11 +4478,11 @@ mod tests {
     async fn test_dod_file_contains_met() {
         use crate::dsl::schema::DoneCriterion;
 
-        let temp_file = "/tmp/test_dod_file_contains.txt";
-        std::fs::write(temp_file, "Hello World\nTest Content").unwrap();
+        let temp_file = std::env::temp_dir().join("test_dod_file_contains.txt");
+        std::fs::write(&temp_file, "Hello World\nTest Content").unwrap();
 
         let criterion = DoneCriterion::FileContains {
-            path: temp_file.to_string(),
+            path: temp_file.to_string_lossy().to_string(),
             pattern: "Hello World".to_string(),
             description: "File must contain greeting".to_string(),
         };
@@ -4497,16 +4498,16 @@ mod tests {
     async fn test_dod_file_contains_regex_pattern() {
         use crate::dsl::schema::DoneCriterion;
 
-        let temp_file = "/tmp/test_dod_file_contains_regex.txt";
+        let temp_file = std::env::temp_dir().join("test_dod_file_contains_regex.txt");
         std::fs::write(
-            temp_file,
+            &temp_file,
             "group_list\ngroup_install\ngroup_update\ngroup_validate",
         )
         .unwrap();
 
         // Test regex pattern matching with .*
         let criterion = DoneCriterion::FileContains {
-            path: temp_file.to_string(),
+            path: temp_file.to_string_lossy().to_string(),
             pattern: "group.*list".to_string(),
             description: "File must contain group_list".to_string(),
         };
@@ -4520,7 +4521,7 @@ mod tests {
 
         // Test another regex pattern
         let criterion2 = DoneCriterion::FileContains {
-            path: temp_file.to_string(),
+            path: temp_file.to_string_lossy().to_string(),
             pattern: "group.*(update|validate)".to_string(),
             description: "File must contain group_update or group_validate".to_string(),
         };
@@ -4538,11 +4539,11 @@ mod tests {
     async fn test_dod_file_not_contains_met() {
         use crate::dsl::schema::DoneCriterion;
 
-        let temp_file = "/tmp/test_dod_file_not_contains.txt";
-        std::fs::write(temp_file, "Clean code").unwrap();
+        let temp_file = std::env::temp_dir().join("test_dod_file_not_contains.txt");
+        std::fs::write(&temp_file, "Clean code").unwrap();
 
         let criterion = DoneCriterion::FileNotContains {
-            path: temp_file.to_string(),
+            path: temp_file.to_string_lossy().to_string(),
             pattern: "TODO".to_string(),
             description: "No TODOs allowed".to_string(),
         };
@@ -4558,11 +4559,11 @@ mod tests {
     async fn test_dod_file_not_contains_failed() {
         use crate::dsl::schema::DoneCriterion;
 
-        let temp_file = "/tmp/test_dod_file_not_contains_fail.txt";
-        std::fs::write(temp_file, "Code with TODO: fix this").unwrap();
+        let temp_file = std::env::temp_dir().join("test_dod_file_not_contains_fail.txt");
+        std::fs::write(&temp_file, "Code with TODO: fix this").unwrap();
 
         let criterion = DoneCriterion::FileNotContains {
-            path: temp_file.to_string(),
+            path: temp_file.to_string_lossy().to_string(),
             pattern: "TODO".to_string(),
             description: "No TODOs allowed".to_string(),
         };
@@ -4579,11 +4580,11 @@ mod tests {
     async fn test_dod_directory_exists() {
         use crate::dsl::schema::DoneCriterion;
 
-        let temp_dir = "/tmp/test_dod_directory";
-        std::fs::create_dir_all(temp_dir).unwrap();
+        let temp_dir = std::env::temp_dir().join("test_dod_directory");
+        std::fs::create_dir_all(&temp_dir).unwrap();
 
         let criterion = DoneCriterion::DirectoryExists {
-            path: temp_dir.to_string(),
+            path: temp_dir.to_string_lossy().to_string(),
             description: "Output directory must exist".to_string(),
         };
 
@@ -4707,17 +4708,18 @@ mod tests {
     async fn test_check_definition_of_done_all_met() {
         use crate::dsl::schema::{DefinitionOfDone, DoneCriterion};
 
-        let temp_file = "/tmp/test_dod_all_met.txt";
-        std::fs::write(temp_file, "Complete").unwrap();
+        let temp_file = std::env::temp_dir().join("test_dod_all_met.txt");
+        std::fs::write(&temp_file, "Complete").unwrap();
 
+        let temp_file_str = temp_file.to_string_lossy().to_string();
         let dod = DefinitionOfDone {
             criteria: vec![
                 DoneCriterion::FileExists {
-                    path: temp_file.to_string(),
+                    path: temp_file_str.clone(),
                     description: "File must exist".to_string(),
                 },
                 DoneCriterion::FileContains {
-                    path: temp_file.to_string(),
+                    path: temp_file_str,
                     pattern: "Complete".to_string(),
                     description: "File must be complete".to_string(),
                 },
@@ -4739,14 +4741,17 @@ mod tests {
     async fn test_check_definition_of_done_some_unmet() {
         use crate::dsl::schema::{DefinitionOfDone, DoneCriterion};
 
+        let existing_file = std::env::temp_dir().join("existing_file.txt");
+        let nonexistent_file = std::env::temp_dir().join("nonexistent_xyz_abc.txt");
+
         let dod = DefinitionOfDone {
             criteria: vec![
                 DoneCriterion::FileExists {
-                    path: "/tmp/existing_file.txt".to_string(),
+                    path: existing_file.to_string_lossy().to_string(),
                     description: "File must exist".to_string(),
                 },
                 DoneCriterion::FileExists {
-                    path: "/tmp/nonexistent_xyz_abc.txt".to_string(),
+                    path: nonexistent_file.to_string_lossy().to_string(),
                     description: "Another file must exist".to_string(),
                 },
             ],
@@ -4756,7 +4761,7 @@ mod tests {
         };
 
         // Create one file but not the other
-        std::fs::write("/tmp/existing_file.txt", "test").unwrap();
+        std::fs::write(&existing_file, "test").unwrap();
 
         let var_context = crate::dsl::variables::VariableContext::new();
         let results = check_definition_of_done(&dod, None, &var_context).await;
@@ -4764,6 +4769,6 @@ mod tests {
         assert!(results[0].met);
         assert!(!results[1].met);
 
-        std::fs::remove_file("/tmp/existing_file.txt").ok();
+        std::fs::remove_file(existing_file).ok();
     }
 }
