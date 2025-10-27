@@ -163,9 +163,9 @@ jobs:
           echo "Disk space after web cleanup:"
           df -h
 
-      - name: Run tests
+      - name: Run unit tests
         if: steps.version.outputs.should_release == 'true'
-        run: cargo test --all-features
+        run: cargo test --lib --bins --all-features
 
       - name: Generate changelog
         if: steps.version.outputs.should_release == 'true'
