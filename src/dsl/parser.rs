@@ -1186,4 +1186,140 @@ tasks:
             _ => panic!("Expected structured notification"),
         }
     }
+
+    // ========================================================================
+    // File Operations Tests
+    // ========================================================================
+
+    #[test]
+    fn test_write_workflow_file() {
+        use tempfile::NamedTempFile;
+
+        let yaml = r#"
+name: "Test Workflow"
+version: "1.0.0"
+agents:
+  test_agent:
+    description: "Test agent"
+"#;
+        let workflow = parse_workflow(yaml).unwrap();
+
+        let temp_file = NamedTempFile::new().unwrap();
+        let path = temp_file.path();
+
+        // Write workflow to file
+        write_workflow_file(&workflow, path).unwrap();
+
+        // Read it back and verify
+        let read_workflow = parse_workflow_file(path).unwrap();
+        assert_eq!(read_workflow.name, workflow.name);
+        assert_eq!(read_workflow.version, workflow.version);
+    }
+
+    #[test]
+    fn test_write_workflow_file_invalid_path() {
+        let yaml = r#"
+name: "Test"
+version: "1.0.0"
+"#;
+        let workflow = parse_workflow(yaml).unwrap();
+
+        // Try to write to invalid path
+        let result = write_workflow_file(&workflow, "/nonexistent/dir/file.yaml");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_workflow_file_not_found() {
+        let result = parse_workflow_file("/nonexistent/file.yaml");
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Failed to read workflow file"));
+    }
+
+    #[test]
+    fn test_merge_subflow_inline() {
+        // Test merge_subflow_inline with a YAML workflow
+        let yaml = r#"
+name: "Main Workflow"
+version: "1.0.0"
+subflows:
+  test_subflow:
+    description: "Test subflow"
+    agents:
+      subflow_agent:
+        description: "Subflow agent"
+    tasks:
+      subflow_task:
+        description: "Subflow task"
+        agent: "subflow_agent"
+"#;
+        let mut workflow = parse_workflow(yaml).unwrap();
+
+        // Merge subflow inline
+        merge_subflow_inline(&mut workflow, "test_subflow").unwrap();
+
+        // Verify agents were merged with namespacing
+        assert!(workflow.agents.contains_key("test_subflow.subflow_agent"));
+
+        // Verify tasks were merged with namespacing
+        assert!(workflow.tasks.contains_key("test_subflow.subflow_task"));
+
+        // Verify agent references were updated
+        let task = workflow.tasks.get("test_subflow.subflow_task").unwrap();
+        assert_eq!(
+            task.agent,
+            Some("test_subflow.subflow_agent".to_string())
+        );
+    }
+
+    #[test]
+    fn test_merge_subflow_inline_with_dependencies() {
+        let yaml = r#"
+name: "Main Workflow"
+version: "1.0.0"
+subflows:
+  sub:
+    description: "Test subflow"
+    tasks:
+      task1:
+        description: "Task 1"
+      task2:
+        description: "Task 2"
+        depends_on:
+          - task1
+"#;
+        let mut workflow = parse_workflow(yaml).unwrap();
+
+        // Merge subflow
+        merge_subflow_inline(&mut workflow, "sub").unwrap();
+
+        // Verify dependencies were namespaced
+        let task2 = workflow.tasks.get("sub.task2").unwrap();
+        assert_eq!(task2.depends_on, vec!["sub.task1".to_string()]);
+    }
+
+    #[test]
+    fn test_merge_subflow_inline_nonexistent() {
+        let yaml = r#"
+name: "Main"
+version: "1.0.0"
+"#;
+        let mut workflow = parse_workflow(yaml).unwrap();
+
+        let result = merge_subflow_inline(&mut workflow, "nonexistent");
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Subflow 'nonexistent' not found"));
+    }
+
+    #[tokio::test]
+    async fn test_parse_workflow_with_subflows_not_found() {
+        let result = parse_workflow_with_subflows("/nonexistent/workflow.yaml").await;
+        assert!(result.is_err());
+    }
 }
