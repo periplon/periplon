@@ -1,6 +1,6 @@
 # Periplon
 
-A Rust SDK for building multi-agent AI workflows and automation.
+A powerful DSL and Rust SDK for building multi-agent AI workflows and automation.
 
 [![Crates.io](https://img.shields.io/crates/v/periplon.svg)](https://crates.io/crates/periplon)
 [![Documentation](https://docs.rs/periplon/badge.svg)](https://docs.rs/periplon)
@@ -11,10 +11,11 @@ A Rust SDK for building multi-agent AI workflows and automation.
 - [Overview](#overview)
 - [Features](#features)
 - [Installation](#installation)
-- [Quick Start](#quick-start)
+- [Quick Start - DSL](#quick-start---dsl)
 - [Tools](#tools)
   - [Executor CLI](#executor-cli)
   - [TUI (Terminal Interface)](#tui-terminal-interface)
+- [SDK Usage](#sdk-usage)
 - [Documentation](#documentation)
 - [Examples](#examples)
 - [Contributing](#contributing)
@@ -22,19 +23,38 @@ A Rust SDK for building multi-agent AI workflows and automation.
 
 ## Overview
 
-Periplon provides a powerful Rust interface for building and executing multi-agent AI workflows. It enables seamless orchestration of AI agents through a clean, type-safe API and a comprehensive DSL system for complex automation tasks.
+Periplon provides a comprehensive DSL (Domain-Specific Language) for orchestrating multi-agent AI workflows with zero configuration. Define complex automation tasks in YAML, and let Periplon handle the execution, state management, and agent coordination.
 
 **Key Capabilities:**
-- 🦀 **Type-Safe Rust SDK** - Strong typing with compile-time guarantees
-- 🔄 **Multi-Agent Workflows** - Orchestrate complex AI agent interactions
 - 📝 **Powerful DSL** - YAML-based workflow definition language
-- 🏗️ **Hexagonal Architecture** - Clean separation of concerns
-- ⚡ **Async I/O** - Non-blocking operations throughout
+- 🔄 **Multi-Agent Workflows** - Orchestrate complex AI agent interactions
+- 🚀 **Zero Configuration** - Start instantly with embedded web UI and API server
+- 🤖 **Natural Language Generation** - Create workflows from plain English
+- 💾 **State Management** - Checkpoint and resume execution
 - 🔌 **Extensible** - Plugin architecture with ports and adapters
+- 🦀 **Type-Safe Rust SDK** - Strong typing with compile-time guarantees for advanced use cases
 
 ## Features
 
+### DSL System
+
+The Periplon DSL is the primary interface for building workflows:
+
+- **Multi-Agent Workflows**: Define and orchestrate multiple specialized AI agents
+- **Natural Language Generation**: Create workflows from plain English descriptions
+- **State Management**: Automatic checkpoint and resume execution
+- **Dependency Resolution**: DAG-based task execution with automatic ordering
+- **Variable System**: Scoped variables with `${variable}` interpolation
+- **Loop Support**: ForEach, While, RepeatUntil, Repeat patterns for iterative tasks
+- **Validation**: Comprehensive workflow validation before execution
+- **Tool Filtering**: Control which tools each agent can access
+- **Permission Modes**: Fine-grained control over agent capabilities
+- **Lifecycle Hooks**: on_start, on_complete, on_error event handlers
+- **HTTP Collections**: Fetch data from REST APIs with authentication
+
 ### Rust SDK
+
+For advanced programmatic usage:
 
 - **Hexagonal Architecture**: Clean separation with ports and adapters pattern
 - **Type Safety**: Strong Rust types with compile-time guarantees
@@ -43,17 +63,25 @@ Periplon provides a powerful Rust interface for building and executing multi-age
 - **Error Handling**: Rich error types with context
 - **Testability**: Mock adapters for isolated testing
 
-### DSL System
-
-- **Multi-Agent Workflows**: Orchestrate complex AI agent interactions
-- **Natural Language Generation**: Create workflows from plain English
-- **State Management**: Checkpoint and resume execution
-- **Dependency Resolution**: DAG-based task execution
-- **Variable System**: Scoped variables with interpolation
-- **Loop Support**: ForEach, While, RepeatUntil, Repeat patterns
-- **Validation**: Comprehensive workflow validation
-
 ## Installation
+
+### For DSL Users
+
+Build the executor CLI and TUI:
+
+```bash
+# Build the executor CLI with full features
+cargo build --release --features full
+
+# Build the TUI
+cargo build --release --bin periplon-tui --features tui
+```
+
+Binaries will be available at:
+- `./target/release/periplon-executor`
+- `./target/release/periplon-tui`
+
+### For SDK Users
 
 Add to your `Cargo.toml`:
 
@@ -66,59 +94,105 @@ futures = "0.3"
 
 For detailed installation instructions, see [Installation Guide](./docs/guides/installation.md).
 
-## Quick Start
+## Quick Start - DSL
 
-### Simple Query
+### Creating Your First Workflow
 
-```rust
-use periplon_sdk::{query, Message, ContentBlock};
-use futures::StreamExt;
+Create a simple workflow file `hello-world.yaml`:
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut stream = query("What is 2 + 2?", None).await?;
+```yaml
+name: "Hello World Workflow"
+version: "1.0.0"
+description: "A simple workflow demonstrating multi-agent coordination"
 
-    while let Some(msg) = stream.next().await {
-        match msg {
-            Message::Assistant(assistant_msg) => {
-                for block in assistant_msg.message.content {
-                    if let ContentBlock::Text { text } = block {
-                        println!("Assistant: {}", text);
-                    }
-                }
-            }
-            _ => {}
-        }
-    }
-    Ok(())
-}
+agents:
+  greeter:
+    description: "Generate friendly greetings"
+    model: "claude-sonnet-4-5"
+    permissions:
+      mode: "default"
+
+  writer:
+    description: "Save greetings to a file"
+    model: "claude-sonnet-4-5"
+    tools: [Write]
+    permissions:
+      mode: "acceptEdits"
+
+tasks:
+  generate_greeting:
+    description: "Generate a friendly greeting message"
+    agent: "greeter"
+
+  save_greeting:
+    description: "Save the greeting to greeting.txt"
+    agent: "writer"
+    depends_on: [generate_greeting]
 ```
 
-### Interactive Client
+### Running the Workflow
 
-```rust
-use periplon_sdk::{PeriplonSDKClient, AgentOptions};
+```bash
+# Validate the workflow
+./target/release/periplon-executor validate hello-world.yaml
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let options = AgentOptions {
-        allowed_tools: vec!["Read".to_string(), "Write".to_string()],
-        permission_mode: Some("acceptEdits".to_string()),
-        ..Default::default()
-    };
-
-    let mut client = PeriplonSDKClient::new(options);
-    client.connect(None).await?;
-
-    client.query("List files in current directory").await?;
-    // Process response...
-
-    client.disconnect().await?;
-    Ok(())
-}
+# Run the workflow
+./target/release/periplon-executor run hello-world.yaml
 ```
 
-See the [Quick Start Guide](./docs/guides/quick-start.md) for more examples.
+### Generate Workflow from Natural Language
+
+```bash
+# Generate a workflow from description
+./target/release/periplon-executor generate \
+  "Create a workflow that analyzes a codebase, finds todos, and generates a report" \
+  -o analyze-todos.yaml
+
+# Run the generated workflow
+./target/release/periplon-executor run analyze-todos.yaml
+```
+
+### Advanced Example: Variable Interpolation
+
+```yaml
+name: "Project Analysis"
+version: "1.0.0"
+
+inputs:
+  project_name:
+    type: string
+    required: true
+    default: "MyProject"
+
+  output_dir:
+    type: string
+    required: true
+    default: "./reports"
+
+agents:
+  analyzer:
+    description: "Analyze code for ${workflow.project_name}"
+    model: "claude-sonnet-4-5"
+    tools: [Read, Grep, Glob]
+    inputs:
+      target_dir:
+        type: string
+        required: true
+
+tasks:
+  scan_codebase:
+    description: "Scan ${workflow.project_name} codebase for issues"
+    agent: "analyzer"
+    inputs:
+      target_dir: "./src"
+    outputs:
+      report:
+        source:
+          type: file
+          path: "${workflow.output_dir}/analysis.json"
+```
+
+See the [DSL Overview](./docs/guides/dsl-overview.md) for comprehensive documentation.
 
 ## Tools
 
@@ -171,18 +245,63 @@ cargo build --release --bin periplon-tui --features tui
 - [Architecture](./docs/tui/architecture.md)
 - [Troubleshooting](./docs/tui/troubleshooting.md)
 
+## SDK Usage
+
+For advanced programmatic control, use the Rust SDK directly:
+
+### Simple Query
+
+```rust
+use periplon_sdk::{query, Message, ContentBlock};
+use futures::StreamExt;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut stream = query("What is 2 + 2?", None).await?;
+
+    while let Some(msg) = stream.next().await {
+        match msg {
+            Message::Assistant(assistant_msg) => {
+                for block in assistant_msg.message.content {
+                    if let ContentBlock::Text { text } = block {
+                        println!("Assistant: {}", text);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    Ok(())
+}
+```
+
+### Interactive Client
+
+```rust
+use periplon_sdk::{PeriplonSDKClient, AgentOptions};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let options = AgentOptions {
+        allowed_tools: vec!["Read".to_string(), "Write".to_string()],
+        permission_mode: Some("acceptEdits".to_string()),
+        ..Default::default()
+    };
+
+    let mut client = PeriplonSDKClient::new(options);
+    client.connect(None).await?;
+
+    client.query("List files in current directory").await?;
+    // Process response...
+
+    client.disconnect().await?;
+    Ok(())
+}
+```
+
+See the [Quick Start Guide](./docs/guides/quick-start.md) for more SDK examples.
+
 ## Documentation
-
-### Getting Started
-- [Installation Guide](./docs/guides/installation.md) - Setup and requirements
-- [Quick Start Guide](./docs/guides/quick-start.md) - Get up and running
-- [Configuration Guide](./docs/guides/configuration.md) - Agent options and settings
-
-### Core Concepts
-- [Architecture Guide](./docs/guides/architecture.md) - Hexagonal architecture overview
-- [Message Types](./docs/api/message-types.md) - Message type reference
-- [Error Handling](./docs/guides/error-handling.md) - Error types and patterns
-- [Testing Guide](./docs/guides/testing.md) - Comprehensive testing (166+ tests)
 
 ### DSL System
 - [DSL Overview](./docs/guides/dsl-overview.md) - Introduction to the DSL
@@ -194,26 +313,33 @@ cargo build --release --bin periplon-tui --features tui
 - [HTTP Collections](./docs/features/HTTP_COLLECTION_SUMMARY.md) - HTTP/HTTPS integration
 - [Security Audit](./docs/api/SECURITY_AUDIT.md) - Safety analysis
 
-### API Reference
+### Getting Started
+- [Installation Guide](./docs/guides/installation.md) - Setup and requirements
+- [Quick Start Guide](./docs/guides/quick-start.md) - Get up and running
+- [Configuration Guide](./docs/guides/configuration.md) - Agent options and settings
+
+### SDK Reference
 - [Rust API Documentation](https://docs.rs/periplon)
+- [Architecture Guide](./docs/guides/architecture.md) - Hexagonal architecture overview
+- [Message Types](./docs/api/message-types.md) - Message type reference
+- [Error Handling](./docs/guides/error-handling.md) - Error types and patterns
+- [Testing Guide](./docs/guides/testing.md) - Comprehensive testing (166+ tests)
+
+### Example Workflows
 - [Example Workflows](./examples/dsl_workflows/)
 
 ## Examples
 
-Run the included examples:
+### DSL Workflow Examples
+
+Run the included DSL examples:
 
 ```bash
-# Simple query
-cargo run --example simple_query
-
-# Interactive client
-cargo run --example interactive_client
-
-# DSL executor
+# DSL executor example
 cargo run --example dsl_executor_example
 ```
 
-### DSL Loop Examples
+**Loop Pattern Examples:**
 - [ForEach Demo](./examples/sdk/foreach_demo.rs) - Process collections
 - [While Demo](./examples/sdk/while_demo.rs) - Polling pattern
 - [Polling Demo](./examples/sdk/polling_demo.rs) - API polling
@@ -221,7 +347,19 @@ cargo run --example dsl_executor_example
 - [HTTP Collection Demo](./examples/sdk/http_collection_demo.rs) - Fetch from APIs
 - [Checkpoint Demo](./examples/sdk/checkpoint_resume_demo.rs) - Resume capability
 
-See [examples/](./examples/) for more examples.
+### SDK Examples
+
+Run the included SDK examples:
+
+```bash
+# Simple query
+cargo run --example simple_query
+
+# Interactive client
+cargo run --example interactive_client
+```
+
+See [examples/](./examples/) for all examples.
 
 ## Requirements
 
