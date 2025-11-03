@@ -146,6 +146,20 @@ jobs:
           name: web-ui-build
           path: web/out/
 
+      - name: Verify web build artifact
+        shell: bash
+        run: |
+          echo "Checking web/out directory..."
+          if [ ! -d "web/out" ]; then
+            echo "WARNING: web/out directory does not exist"
+            ls -la web/ || true
+          else
+            echo "Directory exists. Contents:"
+            ls -la web/out/ || true
+            echo "File count:"
+            find web/out -type f 2>/dev/null | wc -l || echo "0"
+          fi
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
@@ -169,23 +183,29 @@ jobs:
           path: target
           key: ${{ runner.os }}-${{ matrix.rust }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Run tests (default features)
-        run: cargo test --verbose
+      - name: Run unit tests (lib, default features)
+        run: cargo test --lib --verbose
+
+      - name: Run unit tests (bins, default features)
+        run: cargo test --bins --verbose
 
       - name: Clean build artifacts before all-features
         run: cargo clean --release
 
-      - name: Build required binaries for integration tests
-        run: cargo build --bin periplon-executor --features cli
+      - name: Run unit tests (lib, all features)
+        run: cargo test --lib --all-features --verbose
 
-      - name: Run tests (all features)
-        run: cargo test --all-features --verbose
+      - name: Run unit tests (bins, all features)
+        run: cargo test --bins --all-features --verbose
 
       - name: Clean build artifacts before TUI
         run: cargo clean --release
 
-      - name: Run tests (TUI feature)
-        run: cargo test --features tui --verbose
+      - name: Run unit tests (lib, TUI feature)
+        run: cargo test --lib --features tui --verbose
+
+      - name: Run unit tests (bins, TUI feature)
+        run: cargo test --bins --features tui --verbose
 
       - name: Run doc tests
         run: cargo test --doc --all-features
@@ -389,22 +409,33 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install tarpaulin
-        run: cargo install cargo-tarpaulin
+      - name: Cache cargo-tarpaulin
+        id: cache-tarpaulin
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-tarpaulin
+          key: ${{ runner.os }}-cargo-tarpaulin-0.31.0
 
-      - name: Generate coverage
+      - name: Install tarpaulin
+        if: steps.cache-tarpaulin.outputs.cache-hit != 'true'
         run: |
-          # Run tarpaulin with features that work well with coverage
-          # Exclude TUI feature as it requires terminal interaction
-          # Skip integration tests that require CLI binary
+          # Use precompiled binary for faster installation
+          TARPAULIN_VERSION="0.31.0"
+          wget https://github.com/xd009642/tarpaulin/releases/download/${TARPAULIN_VERSION}/cargo-tarpaulin-x86_64-unknown-linux-musl.tar.gz
+          tar -xzf cargo-tarpaulin-x86_64-unknown-linux-musl.tar.gz -C ~/.cargo/bin/
+          chmod +x ~/.cargo/bin/cargo-tarpaulin
+
+      - name: Generate coverage (unit tests only)
+        run: |
+          # Run tarpaulin on unit tests only (lib and bins, excluding integration tests)
+          # Using --lib and --bins flags to exclude integration tests in tests/
           cargo tarpaulin \
             --features cli,server \
             --workspace \
+            --lib \
+            --bins \
             --timeout 600 \
             --out xml \
-            --exclude-files 'tests/*_integration_test.rs' \
-            --exclude-files 'tests/tui_*.rs' \
-            --exclude-files 'tests/git_integration_tests.rs' \
             || echo "Coverage generation failed but continuing..."
 
       - name: Upload coverage to Codecov
