@@ -194,4 +194,17 @@ mod tests {
         assert_eq!(result, content);
         assert!(!truncated);
     }
+
+    #[test]
+    fn test_truncate_summary_strategy() {
+        // Summary strategy currently falls back to tail truncation
+        let content = "0123456789".repeat(10); // 100 bytes
+        let (result, truncated) = truncate_output(&content, 50, &TruncationStrategy::Summary);
+        assert!(truncated);
+        assert!(result.contains("showing last"));
+        assert!(result.contains("50 bytes truncated"));
+        // Verify it behaves like tail truncation for now
+        let (tail_result, _) = truncate_output(&content, 50, &TruncationStrategy::Tail);
+        assert_eq!(result, tail_result);
+    }
 }

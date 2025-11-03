@@ -228,6 +228,163 @@ fn verify_checksum(content: &str, expected: &str) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_subflow_cache_new() {
+        let cache = SubflowCache::new();
+        assert!(cache.get("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_subflow_cache_default() {
+        let cache = SubflowCache::default();
+        assert!(cache.get("key").is_none());
+    }
+
+    #[test]
+    fn test_subflow_cache_insert_and_get() {
+        let cache = SubflowCache::new();
+        let workflow = DSLWorkflow {
+            name: "Test".to_string(),
+            version: "1.0.0".to_string(),
+            dsl_version: "1.0.0".to_string(),
+            cwd: None,
+            create_cwd: None,
+            secrets: HashMap::new(),
+            inputs: HashMap::new(),
+            outputs: HashMap::new(),
+            agents: HashMap::new(),
+            tasks: HashMap::new(),
+            workflows: HashMap::new(),
+            tools: None,
+            communication: None,
+            mcp_servers: HashMap::new(),
+            subflows: HashMap::new(),
+            imports: HashMap::new(),
+            notifications: None,
+            limits: None,
+        };
+
+        cache.insert("test_key".to_string(), workflow.clone());
+        let retrieved = cache.get("test_key");
+        assert!(retrieved.is_some());
+        assert_eq!(retrieved.unwrap().name, "Test");
+    }
+
+    #[test]
+    fn test_subflow_cache_get_nonexistent() {
+        let cache = SubflowCache::new();
+        assert!(cache.get("missing_key").is_none());
+    }
+
+    #[test]
+    fn test_subflow_cache_multiple_entries() {
+        let cache = SubflowCache::new();
+
+        let workflow1 = DSLWorkflow {
+            name: "Workflow1".to_string(),
+            version: "1.0.0".to_string(),
+            dsl_version: "1.0.0".to_string(),
+            cwd: None,
+            create_cwd: None,
+            secrets: HashMap::new(),
+            inputs: HashMap::new(),
+            outputs: HashMap::new(),
+            agents: HashMap::new(),
+            tasks: HashMap::new(),
+            workflows: HashMap::new(),
+            tools: None,
+            communication: None,
+            mcp_servers: HashMap::new(),
+            subflows: HashMap::new(),
+            imports: HashMap::new(),
+            notifications: None,
+            limits: None,
+        };
+
+        let workflow2 = DSLWorkflow {
+            name: "Workflow2".to_string(),
+            version: "2.0.0".to_string(),
+            ..workflow1.clone()
+        };
+
+        cache.insert("key1".to_string(), workflow1);
+        cache.insert("key2".to_string(), workflow2);
+
+        assert_eq!(cache.get("key1").unwrap().name, "Workflow1");
+        assert_eq!(cache.get("key2").unwrap().name, "Workflow2");
+    }
+
+    #[test]
+    fn test_subflow_cache_overwrite() {
+        let cache = SubflowCache::new();
+
+        let workflow1 = DSLWorkflow {
+            name: "Version1".to_string(),
+            version: "1.0.0".to_string(),
+            dsl_version: "1.0.0".to_string(),
+            cwd: None,
+            create_cwd: None,
+            secrets: HashMap::new(),
+            inputs: HashMap::new(),
+            outputs: HashMap::new(),
+            agents: HashMap::new(),
+            tasks: HashMap::new(),
+            workflows: HashMap::new(),
+            tools: None,
+            communication: None,
+            mcp_servers: HashMap::new(),
+            subflows: HashMap::new(),
+            imports: HashMap::new(),
+            notifications: None,
+            limits: None,
+        };
+
+        let workflow2 = DSLWorkflow {
+            name: "Version2".to_string(),
+            ..workflow1.clone()
+        };
+
+        cache.insert("key".to_string(), workflow1);
+        cache.insert("key".to_string(), workflow2);
+
+        assert_eq!(cache.get("key").unwrap().name, "Version2");
+    }
+
+    #[test]
+    fn test_subflow_cache_clone() {
+        let cache1 = SubflowCache::new();
+        let workflow = DSLWorkflow {
+            name: "Test".to_string(),
+            version: "1.0.0".to_string(),
+            dsl_version: "1.0.0".to_string(),
+            cwd: None,
+            create_cwd: None,
+            secrets: HashMap::new(),
+            inputs: HashMap::new(),
+            outputs: HashMap::new(),
+            agents: HashMap::new(),
+            tasks: HashMap::new(),
+            workflows: HashMap::new(),
+            tools: None,
+            communication: None,
+            mcp_servers: HashMap::new(),
+            subflows: HashMap::new(),
+            imports: HashMap::new(),
+            notifications: None,
+            limits: None,
+        };
+
+        cache1.insert("key".to_string(), workflow);
+
+        // Clone the cache
+        let cache2 = cache1.clone();
+
+        // Both caches should share the same underlying data
+        assert!(cache2.get("key").is_some());
+        assert_eq!(cache2.get("key").unwrap().name, "Test");
+    }
 
     #[tokio::test]
     async fn test_fetch_file() {
@@ -251,6 +408,50 @@ agents:
         assert_eq!(workflow.name, "Test Workflow");
     }
 
+    #[tokio::test]
+    async fn test_fetch_file_with_base_path() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let workflow_path = temp_dir.path().join("subdir").join("test.yaml");
+        std::fs::create_dir_all(workflow_path.parent().unwrap()).unwrap();
+
+        let yaml = r#"
+name: "Subdir Workflow"
+version: "1.0.0"
+"#;
+        std::fs::write(&workflow_path, yaml).unwrap();
+
+        let workflow = fetch_file("subdir/test.yaml", Some(temp_dir.path()))
+            .await
+            .unwrap();
+
+        assert_eq!(workflow.name, "Subdir Workflow");
+    }
+
+    #[tokio::test]
+    async fn test_fetch_file_not_found() {
+        let result = fetch_file("/nonexistent/file.yaml", None).await;
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Failed to read subflow file"));
+    }
+
+    #[tokio::test]
+    async fn test_fetch_file_invalid_yaml() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let workflow_path = temp_dir.path().join("invalid.yaml");
+
+        let invalid_yaml = r#"
+name: "Invalid YAML
+version: 1.0.0
+"#;
+        std::fs::write(&workflow_path, invalid_yaml).unwrap();
+
+        let result = fetch_file(workflow_path.to_str().unwrap(), None).await;
+        assert!(result.is_err());
+    }
+
     #[test]
     fn test_verify_checksum_valid() {
         let content = "test content";
@@ -270,6 +471,31 @@ agents:
     fn test_verify_checksum_bad_format() {
         let content = "test content";
         let checksum = "md5:somehash";
-        assert!(verify_checksum(content, checksum).is_err());
+        let result = verify_checksum(content, checksum);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid checksum format"));
+    }
+
+    #[test]
+    fn test_verify_checksum_mismatch() {
+        let content = "test content";
+        let checksum = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
+        let result = verify_checksum(content, checksum);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Checksum mismatch"));
+    }
+
+    #[test]
+    fn test_verify_checksum_empty_content() {
+        let content = "";
+        // SHA-256 of empty string
+        let checksum = "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+        assert!(verify_checksum(content, checksum).is_ok());
     }
 }

@@ -423,4 +423,290 @@ mod tests {
         let content = quick::read_file(temp_file.path()).await.unwrap();
         assert!(content.contains("Quick read test"));
     }
+
+    #[tokio::test]
+    async fn test_data_fetcher_default() {
+        let fetcher = DataFetcher::default();
+        assert_eq!(fetcher.user_agent, "DataFetcher/1.0");
+        assert!(fetcher.default_headers.contains_key("User-Agent"));
+    }
+
+    #[tokio::test]
+    async fn test_data_fetcher_custom_user_agent() {
+        let fetcher = DataFetcher::new().user_agent("CustomAgent/2.0");
+        assert_eq!(fetcher.user_agent, "CustomAgent/2.0");
+        assert_eq!(
+            fetcher.default_headers.get("User-Agent").unwrap(),
+            "CustomAgent/2.0"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_data_fetcher_default_header() {
+        let fetcher = DataFetcher::new()
+            .default_header("X-Custom", "value123")
+            .default_header("Authorization", "Bearer token");
+
+        assert_eq!(fetcher.default_headers.get("X-Custom").unwrap(), "value123");
+        assert_eq!(
+            fetcher.default_headers.get("Authorization").unwrap(),
+            "Bearer token"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_http_method_variants() {
+        let get_req = HttpRequest::new("https://example.com").method(HttpMethod::Get);
+        assert!(matches!(get_req.method, HttpMethod::Get));
+
+        let post_req = HttpRequest::new("https://example.com").method(HttpMethod::Post);
+        assert!(matches!(post_req.method, HttpMethod::Post));
+
+        let put_req = HttpRequest::new("https://example.com").method(HttpMethod::Put);
+        assert!(matches!(put_req.method, HttpMethod::Put));
+
+        let delete_req = HttpRequest::new("https://example.com").method(HttpMethod::Delete);
+        assert!(matches!(delete_req.method, HttpMethod::Delete));
+
+        let patch_req = HttpRequest::new("https://example.com").method(HttpMethod::Patch);
+        assert!(matches!(patch_req.method, HttpMethod::Patch));
+    }
+
+    #[tokio::test]
+    async fn test_http_response_json_parsing() {
+        let response = HttpResponse {
+            status: 200,
+            headers: HashMap::new(),
+            body: r#"{"name": "test", "count": 5}"#.to_string(),
+        };
+
+        #[derive(Deserialize)]
+        struct TestResponse {
+            name: String,
+            count: i32,
+        }
+
+        let parsed: TestResponse = response.json().unwrap();
+        assert_eq!(parsed.name, "test");
+        assert_eq!(parsed.count, 5);
+    }
+
+    #[tokio::test]
+    async fn test_http_response_json_value() {
+        let response = HttpResponse {
+            status: 200,
+            headers: HashMap::new(),
+            body: r#"{"key": "value"}"#.to_string(),
+        };
+
+        let json = response.json_value().unwrap();
+        assert_eq!(json["key"], "value");
+    }
+
+    #[tokio::test]
+    async fn test_http_response_text() {
+        let response = HttpResponse {
+            status: 200,
+            headers: HashMap::new(),
+            body: "Plain text response".to_string(),
+        };
+
+        assert_eq!(response.text(), "Plain text response");
+    }
+
+    #[tokio::test]
+    async fn test_http_response_is_success() {
+        let success = HttpResponse {
+            status: 200,
+            headers: HashMap::new(),
+            body: String::new(),
+        };
+        assert!(success.is_success());
+
+        let redirect = HttpResponse {
+            status: 301,
+            headers: HashMap::new(),
+            body: String::new(),
+        };
+        assert!(!redirect.is_success());
+
+        let error = HttpResponse {
+            status: 404,
+            headers: HashMap::new(),
+            body: String::new(),
+        };
+        assert!(!error.is_success());
+
+        let server_error = HttpResponse {
+            status: 500,
+            headers: HashMap::new(),
+            body: String::new(),
+        };
+        assert!(!server_error.is_success());
+    }
+
+    #[tokio::test]
+    async fn test_fetch_error_display() {
+        let http_err = FetchError::HttpError("Connection failed".to_string());
+        assert!(http_err.to_string().contains("HTTP request failed"));
+
+        let url_err = FetchError::InvalidUrl("bad url".to_string());
+        assert!(url_err.to_string().contains("Invalid URL"));
+
+        let net_err = FetchError::NetworkError("timeout".to_string());
+        assert!(net_err.to_string().contains("Network error"));
+    }
+
+    #[tokio::test]
+    async fn test_post_json() {
+        #[derive(Serialize)]
+        struct PostData {
+            message: String,
+        }
+
+        let fetcher = DataFetcher::new();
+        let data = PostData {
+            message: "test".to_string(),
+        };
+
+        let response = fetcher
+            .post_json("https://api.example.com/post", &data)
+            .await
+            .unwrap();
+
+        assert!(response.is_success());
+    }
+
+    #[tokio::test]
+    async fn test_read_binary_file() {
+        let mut temp_file = NamedTempFile::new().unwrap();
+        temp_file
+            .write_all(&[0x48, 0x65, 0x6c, 0x6c, 0x6f])
+            .unwrap(); // "Hello" in hex
+
+        let fetcher = DataFetcher::new();
+        let content = fetcher.read_binary_file(temp_file.path()).await.unwrap();
+
+        assert_eq!(content, vec![0x48, 0x65, 0x6c, 0x6c, 0x6f]);
+    }
+
+    #[tokio::test]
+    async fn test_read_json_file_typed() {
+        #[derive(Serialize, Deserialize, PartialEq, Debug)]
+        struct Config {
+            enabled: bool,
+            timeout: u32,
+        }
+
+        let mut temp_file = NamedTempFile::new().unwrap();
+        let config = Config {
+            enabled: true,
+            timeout: 30,
+        };
+        writeln!(temp_file, "{}", serde_json::to_string(&config).unwrap()).unwrap();
+
+        let fetcher = DataFetcher::new();
+        let loaded: Config = fetcher.read_json_file(temp_file.path()).await.unwrap();
+
+        assert_eq!(loaded, config);
+    }
+
+    #[tokio::test]
+    async fn test_file_not_found() {
+        let fetcher = DataFetcher::new();
+        let result = fetcher.read_text_file("/nonexistent/file.txt").await;
+
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), FetchError::IoError(_)));
+    }
+
+    #[tokio::test]
+    async fn test_invalid_json_file() {
+        let mut temp_file = NamedTempFile::new().unwrap();
+        writeln!(temp_file, "{{invalid json").unwrap();
+
+        let fetcher = DataFetcher::new();
+        let result = fetcher.read_json_value(temp_file.path()).await;
+
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), FetchError::JsonError(_)));
+    }
+
+    #[tokio::test]
+    async fn test_quick_get() {
+        let response = quick::get("https://api.example.com").await.unwrap();
+        assert!(response.is_success());
+    }
+
+    #[tokio::test]
+    async fn test_quick_post_json() {
+        #[derive(Serialize)]
+        struct Data {
+            value: i32,
+        }
+
+        let response = quick::post_json("https://api.example.com", &Data { value: 42 })
+            .await
+            .unwrap();
+        assert!(response.is_success());
+    }
+
+    #[tokio::test]
+    async fn test_quick_read_json() {
+        let mut temp_file = NamedTempFile::new().unwrap();
+        writeln!(temp_file, r#"{{"test": true}}"#).unwrap();
+
+        let json: Value = quick::read_json(temp_file.path()).await.unwrap();
+        assert_eq!(json["test"], true);
+    }
+
+    #[tokio::test]
+    async fn test_file_metadata_readonly() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let fetcher = DataFetcher::new();
+
+        let metadata = fetcher.file_metadata(temp_file.path()).await.unwrap();
+        assert!(metadata.is_file);
+        assert!(!metadata.is_dir);
+        // readonly status depends on OS and permissions
+    }
+
+    #[tokio::test]
+    async fn test_http_request_default_timeout() {
+        let request = HttpRequest::new("https://example.com");
+        assert_eq!(request.timeout_secs, 30);
+    }
+
+    #[tokio::test]
+    async fn test_http_request_multiple_headers() {
+        let request = HttpRequest::new("https://example.com")
+            .header("X-Header-1", "value1")
+            .header("X-Header-2", "value2")
+            .header("X-Header-3", "value3");
+
+        assert_eq!(request.headers.len(), 3);
+        assert_eq!(request.headers.get("X-Header-1").unwrap(), "value1");
+        assert_eq!(request.headers.get("X-Header-2").unwrap(), "value2");
+        assert_eq!(request.headers.get("X-Header-3").unwrap(), "value3");
+    }
+
+    #[tokio::test]
+    async fn test_empty_file_read() {
+        let temp_file = NamedTempFile::new().unwrap();
+
+        let fetcher = DataFetcher::new();
+        let content = fetcher.read_text_file(temp_file.path()).await.unwrap();
+
+        assert_eq!(content, "");
+    }
+
+    #[tokio::test]
+    async fn test_read_lines_empty_file() {
+        let temp_file = NamedTempFile::new().unwrap();
+
+        let fetcher = DataFetcher::new();
+        let lines = fetcher.read_lines(temp_file.path()).await.unwrap();
+
+        assert_eq!(lines.len(), 0);
+    }
 }

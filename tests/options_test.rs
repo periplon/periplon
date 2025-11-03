@@ -1,3 +1,5 @@
+#![allow(clippy::field_reassign_with_default)]
+
 use periplon_sdk::options::{AgentDefinition, AgentOptions, McpServerConfig, SystemPromptConfig};
 use std::collections::HashMap;
 use std::path::PathBuf;

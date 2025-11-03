@@ -300,4 +300,10 @@ mod tests {
         let result = server.call_tool("nonexistent", json!({})).await;
         assert!(result.is_err());
     }
+
+    #[tokio::test]
+    async fn test_server_name() {
+        let server = MockMcpServer::new("my-test-server");
+        assert_eq!(server.name(), "my-test-server");
+    }
 }

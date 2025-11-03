@@ -431,4 +431,52 @@ mod tests {
             panic!("Expected Allow decision");
         }
     }
+
+    #[tokio::test]
+    async fn test_ask_all() {
+        let service = MockPermissionService::ask_all();
+        let ctx = ToolPermissionContext {
+            signal: None,
+            suggestions: vec![],
+        };
+
+        let decision = service
+            .can_use_tool("AnyTool", &json!({}), ctx)
+            .await
+            .unwrap();
+        assert!(matches!(decision, PermissionDecision::Ask));
+    }
+
+    #[tokio::test]
+    async fn test_clear_log() {
+        let mut service = MockPermissionService::new();
+        service.allow_tool("Read");
+
+        let ctx = ToolPermissionContext {
+            signal: None,
+            suggestions: vec![],
+        };
+
+        service.can_use_tool("Read", &json!({}), ctx).await.unwrap();
+        assert_eq!(service.decision_log().len(), 1);
+
+        service.clear_log();
+        assert_eq!(service.decision_log().len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_default_trait() {
+        let service = MockPermissionService::default();
+        let ctx = ToolPermissionContext {
+            signal: None,
+            suggestions: vec![],
+        };
+
+        // Default should be Ask
+        let decision = service
+            .can_use_tool("AnyTool", &json!({}), ctx)
+            .await
+            .unwrap();
+        assert!(matches!(decision, PermissionDecision::Ask));
+    }
 }

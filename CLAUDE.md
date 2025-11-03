@@ -402,5 +402,6 @@ The project uses GitHub Actions to automatically:
 - **DSL validation**: Validate workflows before execution (cycles, references, etc.)
 - **CLI version compatibility**: Ensure minimum version 2.0.0
 - **ALWAYS use Rust best practices and idioms for safety, performance, and maintainability**
+-   ALWAYS write tests for new features and bug fixes. Use Rust's conventions for test placement and naming.
 - **ALWAYS use conventional commits for all changes** to enable automated releases 
-- make sure just ci passes without errors before any commit
+-   make sure just ci passes without errors before any commit

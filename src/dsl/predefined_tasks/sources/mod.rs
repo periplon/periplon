@@ -120,3 +120,211 @@ pub struct SourceInfo {
     pub trusted: bool,
     pub enabled: bool,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_source_type_display_local() {
+        let source_type = SourceType::Local;
+        assert_eq!(source_type.to_string(), "local");
+    }
+
+    #[test]
+    fn test_source_type_display_git() {
+        let source_type = SourceType::Git;
+        assert_eq!(source_type.to_string(), "git");
+    }
+
+    #[test]
+    fn test_source_type_display_registry() {
+        let source_type = SourceType::Registry;
+        assert_eq!(source_type.to_string(), "registry");
+    }
+
+    #[test]
+    fn test_source_type_serialize() {
+        let local = SourceType::Local;
+        let json = serde_json::to_string(&local).unwrap();
+        assert_eq!(json, "\"local\"");
+
+        let git = SourceType::Git;
+        let json = serde_json::to_string(&git).unwrap();
+        assert_eq!(json, "\"git\"");
+
+        let registry = SourceType::Registry;
+        let json = serde_json::to_string(&registry).unwrap();
+        assert_eq!(json, "\"registry\"");
+    }
+
+    #[test]
+    fn test_source_type_deserialize() {
+        let local: SourceType = serde_json::from_str("\"local\"").unwrap();
+        assert_eq!(local, SourceType::Local);
+
+        let git: SourceType = serde_json::from_str("\"git\"").unwrap();
+        assert_eq!(git, SourceType::Git);
+
+        let registry: SourceType = serde_json::from_str("\"registry\"").unwrap();
+        assert_eq!(registry, SourceType::Registry);
+    }
+
+    #[test]
+    fn test_task_metadata_from_conversion() {
+        let predefined_metadata = PredefinedTaskMetadata {
+            name: "test-task".to_string(),
+            version: "1.0.0".to_string(),
+            description: Some("A test task".to_string()),
+            author: Some("Test Author".to_string()),
+            license: Some("MIT".to_string()),
+            repository: Some("https://github.com/test/task".to_string()),
+            tags: vec!["test".to_string(), "example".to_string()],
+        };
+
+        let task_metadata: TaskMetadata =
+            (&predefined_metadata, "my-source", SourceType::Local).into();
+
+        assert_eq!(task_metadata.name, "test-task");
+        assert_eq!(task_metadata.version, "1.0.0");
+        assert_eq!(task_metadata.description, Some("A test task".to_string()));
+        assert_eq!(task_metadata.author, Some("Test Author".to_string()));
+        assert_eq!(task_metadata.tags.len(), 2);
+        assert_eq!(task_metadata.source_name, "my-source");
+        assert_eq!(task_metadata.source_type, SourceType::Local);
+    }
+
+    #[test]
+    fn test_task_metadata_from_conversion_minimal() {
+        let predefined_metadata = PredefinedTaskMetadata {
+            name: "minimal".to_string(),
+            version: "0.1.0".to_string(),
+            description: None,
+            author: None,
+            license: None,
+            repository: None,
+            tags: vec![],
+        };
+
+        let task_metadata: TaskMetadata =
+            (&predefined_metadata, "git-repo", SourceType::Git).into();
+
+        assert_eq!(task_metadata.name, "minimal");
+        assert_eq!(task_metadata.version, "0.1.0");
+        assert!(task_metadata.description.is_none());
+        assert!(task_metadata.author.is_none());
+        assert!(task_metadata.tags.is_empty());
+        assert_eq!(task_metadata.source_name, "git-repo");
+        assert_eq!(task_metadata.source_type, SourceType::Git);
+    }
+
+    #[test]
+    fn test_task_metadata_construction() {
+        let metadata = TaskMetadata {
+            name: "my-task".to_string(),
+            version: "2.0.0".to_string(),
+            description: Some("Description".to_string()),
+            author: Some("Author Name".to_string()),
+            tags: vec!["tag1".to_string(), "tag2".to_string()],
+            source_name: "registry".to_string(),
+            source_type: SourceType::Registry,
+        };
+
+        assert_eq!(metadata.name, "my-task");
+        assert_eq!(metadata.version, "2.0.0");
+        assert_eq!(metadata.tags.len(), 2);
+    }
+
+    #[test]
+    fn test_update_result_construction() {
+        let result = UpdateResult {
+            updated: true,
+            message: "Updated successfully".to_string(),
+            new_tasks: 5,
+            updated_tasks: 3,
+        };
+
+        assert!(result.updated);
+        assert_eq!(result.message, "Updated successfully");
+        assert_eq!(result.new_tasks, 5);
+        assert_eq!(result.updated_tasks, 3);
+    }
+
+    #[test]
+    fn test_health_status_construction() {
+        let now = Utc::now();
+        let status = HealthStatus {
+            available: true,
+            message: Some("All systems operational".to_string()),
+            last_check: now,
+        };
+
+        assert!(status.available);
+        assert!(status.message.is_some());
+        assert_eq!(status.last_check, now);
+    }
+
+    #[test]
+    fn test_health_status_unavailable() {
+        let now = Utc::now();
+        let status = HealthStatus {
+            available: false,
+            message: Some("Connection failed".to_string()),
+            last_check: now,
+        };
+
+        assert!(!status.available);
+        assert_eq!(status.message, Some("Connection failed".to_string()));
+    }
+
+    #[test]
+    fn test_source_info_construction() {
+        let info = SourceInfo {
+            name: "my-source".to_string(),
+            source_type: SourceType::Git,
+            priority: 10,
+            trusted: true,
+            enabled: true,
+        };
+
+        assert_eq!(info.name, "my-source");
+        assert_eq!(info.source_type, SourceType::Git);
+        assert_eq!(info.priority, 10);
+        assert!(info.trusted);
+        assert!(info.enabled);
+    }
+
+    #[test]
+    fn test_source_info_untrusted_disabled() {
+        let info = SourceInfo {
+            name: "untrusted-source".to_string(),
+            source_type: SourceType::Registry,
+            priority: 1,
+            trusted: false,
+            enabled: false,
+        };
+
+        assert!(!info.trusted);
+        assert!(!info.enabled);
+    }
+
+    #[test]
+    fn test_task_metadata_serialization_roundtrip() {
+        let original = TaskMetadata {
+            name: "roundtrip-test".to_string(),
+            version: "3.0.0".to_string(),
+            description: Some("Test description".to_string()),
+            author: Some("Test Author".to_string()),
+            tags: vec!["test".to_string()],
+            source_name: "test-source".to_string(),
+            source_type: SourceType::Local,
+        };
+
+        let json = serde_json::to_string(&original).unwrap();
+        let deserialized: TaskMetadata = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(deserialized.name, original.name);
+        assert_eq!(deserialized.version, original.version);
+        assert_eq!(deserialized.source_type, original.source_type);
+    }
+}

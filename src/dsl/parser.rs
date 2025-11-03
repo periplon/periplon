@@ -1269,10 +1269,7 @@ subflows:
 
         // Verify agent references were updated
         let task = workflow.tasks.get("test_subflow.subflow_task").unwrap();
-        assert_eq!(
-            task.agent,
-            Some("test_subflow.subflow_agent".to_string())
-        );
+        assert_eq!(task.agent, Some("test_subflow.subflow_agent".to_string()));
     }
 
     #[test]

@@ -270,4 +270,81 @@ spec:
         assert!(!health.available);
         assert!(health.message.is_some());
     }
+
+    #[tokio::test]
+    async fn test_nonexistent_path_discovery() {
+        let mut source = LocalTaskSource::new("test".to_string(), "/nonexistent/path", 10).unwrap();
+
+        // Should return empty list for nonexistent path
+        let tasks = source.discover_tasks().await.unwrap();
+        assert_eq!(tasks.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_nested_directories() {
+        let temp_dir = TempDir::new().unwrap();
+        let tasks_dir = temp_dir.path().join("tasks");
+        let nested_dir = tasks_dir.join("subdir");
+        std::fs::create_dir_all(&nested_dir).unwrap();
+
+        // Create task in nested directory
+        let task_yaml = r#"
+apiVersion: "task/v1"
+kind: "PredefinedTask"
+metadata:
+  name: "nested-task"
+  version: "1.0.0"
+spec:
+  agent_template:
+    description: "Nested task"
+  inputs: {}
+"#;
+        std::fs::write(nested_dir.join("nested.task.yaml"), task_yaml).unwrap();
+
+        let mut source = LocalTaskSource::new("test".to_string(), &tasks_dir, 10).unwrap();
+
+        let tasks = source.discover_tasks().await.unwrap();
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(tasks[0].name, "nested-task");
+    }
+
+    #[tokio::test]
+    async fn test_update_operation() {
+        let temp_dir = TempDir::new().unwrap();
+        let tasks_dir = temp_dir.path().join("tasks");
+        std::fs::create_dir(&tasks_dir).unwrap();
+
+        let mut source = LocalTaskSource::new("test".to_string(), &tasks_dir, 10).unwrap();
+
+        // Update should succeed but report no changes
+        let result = source.update().await.unwrap();
+        assert!(!result.updated);
+        assert_eq!(result.new_tasks, 0);
+        assert_eq!(result.updated_tasks, 0);
+        assert!(result.message.contains("does not require updates"));
+    }
+
+    #[tokio::test]
+    async fn test_trait_methods() {
+        let temp_dir = TempDir::new().unwrap();
+        let source = LocalTaskSource::new("my-source".to_string(), temp_dir.path(), 5).unwrap();
+
+        assert_eq!(source.name(), "my-source");
+        assert_eq!(source.source_type(), SourceType::Local);
+        assert_eq!(source.priority(), 5);
+        assert!(source.is_trusted());
+    }
+
+    #[tokio::test]
+    async fn test_path_is_file_not_directory() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("not-a-directory.txt");
+        std::fs::write(&file_path, "content").unwrap();
+
+        let mut source = LocalTaskSource::new("test".to_string(), &file_path, 10).unwrap();
+
+        // Should return empty list when path is a file, not a directory
+        let tasks = source.discover_tasks().await.unwrap();
+        assert_eq!(tasks.len(), 0);
+    }
 }

@@ -335,4 +335,266 @@ mod tests {
             panic!("Expected Structured notification");
         }
     }
+
+    #[test]
+    fn test_message_builder_default() {
+        let builder = MessageBuilder::default();
+        let content = builder.build();
+        assert!(content.is_empty());
+    }
+
+    #[test]
+    fn test_message_builder_thinking() {
+        let content = MessageBuilder::new()
+            .thinking("Processing request", "sig-123")
+            .build();
+
+        assert_eq!(content.len(), 1);
+        if let ContentBlock::Thinking {
+            thinking,
+            signature,
+        } = &content[0]
+        {
+            assert_eq!(thinking, "Processing request");
+            assert_eq!(signature, "sig-123");
+        } else {
+            panic!("Expected thinking block");
+        }
+    }
+
+    #[test]
+    fn test_message_builder_tool_result() {
+        let content = MessageBuilder::new()
+            .tool_result("tool-1", json!({"result": "success"}), Some(false))
+            .build();
+
+        assert_eq!(content.len(), 1);
+        if let ContentBlock::ToolResult {
+            tool_use_id,
+            content: result_content,
+            is_error,
+        } = &content[0]
+        {
+            assert_eq!(tool_use_id, "tool-1");
+            assert_eq!(result_content.as_ref().unwrap()["result"], "success");
+            assert_eq!(*is_error, Some(false));
+        } else {
+            panic!("Expected tool result block");
+        }
+    }
+
+    #[test]
+    fn test_message_builder_build_assistant() {
+        let msg = MessageBuilder::new()
+            .text("Response text")
+            .build_assistant();
+
+        if let Message::Assistant(assistant_msg) = msg {
+            assert_eq!(assistant_msg.message.content.len(), 1);
+            assert_eq!(assistant_msg.message.model, "claude-sonnet-4-5");
+        } else {
+            panic!("Expected assistant message");
+        }
+    }
+
+    #[test]
+    fn test_message_builder_complex() {
+        let content = MessageBuilder::new()
+            .text("Starting task")
+            .thinking("Analyzing input", "sig-1")
+            .tool_use("tool-1", "Read", json!({"path": "file.txt"}))
+            .tool_result("tool-1", json!({"content": "data"}), Some(false))
+            .text("Task complete")
+            .build();
+
+        assert_eq!(content.len(), 5);
+    }
+
+    #[test]
+    fn test_hook_input_builder_pre_tool_use() {
+        let input = HookInputBuilder::pre_tool_use("Read", json!({"file": "test.txt"}));
+
+        if let HookInput::PreToolUse {
+            tool_name,
+            tool_input,
+            session_id,
+            ..
+        } = input
+        {
+            assert_eq!(tool_name, "Read");
+            assert_eq!(tool_input["file"], "test.txt");
+            assert_eq!(session_id, "test-session");
+        } else {
+            panic!("Expected PreToolUse variant");
+        }
+    }
+
+    #[test]
+    fn test_hook_input_builder_post_tool_use() {
+        let input = HookInputBuilder::post_tool_use(
+            "Write",
+            json!({"file": "out.txt"}),
+            json!({"success": true}),
+        );
+
+        if let HookInput::PostToolUse {
+            tool_name,
+            tool_input,
+            tool_response,
+            ..
+        } = input
+        {
+            assert_eq!(tool_name, "Write");
+            assert_eq!(tool_input["file"], "out.txt");
+            assert_eq!(tool_response["success"], true);
+        } else {
+            panic!("Expected PostToolUse variant");
+        }
+    }
+
+    #[test]
+    fn test_hook_input_builder_user_prompt_submit() {
+        let input = HookInputBuilder::user_prompt_submit("Test prompt");
+
+        if let HookInput::UserPromptSubmit { prompt, .. } = input {
+            assert_eq!(prompt, "Test prompt");
+        } else {
+            panic!("Expected UserPromptSubmit variant");
+        }
+    }
+
+    #[test]
+    fn test_hook_input_builder_stop() {
+        let input = HookInputBuilder::stop();
+
+        if let HookInput::Stop {
+            stop_hook_active, ..
+        } = input
+        {
+            assert!(!stop_hook_active);
+        } else {
+            panic!("Expected Stop variant");
+        }
+    }
+
+    #[test]
+    fn test_permission_context_builder() {
+        let context = PermissionContextBuilder::new().build();
+        assert!(context.suggestions.is_empty());
+        assert!(context.signal.is_none());
+    }
+
+    #[test]
+    fn test_permission_context_builder_default() {
+        let context = PermissionContextBuilder::default().build();
+        assert!(context.suggestions.is_empty());
+    }
+
+    #[test]
+    fn test_hook_context_builder() {
+        let context = HookContextBuilder::build();
+        assert!(context.signal.is_none());
+    }
+
+    #[test]
+    fn test_hook_context_builder_default() {
+        let _builder = HookContextBuilder::default();
+        // Just verify it compiles and can be created
+    }
+
+    #[test]
+    fn test_notification_builder_file_channel() {
+        let notification = NotificationBuilder::new("File test")
+            .file("/tmp/notifications.log")
+            .build();
+
+        if let NotificationSpec::Structured { channels, .. } = notification {
+            assert_eq!(channels.len(), 1);
+            if let NotificationChannel::File {
+                path,
+                append,
+                timestamp,
+                format,
+            } = &channels[0]
+            {
+                assert_eq!(path, "/tmp/notifications.log");
+                assert!(!append);
+                assert!(*timestamp);
+                assert!(matches!(format, FileNotificationFormat::Json));
+            } else {
+                panic!("Expected File channel");
+            }
+        }
+    }
+
+    #[test]
+    fn test_notification_builder_ntfy_channel() {
+        let notification = NotificationBuilder::new("Ntfy test")
+            .ntfy("https://ntfy.sh", "test-topic")
+            .build();
+
+        if let NotificationSpec::Structured { channels, .. } = notification {
+            assert_eq!(channels.len(), 1);
+            if let NotificationChannel::Ntfy { server, topic, .. } = &channels[0] {
+                assert_eq!(server, "https://ntfy.sh");
+                assert_eq!(topic, "test-topic");
+            } else {
+                panic!("Expected Ntfy channel");
+            }
+        }
+    }
+
+    #[test]
+    fn test_notification_builder_multiple_channels() {
+        let notification = NotificationBuilder::new("Multi-channel test")
+            .console()
+            .file("/tmp/log.txt")
+            .ntfy("https://ntfy.sh", "alerts")
+            .build();
+
+        if let NotificationSpec::Structured { channels, .. } = notification {
+            assert_eq!(channels.len(), 3);
+        } else {
+            panic!("Expected Structured notification");
+        }
+    }
+
+    #[test]
+    fn test_notification_builder_all_priorities() {
+        use crate::dsl::NotificationPriority;
+
+        let priorities = vec![
+            NotificationPriority::Low,
+            NotificationPriority::Normal,
+            NotificationPriority::High,
+            NotificationPriority::Critical,
+        ];
+
+        for prio in priorities {
+            let notification = NotificationBuilder::new("Test")
+                .priority(prio.clone())
+                .build();
+
+            if let NotificationSpec::Structured { priority, .. } = notification {
+                assert_eq!(priority, Some(prio));
+            }
+        }
+    }
+
+    #[test]
+    fn test_notification_builder_without_optional_fields() {
+        let notification = NotificationBuilder::new("Minimal").console().build();
+
+        if let NotificationSpec::Structured {
+            message,
+            title,
+            priority,
+            ..
+        } = notification
+        {
+            assert_eq!(message, "Minimal");
+            assert!(title.is_none());
+            assert!(priority.is_none());
+        }
+    }
 }
