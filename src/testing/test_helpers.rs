@@ -498,7 +498,7 @@ mod tests {
 
     #[test]
     fn test_hook_context_builder_default() {
-        let _builder = HookContextBuilder::default();
+        let _builder = HookContextBuilder;
         // Just verify it compiles and can be created
     }
 

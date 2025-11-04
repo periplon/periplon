@@ -329,14 +329,19 @@ mod tests {
     #[test]
     fn test_result_type_ok() {
         let result: Result<i32> = Ok(42);
-        assert_eq!(result.unwrap(), 42);
+        assert!(result.is_ok());
+        if let Ok(val) = result {
+            assert_eq!(val, 42);
+        }
     }
 
     #[test]
     fn test_result_type_err() {
         let result: Result<i32> = Err(Error::NotConnected);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), Error::NotConnected));
+        if let Err(e) = result {
+            assert!(matches!(e, Error::NotConnected));
+        }
     }
 
     #[test]
