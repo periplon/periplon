@@ -321,6 +321,7 @@ fn truncate_to_size(text: &str, max_size: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::Provider;
     use crate::dsl::schema::TaskSpec;
     use crate::dsl::state::OutputType;
     use crate::dsl::truncation::create_task_output;
@@ -329,6 +330,8 @@ mod tests {
     #[allow(clippy::field_reassign_with_default)]
     fn create_test_workflow() -> DSLWorkflow {
         let mut workflow = DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),

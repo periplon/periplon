@@ -1155,6 +1155,8 @@ mod tests {
             name: "Test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
+            provider: Default::default(),
+            model: None,
             cwd: None,
             create_cwd: None,
             secrets: std::collections::HashMap::new(),

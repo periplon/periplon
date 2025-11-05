@@ -143,6 +143,8 @@ impl DSLWorkflowBuilder {
     /// Build the DSL workflow
     pub fn build(self) -> DSLWorkflow {
         DSLWorkflow {
+            provider: Default::default(),
+            model: None,
             name: self.name,
             version: self.version,
             dsl_version: self.dsl_version,

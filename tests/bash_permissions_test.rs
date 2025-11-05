@@ -104,6 +104,7 @@ fn test_bypass_permissions_in_agent_options() {
 
     let agent_spec = AgentSpec {
         description: "Test agent with bypass permissions".to_string(),
+        provider: None,
         model: None,
         system_prompt: None,
         cwd: None,

@@ -95,6 +95,8 @@ tasks:
 #[test]
 fn test_subflow_validation_missing_reference() {
     let mut workflow = DSLWorkflow {
+        provider: Default::default(),
+        model: None,
         name: "Test".to_string(),
         version: "1.0.0".to_string(),
         dsl_version: "1.0.0".to_string(),
@@ -134,6 +136,8 @@ fn test_subflow_validation_missing_reference() {
 #[test]
 fn test_subflow_validation_agent_and_subflow_mutually_exclusive() {
     let mut workflow = DSLWorkflow {
+        provider: Default::default(),
+        model: None,
         name: "Test".to_string(),
         version: "1.0.0".to_string(),
         dsl_version: "1.0.0".to_string(),
@@ -157,6 +161,7 @@ fn test_subflow_validation_agent_and_subflow_mutually_exclusive() {
     workflow.agents.insert(
         "test_agent".to_string(),
         AgentSpec {
+            provider: None,
             description: "Test".to_string(),
             model: None,
             system_prompt: None,
@@ -202,6 +207,8 @@ fn test_subflow_validation_agent_and_subflow_mutually_exclusive() {
 #[test]
 fn test_subflow_validation_missing_required_input() {
     let mut workflow = DSLWorkflow {
+        provider: Default::default(),
+        model: None,
         name: "Test".to_string(),
         version: "1.0.0".to_string(),
         dsl_version: "1.0.0".to_string(),
@@ -265,6 +272,8 @@ fn test_subflow_validation_missing_required_input() {
 #[test]
 fn test_subflow_validation_valid_inline() {
     let mut workflow = DSLWorkflow {
+        provider: Default::default(),
+        model: None,
         name: "Test".to_string(),
         version: "1.0.0".to_string(),
         dsl_version: "1.0.0".to_string(),
@@ -289,6 +298,7 @@ fn test_subflow_validation_valid_inline() {
     subflow_agents.insert(
         "validator".to_string(),
         AgentSpec {
+            provider: None,
             description: "Validator".to_string(),
             model: None,
             system_prompt: None,
@@ -327,6 +337,7 @@ fn test_subflow_validation_valid_inline() {
     workflow.agents.insert(
         "main".to_string(),
         AgentSpec {
+            provider: None,
             description: "Main agent".to_string(),
             model: None,
             system_prompt: None,

@@ -294,6 +294,7 @@ fn create_agent_from_template(
 
     Ok(AgentSpec {
         description,
+        provider: None,
         model: template.model.clone(),
         system_prompt,
         cwd: None,

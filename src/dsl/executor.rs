@@ -3801,11 +3801,14 @@ async fn execute_repeat_parallel(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::Provider;
     use crate::dsl::schema::PermissionsSpec;
 
     #[test]
     fn test_executor_creation() {
         let workflow = DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "Test Workflow".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
@@ -3835,6 +3838,8 @@ mod tests {
     #[test]
     fn test_agent_spec_to_options() {
         let workflow = DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "Test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
@@ -3858,6 +3863,7 @@ mod tests {
         let executor = DSLExecutor::new(workflow).unwrap();
 
         let agent_spec = AgentSpec {
+            provider: None,
             description: "Test agent".to_string(),
             model: Some("claude-sonnet-4-5".to_string()),
             system_prompt: None,
@@ -3891,6 +3897,8 @@ mod tests {
     #[test]
     fn test_cwd_workflow_level_only() {
         let workflow = DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "Test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
@@ -3914,6 +3922,7 @@ mod tests {
         let executor = DSLExecutor::new(workflow).unwrap();
 
         let agent_spec = AgentSpec {
+            provider: None,
             description: "Test agent".to_string(),
             model: None,
             system_prompt: None,
@@ -3936,6 +3945,8 @@ mod tests {
     #[test]
     fn test_cwd_agent_level_only() {
         let workflow = DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "Test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
@@ -3959,6 +3970,7 @@ mod tests {
         let executor = DSLExecutor::new(workflow).unwrap();
 
         let agent_spec = AgentSpec {
+            provider: None,
             description: "Test agent".to_string(),
             model: None,
             system_prompt: None,
@@ -3981,6 +3993,8 @@ mod tests {
     #[test]
     fn test_cwd_agent_overrides_workflow() {
         let workflow = DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "Test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
@@ -4004,6 +4018,7 @@ mod tests {
         let executor = DSLExecutor::new(workflow).unwrap();
 
         let agent_spec = AgentSpec {
+            provider: None,
             description: "Test agent".to_string(),
             model: None,
             system_prompt: None,
@@ -4027,6 +4042,8 @@ mod tests {
     #[test]
     fn test_cwd_backwards_compatibility() {
         let workflow = DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "Test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
@@ -4050,6 +4067,7 @@ mod tests {
         let executor = DSLExecutor::new(workflow).unwrap();
 
         let agent_spec = AgentSpec {
+            provider: None,
             description: "Test agent".to_string(),
             model: None,
             system_prompt: None,
@@ -4073,6 +4091,8 @@ mod tests {
     #[test]
     fn test_create_cwd_workflow_level() {
         let workflow = DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "Test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
@@ -4096,6 +4116,7 @@ mod tests {
         let executor = DSLExecutor::new(workflow).unwrap();
 
         let agent_spec = AgentSpec {
+            provider: None,
             description: "Test agent".to_string(),
             model: None,
             system_prompt: None,
@@ -4118,6 +4139,8 @@ mod tests {
     #[test]
     fn test_create_cwd_agent_overrides_workflow() {
         let workflow = DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "Test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
@@ -4141,6 +4164,7 @@ mod tests {
         let executor = DSLExecutor::new(workflow).unwrap();
 
         let agent_spec = AgentSpec {
+            provider: None,
             description: "Test agent".to_string(),
             model: None,
             system_prompt: None,
@@ -4164,6 +4188,8 @@ mod tests {
     #[test]
     fn test_create_cwd_defaults_to_false() {
         let workflow = DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "Test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
@@ -4187,6 +4213,7 @@ mod tests {
         let executor = DSLExecutor::new(workflow).unwrap();
 
         let agent_spec = AgentSpec {
+            provider: None,
             description: "Test agent".to_string(),
             model: None,
             system_prompt: None,
