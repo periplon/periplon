@@ -1234,6 +1234,8 @@ mod tests {
             name: "Test Workflow".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
+            provider: Default::default(),
+            model: None,
             cwd: None,
             create_cwd: None,
             secrets: HashMap::new(),

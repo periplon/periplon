@@ -62,6 +62,8 @@ fi
     }
 
     let mut workflow = DSLWorkflow {
+        provider: Default::default(),
+        model: None,
         name: "Basic Retry Test".to_string(),
         version: "1.0.0".to_string(),
         dsl_version: "1.0.0".to_string(),
@@ -153,6 +155,8 @@ exit 1
     }
 
     let mut workflow = DSLWorkflow {
+        provider: Default::default(),
+        model: None,
         name: "Exponential Backoff Test".to_string(),
         version: "1.0.0".to_string(),
         dsl_version: "1.0.0".to_string(),
@@ -281,6 +285,8 @@ exit 0
     }
 
     let mut workflow = DSLWorkflow {
+        provider: Default::default(),
+        model: None,
         name: "Fallback Agent Test".to_string(),
         version: "1.0.0".to_string(),
         dsl_version: "1.0.0".to_string(),
@@ -369,6 +375,8 @@ exit 1
     }
 
     let mut workflow = DSLWorkflow {
+        provider: Default::default(),
+        model: None,
         name: "Retry Delay Test".to_string(),
         version: "1.0.0".to_string(),
         dsl_version: "1.0.0".to_string(),
@@ -481,6 +489,8 @@ exit 1
     }
 
     let mut workflow = DSLWorkflow {
+        provider: Default::default(),
+        model: None,
         name: "Retry Exhaustion Test".to_string(),
         version: "1.0.0".to_string(),
         dsl_version: "1.0.0".to_string(),
@@ -582,6 +592,8 @@ exit 0
     }
 
     let mut workflow = DSLWorkflow {
+        provider: Default::default(),
+        model: None,
         name: "No Retry on Success Test".to_string(),
         version: "1.0.0".to_string(),
         dsl_version: "1.0.0".to_string(),

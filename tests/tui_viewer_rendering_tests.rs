@@ -77,6 +77,8 @@ fn count_border_chars(terminal: &Terminal<TestBackend>) -> usize {
 /// Create a minimal test workflow
 fn create_minimal_workflow() -> DSLWorkflow {
     DSLWorkflow {
+        provider: Default::default(),
+        model: None,
         name: "Test Workflow".to_string(),
         version: "1.0.0".to_string(),
         dsl_version: "1.0.0".to_string(),
@@ -104,6 +106,7 @@ fn create_complete_workflow() -> DSLWorkflow {
     agents.insert(
         "researcher".to_string(),
         AgentSpec {
+            provider: None,
             description: "Research and gather information".to_string(),
             model: Some("claude-sonnet-4-5".to_string()),
             system_prompt: None,
@@ -120,6 +123,7 @@ fn create_complete_workflow() -> DSLWorkflow {
     agents.insert(
         "analyzer".to_string(),
         AgentSpec {
+            provider: None,
             description: "Analyze data".to_string(),
             model: None,
             system_prompt: None,
@@ -163,6 +167,8 @@ fn create_complete_workflow() -> DSLWorkflow {
     );
 
     DSLWorkflow {
+        provider: Default::default(),
+        model: None,
         name: "Complete Workflow".to_string(),
         version: "2.0.0".to_string(),
         dsl_version: "1.0.0".to_string(),

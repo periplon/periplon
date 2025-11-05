@@ -76,6 +76,8 @@ fn count_border_chars(terminal: &Terminal<TestBackend>) -> usize {
 /// Create minimal workflow for testing
 fn create_test_workflow() -> DSLWorkflow {
     DSLWorkflow {
+        provider: Default::default(),
+        model: None,
         name: "Test Workflow".to_string(),
         version: "1.0.0".to_string(),
         dsl_version: "1.0.0".to_string(),

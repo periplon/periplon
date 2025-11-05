@@ -26,6 +26,7 @@ mod workflow_api_tests {
         agents.insert(
             "test_agent".to_string(),
             AgentSpec {
+                provider: None,
                 description: "Test agent".to_string(),
                 model: Some("claude-sonnet-4-5".to_string()),
                 system_prompt: None,
@@ -86,6 +87,8 @@ mod workflow_api_tests {
         }
 
         DSLWorkflow {
+            provider: Default::default(),
+            model: None,
             name: name.to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),

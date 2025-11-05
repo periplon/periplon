@@ -29,6 +29,8 @@ use uuid::Uuid;
 
 fn create_test_workflow(name: &str) -> (DSLWorkflow, WorkflowMetadata) {
     let workflow = DSLWorkflow {
+        provider: Default::default(),
+        model: None,
         name: name.to_string(),
         version: "1.0.0".to_string(),
         dsl_version: "1.0.0".to_string(),

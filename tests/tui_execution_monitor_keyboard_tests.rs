@@ -58,6 +58,8 @@ fn handle_execution_monitor_key_simulation(
 /// Create sample workflow for testing
 fn create_test_workflow() -> DSLWorkflow {
     DSLWorkflow {
+        provider: Default::default(),
+        model: None,
         name: "Test Workflow".to_string(),
         version: "1.0.0".to_string(),
         dsl_version: "1.0.0".to_string(),

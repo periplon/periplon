@@ -20,6 +20,8 @@ mod worker_tests {
 
     fn create_test_workflow() -> (DSLWorkflow, WorkflowMetadata) {
         let workflow = DSLWorkflow {
+            provider: Default::default(),
+            model: None,
             name: "test-workflow".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
