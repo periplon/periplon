@@ -264,6 +264,7 @@ pub fn merge_subflow_inline(workflow: &mut DSLWorkflow, subflow_id: &str) -> Res
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::Provider;
 
     #[test]
     fn test_parse_minimal_workflow() {
@@ -458,6 +459,8 @@ tasks:
         use std::collections::HashMap;
 
         let mut workflow = DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "Test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),

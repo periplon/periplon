@@ -1,5 +1,5 @@
 use crate::domain::{
-    HookEvent, HookMatcher, PermissionMode, PermissionResult, ToolPermissionContext,
+    HookEvent, HookMatcher, PermissionMode, PermissionResult, Provider, ToolPermissionContext,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -11,6 +11,7 @@ pub type SettingSource = String;
 
 #[derive(Clone, Default)]
 pub struct AgentOptions {
+    pub provider: Option<Provider>,
     pub allowed_tools: Vec<String>,
     pub disallowed_tools: Vec<String>,
     pub system_prompt: Option<SystemPromptConfig>,
@@ -108,6 +109,7 @@ pub type StderrCallback = std::sync::Arc<dyn Fn(String) + Send + Sync>;
 impl std::fmt::Debug for AgentOptions {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("AgentOptions")
+            .field("provider", &self.provider)
             .field("allowed_tools", &self.allowed_tools)
             .field("disallowed_tools", &self.disallowed_tools)
             .field("system_prompt", &self.system_prompt)

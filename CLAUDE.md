@@ -250,10 +250,15 @@ name: "Workflow Name"
 version: "1.0.0"
 description: "Optional description"
 
+# Provider selection (workflow-level default)
+provider: claude  # claude (default) or codex
+model: "claude-sonnet-4-5"  # optional workflow-level model
+
 agents:
   agent_id:
     description: "What this agent does"
-    model: "claude-sonnet-4-5"  # optional, defaults to sonnet
+    provider: claude  # optional, overrides workflow-level provider
+    model: "claude-sonnet-4-5"  # optional, overrides workflow-level model
     tools: [Read, Write, WebSearch]  # tool allowlist
     permissions:
       mode: "acceptEdits"
@@ -268,6 +273,48 @@ tasks:
     output: "output.md"           # optional output file
     inputs:
       key: "value"                # optional task inputs
+```
+
+### Provider Selection
+
+Periplon supports multiple AI providers:
+
+**Claude (Anthropic)**: Default provider
+- CLI: `claude` (requires `@anthropics/claude` npm package)
+- Models: `claude-sonnet-4-5`, `claude-sonnet-4`, `claude-opus-4`, `claude-haiku-4`
+- Command: `claude --output-format stream-json --verbose`
+
+**Codex (OpenAI)**: Alternative provider with automatic sandbox bypass
+- CLI: `codex` (requires separate Codex CLI installation)
+- Models: `gpt-5-codex`, `gpt-5`
+- Command: `codex --output-format stream-json --verbose --dangerously-bypass-approvals-and-sandbox`
+
+Provider selection cascades:
+1. Agent-level `provider` field (highest priority)
+2. Workflow-level `provider` field
+3. Default: `claude`
+
+Model selection cascades:
+1. Agent-level `model` field (highest priority)
+2. Workflow-level `model` field
+3. Provider default (`claude-sonnet-4-5` for Claude, `gpt-5-codex` for Codex)
+
+Example with mixed providers:
+```yaml
+name: "Mixed Provider Workflow"
+version: "1.0.0"
+provider: claude  # default for all agents
+model: "claude-sonnet-4-5"
+
+agents:
+  researcher:
+    description: "Research using Claude"
+    # inherits workflow provider and model
+
+  coder:
+    description: "Code generation using Codex"
+    provider: codex  # override to use Codex
+    model: "gpt-5-codex"
 ```
 
 ## Key Implementation Patterns

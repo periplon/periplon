@@ -1,3 +1,4 @@
+use crate::domain::Provider;
 use crate::error::{Error, Result};
 use crate::options::{AgentOptions, SystemPromptConfig};
 use crate::ports::secondary::Transport;
@@ -10,6 +11,7 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStderr, ChildStdin, ChildStdout, Command};
 
 const MINIMUM_CLI_VERSION: &str = "2.0.0";
+const MINIMUM_CODEX_VERSION: &str = "1.0.0";
 
 use std::sync::Arc;
 use tokio::sync::Mutex as TokioMutex;
@@ -44,21 +46,34 @@ pub enum PromptType {
 
 impl SubprocessCLITransport {
     pub fn new(prompt: PromptType, options: AgentOptions) -> Self {
+        let provider = options.provider.as_ref().unwrap_or(&Provider::Claude);
+        let cli_name = provider.cli_binary_name();
+
         let cli_path = options.cli_path.clone().unwrap_or_else(|| {
-            Self::find_cli().unwrap_or_else(|e| {
+            Self::find_cli(cli_name).unwrap_or_else(|e| {
                 eprintln!("Error: {}", e);
                 eprintln!("\nTroubleshooting:");
-                eprintln!("  1. Ensure the CLI is installed (npm install -g @anthropics/claude)");
-                eprintln!("  2. Check if 'claude' is in your PATH or set as an alias");
+                match provider {
+                    Provider::Claude => {
+                        eprintln!(
+                            "  1. Ensure the CLI is installed (npm install -g @anthropics/claude)"
+                        );
+                        eprintln!("  2. Check if 'claude' is in your PATH or set as an alias");
+                    }
+                    Provider::Codex => {
+                        eprintln!("  1. Ensure the Codex CLI is installed");
+                        eprintln!("  2. Check if 'codex' is in your PATH or set as an alias");
+                    }
+                }
                 eprintln!("  3. Specify cli_path explicitly in AgentOptions");
                 eprintln!("\nSearched locations:");
                 if let Ok(home) = std::env::var("HOME") {
                     eprintln!("  - PATH and shell aliases");
-                    eprintln!("  - {}/.npm-global/bin/claude", home);
-                    eprintln!("  - /usr/local/bin/claude");
-                    eprintln!("  - {}/.local/bin/claude", home);
-                    eprintln!("  - {}/node_modules/.bin/claude", home);
-                    eprintln!("  - {}/.yarn/bin/claude", home);
+                    eprintln!("  - {}/.npm-global/bin/{}", home, cli_name);
+                    eprintln!("  - /usr/local/bin/{}", cli_name);
+                    eprintln!("  - {}/.local/bin/{}", home, cli_name);
+                    eprintln!("  - {}/node_modules/.bin/{}", home, cli_name);
+                    eprintln!("  - {}/.yarn/bin/{}", home, cli_name);
                 }
                 panic!("CLI not found");
             })
@@ -82,14 +97,14 @@ impl SubprocessCLITransport {
     }
 
     /// Find CLI binary in common locations
-    fn find_cli() -> Result<PathBuf> {
+    fn find_cli(cli_name: &str) -> Result<PathBuf> {
         let debug = std::env::var("CLAUDE_SDK_DEBUG").is_ok();
 
         // 1. Check PATH (which resolves aliases and symlinks)
         if debug {
-            eprintln!("[DEBUG] Searching for 'claude' in PATH...");
+            eprintln!("[DEBUG] Searching for '{}' in PATH...", cli_name);
         }
-        if let Ok(path) = which::which("claude") {
+        if let Ok(path) = which::which(cli_name) {
             if debug {
                 eprintln!("[DEBUG] Found in PATH: {:?}", path);
             }
@@ -107,7 +122,7 @@ impl SubprocessCLITransport {
         if debug {
             eprintln!("[DEBUG] Attempting to resolve shell alias...");
         }
-        if let Ok(resolved) = Self::resolve_shell_alias("claude") {
+        if let Ok(resolved) = Self::resolve_shell_alias(cli_name) {
             if debug {
                 eprintln!("[DEBUG] Resolved alias to: {:?}", resolved);
             }
@@ -120,11 +135,11 @@ impl SubprocessCLITransport {
         }
         let home = std::env::var("HOME").map_err(|_| Error::CliNotFound)?;
         let locations = vec![
-            format!("{}/.npm-global/bin/claude", home),
-            "/usr/local/bin/claude".to_string(),
-            format!("{}/.local/bin/claude", home),
-            format!("{}/node_modules/.bin/claude", home),
-            format!("{}/.yarn/bin/claude", home),
+            format!("{}/.npm-global/bin/{}", home, cli_name),
+            format!("/usr/local/bin/{}", cli_name),
+            format!("{}/.local/bin/{}", home, cli_name),
+            format!("{}/node_modules/.bin/{}", home, cli_name),
+            format!("{}/.yarn/bin/{}", home, cli_name),
         ];
 
         for loc in &locations {
@@ -241,6 +256,12 @@ impl SubprocessCLITransport {
             "stream-json".to_string(),
             "--verbose".to_string(),
         ];
+
+        // Add dangerously-bypass-approvals-and-sandbox flag for codex
+        let provider = self.options.provider.as_ref().unwrap_or(&Provider::Claude);
+        if matches!(provider, Provider::Codex) {
+            cmd.push("--dangerously-bypass-approvals-and-sandbox".to_string());
+        }
 
         // System prompt
         match &self.options.system_prompt {
@@ -387,12 +408,19 @@ impl SubprocessCLITransport {
         {
             let version = captures.get(1).unwrap().as_str();
             let parts: Vec<u32> = version.split('.').filter_map(|s| s.parse().ok()).collect();
-            let min_parts = vec![2, 0, 0];
+
+            let provider = self.options.provider.as_ref().unwrap_or(&Provider::Claude);
+            let (min_version, min_parts) = match provider {
+                Provider::Claude => (MINIMUM_CLI_VERSION, vec![2, 0, 0]),
+                Provider::Codex => (MINIMUM_CODEX_VERSION, vec![1, 0, 0]),
+            };
 
             if parts < min_parts {
                 eprintln!(
-                    "Warning: CLI version {} is unsupported. Minimum required: {}",
-                    version, MINIMUM_CLI_VERSION
+                    "Warning: {} CLI version {} is unsupported. Minimum required: {}",
+                    provider.cli_binary_name(),
+                    version,
+                    min_version
                 );
             }
         }

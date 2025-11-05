@@ -1729,10 +1729,13 @@ fn is_valid_email_format(email: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::Provider;
     use crate::dsl::schema::{AgentSpec, PermissionsSpec};
 
     fn create_test_workflow() -> DSLWorkflow {
         DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "Test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
@@ -1763,6 +1766,8 @@ mod tests {
     #[test]
     fn test_validate_invalid_agent_reference() {
         let mut workflow = DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "Test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
@@ -1802,6 +1807,8 @@ mod tests {
     #[test]
     fn test_validate_circular_dependency() {
         let mut workflow = DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "Test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
@@ -1848,6 +1855,8 @@ mod tests {
     #[test]
     fn test_validate_invalid_tool() {
         let mut workflow = DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "Test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
@@ -1869,6 +1878,7 @@ mod tests {
         };
 
         let agent = AgentSpec {
+            provider: None,
             description: "Test agent".to_string(),
             model: None,
             system_prompt: None,
@@ -1891,6 +1901,8 @@ mod tests {
     #[test]
     fn test_validate_invalid_permission_mode() {
         let mut workflow = DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "Test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
@@ -1912,6 +1924,7 @@ mod tests {
         };
 
         let agent = AgentSpec {
+            provider: None,
             description: "Test agent".to_string(),
             model: None,
             system_prompt: None,
@@ -1942,6 +1955,8 @@ mod tests {
         use crate::dsl::schema::LoopSpec;
 
         let mut workflow = DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "Test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
@@ -1988,6 +2003,8 @@ mod tests {
         use crate::dsl::schema::{CollectionSource, LoopSpec};
 
         let mut workflow = DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "Test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
@@ -2034,6 +2051,8 @@ mod tests {
         use crate::dsl::schema::{CollectionSource, LoopSpec};
 
         let mut workflow = DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "Test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
@@ -2084,6 +2103,8 @@ mod tests {
         use crate::dsl::schema::{CollectionSource, LoopSpec};
 
         let mut workflow = DSLWorkflow {
+            provider: Provider::Claude,
+            model: None,
             name: "Test".to_string(),
             version: "1.0.0".to_string(),
             dsl_version: "1.0.0".to_string(),
@@ -2400,6 +2421,7 @@ mod tests {
         workflow.agents.insert(
             "processor".to_string(),
             AgentSpec {
+                provider: None,
                 description: "Processor agent".to_string(),
                 model: None,
                 system_prompt: None,
@@ -2483,6 +2505,7 @@ mod tests {
         workflow.agents.insert(
             "test_agent".to_string(),
             AgentSpec {
+                provider: None,
                 description: "Test agent".to_string(),
                 model: None,
                 system_prompt: None,
@@ -2677,6 +2700,7 @@ mod tests {
         workflow.agents.insert(
             "test_agent".to_string(),
             AgentSpec {
+                provider: None,
                 description: "Test agent".to_string(),
                 model: None,
                 system_prompt: None,
@@ -2768,6 +2792,7 @@ mod tests {
         workflow.agents.insert(
             "test_agent".to_string(),
             AgentSpec {
+                provider: None,
                 description: "Test agent".to_string(),
                 model: None,
                 system_prompt: None,
@@ -2872,6 +2897,7 @@ mod tests {
         workflow.agents.insert(
             "test_agent".to_string(),
             AgentSpec {
+                provider: None,
                 description: "Test agent".to_string(),
                 model: None,
                 system_prompt: None,
@@ -3031,6 +3057,7 @@ mod tests {
         workflow.agents.insert(
             "test_agent".to_string(),
             AgentSpec {
+                provider: None,
                 description: "Test agent".to_string(),
                 model: None,
                 system_prompt: None,
@@ -3325,6 +3352,7 @@ mod tests {
         workflow.agents.insert(
             "test_agent".to_string(),
             AgentSpec {
+                provider: None,
                 description: "Test agent".to_string(),
                 model: None,
                 system_prompt: None,
@@ -3377,6 +3405,7 @@ mod tests {
         workflow.agents.insert(
             "test_agent".to_string(),
             AgentSpec {
+                provider: None,
                 description: "Test agent".to_string(),
                 model: None,
                 system_prompt: None,
@@ -3428,6 +3457,7 @@ mod tests {
         workflow.agents.insert(
             "test_agent".to_string(),
             AgentSpec {
+                provider: None,
                 description: "Test agent".to_string(),
                 model: None,
                 system_prompt: None,
@@ -3443,6 +3473,7 @@ mod tests {
 
         // Create an agent for the subflow
         let subflow_agent = AgentSpec {
+            provider: None,
             description: "Subflow agent".to_string(),
             model: None,
             system_prompt: None,
@@ -3521,6 +3552,7 @@ mod tests {
         workflow.agents.insert(
             "test_agent".to_string(),
             AgentSpec {
+                provider: None,
                 description: "Test agent".to_string(),
                 model: None,
                 system_prompt: None,
@@ -3656,6 +3688,7 @@ mod tests {
 
         // Create an agent for the subflow
         let subflow_agent = AgentSpec {
+            provider: None,
             description: "Subflow agent".to_string(),
             model: None,
             system_prompt: None,

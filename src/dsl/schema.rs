@@ -3,6 +3,7 @@
 //! This module defines the type structures for the DSL, including agents, tasks,
 //! workflows, tools, and communication protocols.
 
+use crate::domain::Provider;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -19,6 +20,12 @@ pub struct DSLWorkflow {
         skip_serializing_if = "is_default_dsl_version"
     )]
     pub dsl_version: String,
+    /// Default provider for the workflow (claude or codex)
+    #[serde(default, skip_serializing_if = "is_default_provider")]
+    pub provider: Provider,
+    /// Default model for the workflow (can be overridden per agent)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
     /// Working directory for all agents (can be overridden per agent)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cwd: Option<String>,
@@ -71,7 +78,10 @@ pub struct DSLWorkflow {
 pub struct AgentSpec {
     /// Agent description
     pub description: String,
-    /// Model to use (e.g., "claude-sonnet-4-5")
+    /// Provider to use (claude or codex), overrides workflow-level provider
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider: Option<Provider>,
+    /// Model to use (e.g., "claude-sonnet-4-5" or "gpt-5-codex")
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
     /// System prompt
@@ -134,6 +144,10 @@ fn default_dsl_version() -> String {
 
 fn is_default_dsl_version(version: &str) -> bool {
     version == "1.0.0"
+}
+
+fn is_default_provider(provider: &Provider) -> bool {
+    *provider == Provider::Claude
 }
 
 fn is_default_permission_mode(mode: &str) -> bool {
