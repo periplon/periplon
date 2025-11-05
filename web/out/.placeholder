@@ -1,3 +1,0 @@
-This placeholder file ensures the `web/out` directory is included in packaged source
-archives so the `RustEmbed` derive used by the server feature can always find the
-directory during builds (including docs.rs).
