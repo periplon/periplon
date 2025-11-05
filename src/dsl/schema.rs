@@ -1411,7 +1411,7 @@ pub enum NotificationChannel {
     },
     /// ntfy.sh notification
     Ntfy {
-        /// ntfy.sh server URL (default: https://ntfy.sh)
+        /// ntfy.sh server URL (default: <https://ntfy.sh>)
         #[serde(default = "default_ntfy_server")]
         server: String,
         /// Topic name

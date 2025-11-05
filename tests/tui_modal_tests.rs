@@ -620,7 +620,7 @@ fn test_input_modal_keyboard_hints_formatting() {
 
 #[test]
 fn test_modal_sequence_rendering() {
-    let modals = vec![
+    let modals = [
         Modal::Confirm {
             title: "Step 1".to_string(),
             message: "Confirm action".to_string(),

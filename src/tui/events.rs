@@ -186,7 +186,7 @@ mod tests {
 
     #[test]
     fn test_execution_update_variants() {
-        let updates = vec![
+        let updates = [
             ExecutionUpdate::TaskStarted("test".to_string()),
             ExecutionUpdate::TaskCompleted("test".to_string()),
             ExecutionUpdate::TaskFailed {
@@ -205,7 +205,7 @@ mod tests {
 
     #[test]
     fn test_app_event_variants() {
-        let events = vec![
+        let events = [
             AppEvent::Key(KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE)),
             AppEvent::Resize(80, 24),
             AppEvent::Tick,

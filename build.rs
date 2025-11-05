@@ -16,36 +16,31 @@ fn main() {
             // Create the directory structure
             fs::create_dir_all(&web_out_path)
                 .expect("Failed to create web/out directory for RustEmbed");
+        }
 
-            // Create a placeholder file so the directory isn't empty
-            let placeholder = web_out_path.join(".placeholder");
-            fs::write(
-                &placeholder,
-                "This is a placeholder file created by build.rs to satisfy RustEmbed requirements.",
-            )
-            .expect("Failed to create placeholder file");
-
-            eprintln!("Created web/out directory with placeholder for RustEmbed");
-        } else {
-            // Directory exists, check if it has content
-            match fs::read_dir(&web_out_path) {
-                Ok(entries) => {
-                    let count = entries.count();
-
-                    if count == 0 {
-                        let placeholder = web_out_path.join(".placeholder");
-                        fs::write(
-                            &placeholder,
-                            "This is a placeholder file created by build.rs to satisfy RustEmbed requirements.",
-                        )
-                        .expect("Failed to create placeholder file");
-                        eprintln!("web/out directory was empty, created placeholder");
-                    }
-                }
-                Err(e) => {
-                    eprintln!("Warning: Failed to read web/out directory: {}", e);
-                }
-            }
+        // Check if index.html exists, if not create a minimal one
+        let index_html_path = web_out_path.join("index.html");
+        if !index_html_path.exists() {
+            let minimal_html = r#"<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Periplon Web UI</title>
+</head>
+<body>
+    <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: system-ui, -apple-system, sans-serif;">
+        <div style="text-align: center;">
+            <h1>Periplon Web UI</h1>
+            <p>The web UI assets have not been built yet.</p>
+            <p>To build the web UI, run:</p>
+            <pre style="background: #f5f5f5; padding: 1em; border-radius: 4px;">cd web && npm install && npm run build</pre>
+        </div>
+    </div>
+</body>
+</html>"#;
+            fs::write(&index_html_path, minimal_html).expect("Failed to create minimal index.html");
+            eprintln!("Created minimal index.html for web UI (web assets not built)");
         }
     }
 
