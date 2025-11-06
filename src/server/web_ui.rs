@@ -3,10 +3,28 @@
 #[cfg(feature = "server")]
 use rust_embed::RustEmbed;
 
-#[cfg(feature = "server")]
+// Skip embedding web assets when building docs.rs to avoid missing directory error
+#[cfg(all(feature = "server", not(docsrs)))]
 #[derive(RustEmbed)]
 #[folder = "web/out/"]
 pub struct WebAssets;
+
+// Provide a stub implementation for docs.rs builds
+#[cfg(all(feature = "server", docsrs))]
+pub struct WebAssets;
+
+#[cfg(all(feature = "server", docsrs))]
+impl WebAssets {
+    /// Stub method for docs.rs - not functional
+    pub fn get(_file_path: &str) -> Option<rust_embed::EmbeddedFile> {
+        None
+    }
+
+    /// Stub method for docs.rs - not functional
+    pub fn iter() -> impl Iterator<Item = std::borrow::Cow<'static, str>> {
+        std::iter::empty()
+    }
+}
 
 #[cfg(feature = "server")]
 pub fn get_content_type(path: &str) -> &'static str {

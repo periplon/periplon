@@ -872,9 +872,9 @@ fn validate_string_variable_refs(
                 // Check if it's a valid scope prefix
                 let scope = var_ref.split('.').next().unwrap();
                 match scope {
-                    "workflow" | "agent" | "task" | "subflow" => {
-                        errors.add_error(format!(
-                            "{}: Variable '{}' is not defined",
+                    "workflow" | "agent" | "task" | "subflow" | "loop" => {
+                        errors.add_warning(format!(
+                            "{}: Variable '{}' is not defined (will be checked at runtime for loop variables)",
                             context, var_ref
                         ));
                     }
@@ -887,21 +887,23 @@ fn validate_string_variable_refs(
                 }
             }
         } else {
-            // Unqualified references - check if exists in any scope (workflow, agent, task)
+            // Unqualified references - check if exists in any scope (workflow, agent, task, loop)
             let workflow_qualified = format!("workflow.{}", var_ref);
             let agent_qualified = format!("agent.{}", var_ref);
             let task_qualified = format!("task.{}", var_ref);
             let subflow_qualified = format!("subflow.{}", var_ref);
+            let loop_qualified = format!("loop.{}", var_ref);
 
             if !defined_vars.contains(&workflow_qualified)
                 && !defined_vars.contains(&agent_qualified)
                 && !defined_vars.contains(&task_qualified)
                 && !defined_vars.contains(&subflow_qualified)
+                && !defined_vars.contains(&loop_qualified)
             {
                 errors.add_warning(format!(
                     "{}: Unqualified variable '{}' may not be defined at runtime. \
-                     Consider using qualified reference (e.g., workflow.{}, agent.{}, or task.{})",
-                    context, var_ref, var_ref, var_ref, var_ref
+                     Consider using qualified reference (e.g., workflow.{}, agent.{}, task.{}, or loop.{})",
+                    context, var_ref, var_ref, var_ref, var_ref, var_ref
                 ));
             }
         }

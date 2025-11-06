@@ -34,6 +34,8 @@ pub enum Scope {
     Task(String),
     /// Subflow-level variables
     Subflow(String),
+    /// Loop-level variables (iteration, item, index, etc.)
+    Loop(String),
     /// Secret values (read-only)
     Secret,
 }
@@ -46,6 +48,7 @@ impl Scope {
             Scope::Agent(_) => "agent",
             Scope::Task(_) => "task",
             Scope::Subflow(_) => "subflow",
+            Scope::Loop(_) => "loop",
             Scope::Secret => "secret",
         }
     }
@@ -54,7 +57,9 @@ impl Scope {
     pub fn identifier(&self) -> Option<&str> {
         match self {
             Scope::Workflow | Scope::Secret => None,
-            Scope::Agent(name) | Scope::Task(name) | Scope::Subflow(name) => Some(name),
+            Scope::Agent(name) | Scope::Task(name) | Scope::Subflow(name) | Scope::Loop(name) => {
+                Some(name)
+            }
         }
     }
 }
@@ -167,6 +172,16 @@ impl VariableContext {
                         )));
                     }
                 }
+                "loop" => {
+                    if let Some(Scope::Loop(name)) = &self.current_scope {
+                        Scope::Loop(name.clone())
+                    } else {
+                        return Err(Error::InvalidInput(format!(
+                            "Cannot resolve loop variable '{}' outside loop scope",
+                            reference
+                        )));
+                    }
+                }
                 _ => {
                     return Err(Error::InvalidInput(format!(
                         "Unknown scope prefix '{}' in variable reference '{}'",
@@ -269,6 +284,7 @@ impl VariableContext {
             Scope::Agent(agent_name) => format!("agent:{}:{}", agent_name, name),
             Scope::Task(task_name) => format!("task:{}:{}", task_name, name),
             Scope::Subflow(subflow_name) => format!("subflow:{}:{}", subflow_name, name),
+            Scope::Loop(loop_id) => format!("loop:{}:{}", loop_id, name),
         }
     }
 
