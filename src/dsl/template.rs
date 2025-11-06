@@ -2141,10 +2141,26 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "# ⚠️ CRITICAL OUTPUT REQUIREMENTS ⚠️").unwrap();
     writeln!(&mut prompt, "YOU MUST:").unwrap();
     writeln!(&mut prompt, "1. Output ONLY valid YAML workflow syntax").unwrap();
-    writeln!(&mut prompt, "2. DO NOT include ANY explanatory text, questions, or clarifications").unwrap();
-    writeln!(&mut prompt, "3. DO NOT ask questions or seek clarification - make reasonable assumptions").unwrap();
-    writeln!(&mut prompt, "4. If the request is unclear, generate a best-effort workflow anyway").unwrap();
-    writeln!(&mut prompt, "5. Start immediately with ```yaml and the workflow definition").unwrap();
+    writeln!(
+        &mut prompt,
+        "2. DO NOT include ANY explanatory text, questions, or clarifications"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "3. DO NOT ask questions or seek clarification - make reasonable assumptions"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "4. If the request is unclear, generate a best-effort workflow anyway"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "5. Start immediately with ```yaml and the workflow definition"
+    )
+    .unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(
         &mut prompt,
@@ -3720,11 +3736,19 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "```").unwrap();
     writeln!(&mut prompt).unwrap();
     writeln!(&mut prompt, "# ⚠️⚠️⚠️ FINAL REMINDER ⚠️⚠️⚠️").unwrap();
-    writeln!(&mut prompt, "Your response MUST be ONLY valid YAML wrapped in ```yaml code blocks.").unwrap();
+    writeln!(
+        &mut prompt,
+        "Your response MUST be ONLY valid YAML wrapped in ```yaml code blocks."
+    )
+    .unwrap();
     writeln!(&mut prompt, "DO NOT write ANY text outside the code block.").unwrap();
     writeln!(&mut prompt, "DO NOT ask clarifying questions.").unwrap();
     writeln!(&mut prompt, "DO NOT explain your reasoning.").unwrap();
-    writeln!(&mut prompt, "If anything is unclear, make reasonable assumptions and generate a working workflow.").unwrap();
+    writeln!(
+        &mut prompt,
+        "If anything is unclear, make reasonable assumptions and generate a working workflow."
+    )
+    .unwrap();
     writeln!(&mut prompt, "START YOUR RESPONSE NOW with ```yaml").unwrap();
 
     prompt
