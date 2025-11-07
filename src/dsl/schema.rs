@@ -268,6 +268,9 @@ pub struct TaskSpec {
     /// MCP tool invocation specification (mutually exclusive with other execution types)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mcp_tool: Option<McpToolSpec>,
+    /// LLM invocation specification (mutually exclusive with other execution types)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub llm: Option<LlmSpec>,
     /// Reference to a prebuilt workflow from a task group (e.g., "google:upload-files")
     /// Format: "namespace:workflow_name"
     /// Mutually exclusive with other execution types
@@ -345,6 +348,7 @@ impl TaskSpec {
             || self.command.is_some()
             || self.http.is_some()
             || self.mcp_tool.is_some()
+            || self.llm.is_some()
             || self.uses_workflow.is_some()
     }
 
@@ -373,6 +377,9 @@ impl TaskSpec {
             count += 1;
         }
         if self.mcp_tool.is_some() {
+            count += 1;
+        }
+        if self.llm.is_some() {
             count += 1;
         }
         if self.uses_workflow.is_some() {
@@ -1231,6 +1238,51 @@ pub struct McpToolSpec {
     /// Timeout in seconds
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub timeout_secs: Option<u64>,
+}
+
+/// LLM invocation specification for direct API calls
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LlmSpec {
+    /// LLM provider (ollama, openai, anthropic, google)
+    pub provider: Provider,
+    /// Model name (e.g., "gpt-4o", "claude-3-5-sonnet-20241022", "llama3.3")
+    pub model: String,
+    /// User prompt/query (supports variable interpolation)
+    pub prompt: String,
+    /// System prompt (optional)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
+    /// API endpoint URL (optional, uses provider default if not specified)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub endpoint: Option<String>,
+    /// API key (can reference secrets via ${secret.name})
+    /// If not provided, will try to use environment variable for the provider
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub api_key: Option<String>,
+    /// Temperature for sampling (0.0 to 2.0, default depends on provider)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub temperature: Option<f64>,
+    /// Maximum tokens to generate
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_tokens: Option<u32>,
+    /// Top-p nucleus sampling
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub top_p: Option<f64>,
+    /// Top-k sampling (for providers that support it)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub top_k: Option<u32>,
+    /// Stop sequences
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub stop: Vec<String>,
+    /// Timeout in seconds
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timeout_secs: Option<u64>,
+    /// Additional provider-specific parameters
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub extra_params: HashMap<String, serde_json::Value>,
+    /// Whether to stream the response (default: false)
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub stream: bool,
 }
 
 // ============================================================================

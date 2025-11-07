@@ -1,0 +1,14 @@
+name: "Simple LLM Test"
+version: "1.0.0"
+description: "Simple test workflow for LLM task execution"
+
+tasks:
+  # Test with Ollama (no API key required)
+  hello_ollama:
+    description: "Simple greeting from Ollama"
+    llm:
+      provider: ollama
+      model: "llama3.3"
+      prompt: "Say hello and introduce yourself in one sentence."
+      temperature: 0.7
+      max_tokens: 100

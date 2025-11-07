@@ -1,0 +1,172 @@
+name: "LLM Examples Workflow"
+version: "1.0.0"
+description: "Demonstrates LLM task execution with multiple providers"
+
+# Secret configuration for API keys
+secrets:
+  openai_key:
+    source:
+      type: env
+      var: "OPENAI_API_KEY"
+    description: "OpenAI API key"
+
+  anthropic_key:
+    source:
+      type: env
+      var: "ANTHROPIC_API_KEY"
+    description: "Anthropic API key"
+
+  google_key:
+    source:
+      type: env
+      var: "GOOGLE_API_KEY"
+    description: "Google API key"
+
+# Define tasks using different LLM providers
+tasks:
+  # Example 1: Ollama (local, no API key needed)
+  local_analysis:
+    description: "Analyze code using local Ollama model"
+    llm:
+      provider: ollama
+      model: "llama3.3"
+      endpoint: "http://localhost:11434"  # Optional, this is the default
+      system_prompt: "You are a helpful code analysis assistant."
+      prompt: |
+        Analyze this Rust function and suggest improvements:
+
+        fn calculate_sum(numbers: Vec<i32>) -> i32 {
+            let mut sum = 0;
+            for num in numbers {
+                sum = sum + num;
+            }
+            sum
+        }
+      temperature: 0.7
+      max_tokens: 500
+    outputs:
+      analysis:
+        source:
+          type: task_output
+          task: "local_analysis"
+        description: "Code analysis result"
+
+  # Example 2: OpenAI
+  openai_review:
+    description: "Get code review from OpenAI GPT-4"
+    llm:
+      provider: openai
+      model: "gpt-4o"
+      api_key: "${secret.openai_key}"
+      system_prompt: "You are an expert code reviewer focusing on performance and best practices."
+      prompt: "Review the following Rust code for performance issues: ${workflow.code_snippet}"
+      temperature: 0.3
+      max_tokens: 1000
+      timeout_secs: 30
+    depends_on: ["local_analysis"]
+    outputs:
+      review:
+        source:
+          type: task_output
+          task: "openai_review"
+
+  # Example 3: Anthropic Claude
+  anthropic_refactor:
+    description: "Get refactoring suggestions from Claude"
+    llm:
+      provider: anthropic
+      model: "claude-3-5-sonnet-20241022"
+      api_key: "${secret.anthropic_key}"
+      system_prompt: "You are a Rust expert specializing in idiomatic code."
+      prompt: "Refactor this Rust code to be more idiomatic and efficient"
+      temperature: 0.5
+      max_tokens: 1500
+      top_p: 0.9
+      top_k: 50
+    depends_on: ["openai_review"]
+    outputs:
+      refactored:
+        source:
+          type: task_output
+          task: "anthropic_refactor"
+
+  # Example 4: Google Gemini
+  google_documentation:
+    description: "Generate documentation using Google Gemini"
+    llm:
+      provider: google
+      model: "gemini-2.0-flash-exp"
+      api_key: "${secret.google_key}"
+      system_prompt: "You are a technical writer creating clear, concise documentation."
+      prompt: "Generate comprehensive documentation for the refactored code"
+      temperature: 0.4
+      max_tokens: 2000
+    depends_on: ["anthropic_refactor"]
+    outputs:
+      documentation:
+        source:
+          type: task_output
+          task: "google_documentation"
+
+  # Example 5: Multiple LLM calls in parallel for comparison
+  compare_explanations_ollama:
+    description: "Explain code with Ollama"
+    llm:
+      provider: ollama
+      model: "llama3.3"
+      prompt: "Explain how this Rust iterator chain works: numbers.iter().filter(|x| **x > 0).map(|x| x * 2).collect()"
+      temperature: 0.7
+      max_tokens: 300
+
+  compare_explanations_openai:
+    description: "Explain code with OpenAI"
+    llm:
+      provider: openai
+      model: "gpt-4o-mini"
+      api_key: "${secret.openai_key}"
+      prompt: "Explain how this Rust iterator chain works: numbers.iter().filter(|x| **x > 0).map(|x| x * 2).collect()"
+      temperature: 0.7
+      max_tokens: 300
+    parallel_with: ["compare_explanations_ollama"]
+
+  # Example 6: Using LLM with conditional execution
+  detailed_analysis:
+    description: "Perform detailed analysis if initial review found issues"
+    llm:
+      provider: anthropic
+      model: "claude-3-5-sonnet-20241022"
+      api_key: "${secret.anthropic_key}"
+      prompt: "Provide detailed analysis of the code issues found"
+      max_tokens: 2000
+    condition:
+      type: state_exists
+      key: "issues_found"
+    depends_on: ["openai_review"]
+
+  # Example 7: LLM with loop for batch processing
+  analyze_files:
+    description: "Analyze multiple files"
+    llm:
+      provider: ollama
+      model: "codellama"
+      prompt: "Analyze this file: ${loop.item}"
+      max_tokens: 500
+    loop:
+      type: for_each
+      collection:
+        source: inline
+        items:
+          - "src/main.rs"
+          - "src/lib.rs"
+          - "src/utils.rs"
+      iterator: "item"
+      parallel: true
+      max_parallel: 3
+
+# Notification on completion
+notifications:
+  notify_on_completion: true
+  default_channels:
+    - type: console
+      colored: true
+      timestamp: true
