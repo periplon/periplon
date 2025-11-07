@@ -1510,6 +1510,98 @@ async fn execute_command_task(
     })
 }
 
+/// Execute an LLM task (direct API call)
+async fn execute_llm_task(
+    _task_id: &str,
+    llm_spec: &crate::dsl::schema::LlmSpec,
+    workflow_inputs: &HashMap<String, serde_json::Value>,
+    task_inputs: &HashMap<String, serde_json::Value>,
+    attempt: u32,
+) -> Result<Option<String>> {
+    use crate::adapters::secondary::HttpLlmClient;
+    use crate::ports::secondary::{LlmClient, LlmRequest};
+
+    // Substitute variables in prompt
+    let prompt = DSLExecutor::substitute_variables(&llm_spec.prompt, workflow_inputs, task_inputs);
+
+    // Substitute variables in system prompt if present
+    let system_prompt = llm_spec
+        .system_prompt
+        .as_ref()
+        .map(|sp| DSLExecutor::substitute_variables(sp, workflow_inputs, task_inputs));
+
+    // Substitute variables in endpoint if present
+    let endpoint = llm_spec
+        .endpoint
+        .as_ref()
+        .map(|ep| DSLExecutor::substitute_variables(ep, workflow_inputs, task_inputs));
+
+    // Substitute variables in API key if present
+    let api_key = llm_spec
+        .api_key
+        .as_ref()
+        .map(|key| DSLExecutor::substitute_variables(key, workflow_inputs, task_inputs));
+
+    if attempt > 0 {
+        println!(
+            "  [Retry {}] Executing LLM task with {:?} {}",
+            attempt, llm_spec.provider, llm_spec.model
+        );
+    } else {
+        println!(
+            "  Executing LLM task with {:?} {}",
+            llm_spec.provider, llm_spec.model
+        );
+    }
+
+    // Build LLM request
+    let request = LlmRequest {
+        provider: llm_spec.provider.clone(),
+        model: llm_spec.model.clone(),
+        prompt,
+        system_prompt,
+        endpoint,
+        api_key,
+        temperature: llm_spec.temperature,
+        max_tokens: llm_spec.max_tokens,
+        top_p: llm_spec.top_p,
+        top_k: llm_spec.top_k,
+        stop: llm_spec.stop.clone(),
+        timeout_secs: llm_spec.timeout_secs,
+        extra_params: llm_spec.extra_params.clone(),
+    };
+
+    // Create HTTP LLM client
+    let client = HttpLlmClient::new();
+
+    // Execute LLM request
+    let response = client
+        .execute(request)
+        .await
+        .map_err(|e| Error::InvalidInput(format!("LLM execution failed: {}", e)))?;
+
+    // Print response
+    println!("\n{}", response.content);
+
+    // Print token usage if available
+    if let Some(usage) = &response.usage {
+        println!(
+            "\n  Token usage: {} input + {} output = {} total",
+            usage.prompt_tokens, usage.completion_tokens, usage.total_tokens
+        );
+    }
+
+    // Print finish reason if available
+    if let Some(reason) = &response.finish_reason {
+        println!("  Finish reason: {}", reason);
+    }
+
+    println!(); // Add blank line for readability
+
+    // Return content as output
+    Ok(Some(response.content))
+}
+
 /// Attempt to execute a task once
 #[allow(clippy::too_many_arguments)]
 async fn execute_task_attempt(
@@ -1547,6 +1639,12 @@ async fn execute_task_attempt(
             attempt,
         )
         .await;
+    }
+
+    // Check if this is an LLM task
+    if let Some(llm_spec) = &_spec.llm {
+        // Execute LLM task
+        return execute_llm_task(_task_id, llm_spec, workflow_inputs, &_spec.inputs, attempt).await;
     }
 
     // Default to agent-based execution

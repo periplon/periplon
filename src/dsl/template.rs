@@ -997,8 +997,79 @@ pub fn generate_template() -> String {
     writeln!(&mut template, "      timeout_secs: 60  # Optional timeout").unwrap();
     writeln!(&mut template).unwrap();
 
+    writeln!(&mut template, "  # Example: Direct LLM API call task").unwrap();
+    writeln!(&mut template, "  llm_task:").unwrap();
+    writeln!(
+        &mut template,
+        "    description: \"Call LLM API directly without CLI subprocess\""
+    )
+    .unwrap();
+    writeln!(&mut template, "    llm:").unwrap();
+    writeln!(
+        &mut template,
+        "      provider: ollama  # ollama, openai, anthropic, google"
+    )
+    .unwrap();
+    writeln!(&mut template, "      model: \"llama3.3\"  # Model name").unwrap();
+    writeln!(
+        &mut template,
+        "      prompt: \"Analyze this code: ${{workflow.code_snippet}}\"  # Supports variable interpolation"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "      system_prompt: \"You are an expert code reviewer\"  # Optional"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "      # endpoint: \"http://localhost:11434\"  # Optional (uses provider default)"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "      # api_key: \"${{secret.openai_key}}\"  # Optional (uses env var: OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY)"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "      temperature: 0.7  # Sampling temperature (0.0-2.0)"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "      max_tokens: 500  # Maximum tokens to generate"
+    )
+    .unwrap();
+    writeln!(&mut template, "      # top_p: 0.9  # Nucleus sampling").unwrap();
+    writeln!(&mut template, "      # top_k: 50  # Top-k sampling").unwrap();
+    writeln!(&mut template, "      # stop: [\"END\"]  # Stop sequences").unwrap();
+    writeln!(&mut template, "      timeout_secs: 30  # Request timeout").unwrap();
+    writeln!(&mut template, "    # Provider details:").unwrap();
+    writeln!(
+        &mut template,
+        "    # - ollama: Local server, no API key required"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "    # - openai: gpt-4o, gpt-4o-mini, o1, o1-mini"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "    # - anthropic: claude-3-5-sonnet-20241022, claude-3-5-haiku-20241022"
+    )
+    .unwrap();
+    writeln!(
+        &mut template,
+        "    # - google: gemini-2.0-flash-exp, gemini-1.5-pro"
+    )
+    .unwrap();
+    writeln!(&mut template).unwrap();
+
     writeln!(&mut template, "# STANDARD TASK FIELDS").unwrap();
-    writeln!(&mut template, "# The following fields apply to all task types (AI agent, script, command, http, mcp_tool)").unwrap();
+    writeln!(&mut template, "# The following fields apply to all task types (AI agent, script, command, http, mcp_tool, llm)").unwrap();
     writeln!(&mut template).unwrap();
 
     writeln!(&mut template, "  standard_task:").unwrap();
@@ -2732,7 +2803,7 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     .unwrap();
     writeln!(
         &mut prompt,
-        "    # Option 1: AI agent execution (mutually exclusive with options 2-8)"
+        "    # Option 1: AI agent execution (mutually exclusive with options 2-9)"
     )
     .unwrap();
     writeln!(&mut prompt, "    agent: \"agent_name\"").unwrap();
@@ -2839,6 +2910,69 @@ pub fn generate_nl_to_dsl_prompt() -> String {
     writeln!(&mut prompt, "#       parameters:").unwrap();
     writeln!(&mut prompt, "#         input: \"${{workflow.data_file}}\"").unwrap();
     writeln!(&mut prompt, "#       timeout_secs: 60").unwrap();
+    writeln!(
+        &mut prompt,
+        "    # Option 9: Direct LLM API call (no CLI subprocess)"
+    )
+    .unwrap();
+    writeln!(&mut prompt, "    # llm:").unwrap();
+    writeln!(
+        &mut prompt,
+        "#       provider: ollama  # ollama, openai, anthropic, google"
+    )
+    .unwrap();
+    writeln!(&mut prompt, "#       model: \"llama3.3\"  # Model name").unwrap();
+    writeln!(&mut prompt, "#       prompt: \"Analyze this code: ${{workflow.code}}\"  # User prompt (supports variables)").unwrap();
+    writeln!(
+        &mut prompt,
+        "#       system_prompt: \"You are a code expert\"  # Optional system prompt"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "#       endpoint: \"http://localhost:11434\"  # Optional (uses provider default)"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "#       api_key: \"${{secret.openai_key}}\"  # Optional (uses env var if not provided)"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "#       temperature: 0.7  # Sampling temperature (0.0-2.0)"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "#       max_tokens: 500  # Maximum tokens to generate"
+    )
+    .unwrap();
+    writeln!(&mut prompt, "#       top_p: 0.9  # Nucleus sampling").unwrap();
+    writeln!(&mut prompt, "#       top_k: 50  # Top-k sampling").unwrap();
+    writeln!(&mut prompt, "#       stop: [\"END\"]  # Stop sequences").unwrap();
+    writeln!(&mut prompt, "#       timeout_secs: 30  # Request timeout").unwrap();
+    writeln!(&mut prompt, "#       # Providers:").unwrap();
+    writeln!(
+        &mut prompt,
+        "#       # - ollama: Local (default http://localhost:11434, no API key)"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "#       # - openai: gpt-4o, gpt-4o-mini (OPENAI_API_KEY env var)"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "#       # - anthropic: claude-3-5-sonnet-20241022 (ANTHROPIC_API_KEY)"
+    )
+    .unwrap();
+    writeln!(
+        &mut prompt,
+        "#       # - google: gemini-2.0-flash-exp (GOOGLE_API_KEY)"
+    )
+    .unwrap();
     writeln!(&mut prompt, "    # Common task fields (all types):").unwrap();
     writeln!(
         &mut prompt,

@@ -41,6 +41,7 @@ Periplon provides a comprehensive DSL (Domain-Specific Language) for orchestrati
 The Periplon DSL is the primary interface for building workflows:
 
 - **Multi-Agent Workflows**: Define and orchestrate multiple specialized AI agents
+- **Direct LLM API Calls**: Call Ollama, OpenAI, Anthropic, and Google APIs directly
 - **Natural Language Generation**: Create workflows from plain English descriptions
 - **State Management**: Automatic checkpoint and resume execution
 - **Dependency Resolution**: DAG-based task execution with automatic ordering
@@ -192,6 +193,69 @@ tasks:
           path: "${workflow.output_dir}/analysis.json"
 ```
 
+### LLM Task Execution
+
+Call LLM APIs directly without CLI subprocesses. Supports Ollama, OpenAI, Anthropic, and Google:
+
+```yaml
+name: "Code Analysis with LLMs"
+version: "1.0.0"
+
+secrets:
+  openai_key:
+    source:
+      type: env
+      var: "OPENAI_API_KEY"
+
+tasks:
+  # Use local Ollama (no API key required)
+  local_analysis:
+    description: "Analyze code using local Ollama"
+    llm:
+      provider: ollama
+      model: "llama3.3"
+      system_prompt: "You are a code analysis expert"
+      prompt: "Analyze this Rust function for potential issues"
+      temperature: 0.7
+      max_tokens: 500
+    outputs:
+      analysis:
+        source:
+          type: task_output
+          task: "local_analysis"
+
+  # Use OpenAI GPT-4
+  detailed_review:
+    description: "Get detailed review from GPT-4"
+    depends_on: ["local_analysis"]
+    llm:
+      provider: openai
+      model: "gpt-4o"
+      api_key: "${secret.openai_key}"
+      prompt: "Provide detailed review based on: ${local_analysis.output}"
+      temperature: 0.3
+      max_tokens: 1000
+      timeout_secs: 30
+
+  # Use Anthropic Claude
+  refactor_suggestions:
+    description: "Get refactoring suggestions from Claude"
+    depends_on: ["detailed_review"]
+    llm:
+      provider: anthropic
+      model: "claude-3-5-sonnet-20241022"
+      api_key: "${secret.anthropic_key}"
+      prompt: "Suggest refactorings for the reviewed code"
+      temperature: 0.5
+      max_tokens: 1500
+```
+
+**Supported Providers:**
+- **Ollama**: Local LLM server (llama3.3, qwen2.5, mistral, codellama) - No API key required
+- **OpenAI**: gpt-4o, gpt-4o-mini, o1 - `OPENAI_API_KEY` environment variable
+- **Anthropic**: claude-3-5-sonnet, claude-3-5-haiku - `ANTHROPIC_API_KEY` environment variable
+- **Google**: gemini-2.0-flash-exp, gemini-1.5-pro - `GOOGLE_API_KEY` environment variable
+
 See the [DSL Overview](./docs/guides/dsl-overview.md) for comprehensive documentation.
 
 ## Tools
@@ -327,6 +391,8 @@ See the [Quick Start Guide](./docs/guides/quick-start.md) for more SDK examples.
 
 ### Example Workflows
 - [Example Workflows](./examples/dsl_workflows/)
+- [LLM Workflow Examples](./examples/llm_workflow.yaml) - Direct LLM API calls
+- [Simple LLM Test](./examples/simple_llm_test.yaml) - Quick Ollama test
 
 ## Examples
 
@@ -346,6 +412,10 @@ cargo run --example dsl_executor_example
 - [Parallel Demo](./examples/sdk/parallel_foreach_demo.rs) - Concurrent execution
 - [HTTP Collection Demo](./examples/sdk/http_collection_demo.rs) - Fetch from APIs
 - [Checkpoint Demo](./examples/sdk/checkpoint_resume_demo.rs) - Resume capability
+
+**LLM Task Examples:**
+- [Comprehensive LLM Workflow](./examples/llm_workflow.yaml) - All 4 providers with dependencies
+- [Simple Ollama Test](./examples/simple_llm_test.yaml) - Quick local LLM test
 
 ### SDK Examples
 

@@ -289,6 +289,27 @@ Periplon supports multiple AI providers:
 - Models: `gpt-5-codex`, `gpt-5`
 - Command: `codex --output-format stream-json --verbose --dangerously-bypass-approvals-and-sandbox`
 
+**LLM Providers (Direct API)**: For direct API-based LLM calls
+- **Ollama**: Local LLM server
+  - Endpoint: `http://localhost:11434` (default)
+  - Models: `llama3.3`, `llama3.2`, `qwen2.5`, `phi4`, `mistral`, `codellama`, etc.
+  - No API key required
+
+- **OpenAI**: OpenAI API
+  - Endpoint: `https://api.openai.com/v1`
+  - Models: `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `o1`, `o1-mini`
+  - Requires: `OPENAI_API_KEY` environment variable
+
+- **Anthropic**: Anthropic API (direct)
+  - Endpoint: `https://api.anthropic.com/v1`
+  - Models: `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022`, `claude-3-opus-20240229`
+  - Requires: `ANTHROPIC_API_KEY` environment variable
+
+- **Google**: Google Gemini API
+  - Endpoint: `https://generativelanguage.googleapis.com/v1beta`
+  - Models: `gemini-2.0-flash-exp`, `gemini-exp-1206`, `gemini-1.5-pro`, `gemini-1.5-flash`
+  - Requires: `GOOGLE_API_KEY` environment variable
+
 Provider selection cascades:
 1. Agent-level `provider` field (highest priority)
 2. Workflow-level `provider` field
@@ -316,6 +337,79 @@ agents:
     provider: codex  # override to use Codex
     model: "gpt-5-codex"
 ```
+
+### LLM Task Execution
+
+For direct API-based LLM calls without CLI subprocesses, use the `llm` field in tasks:
+
+```yaml
+tasks:
+  code_analysis:
+    description: "Analyze code using Ollama"
+    llm:
+      provider: ollama
+      model: "llama3.3"
+      system_prompt: "You are a code analysis expert"
+      prompt: "Analyze this code: ${code}"
+      temperature: 0.7
+      max_tokens: 500
+    outputs:
+      analysis:
+        source:
+          type: task_output
+          task: "code_analysis"
+
+  openai_review:
+    description: "Review code with OpenAI"
+    llm:
+      provider: openai
+      model: "gpt-4o"
+      api_key: "${secret.openai_key}"
+      prompt: "Review this code for issues"
+      temperature: 0.3
+      max_tokens: 1000
+      timeout_secs: 30
+
+  anthropic_refactor:
+    description: "Refactor with Claude"
+    llm:
+      provider: anthropic
+      model: "claude-3-5-sonnet-20241022"
+      api_key: "${secret.anthropic_key}"
+      prompt: "Refactor this code"
+      temperature: 0.5
+      max_tokens: 1500
+      top_p: 0.9
+      top_k: 50
+
+  google_docs:
+    description: "Generate docs with Gemini"
+    llm:
+      provider: google
+      model: "gemini-2.0-flash-exp"
+      api_key: "${secret.google_key}"
+      prompt: "Generate documentation"
+      temperature: 0.4
+      max_tokens: 2000
+```
+
+**LLM Task Parameters:**
+- `provider`: LLM provider (ollama, openai, anthropic, google)
+- `model`: Model name
+- `prompt`: User prompt/query (supports variable interpolation)
+- `system_prompt`: System prompt (optional)
+- `endpoint`: API endpoint URL (optional, uses provider default)
+- `api_key`: API key (optional, uses environment variable if not provided)
+- `temperature`: Sampling temperature (0.0-2.0)
+- `max_tokens`: Maximum tokens to generate
+- `top_p`: Nucleus sampling
+- `top_k`: Top-k sampling
+- `stop`: Stop sequences
+- `timeout_secs`: Request timeout
+- `extra_params`: Provider-specific parameters
+- `stream`: Enable streaming (default: false)
+
+See `examples/llm_workflow.yaml` for comprehensive examples.
 
 ## Key Implementation Patterns
 

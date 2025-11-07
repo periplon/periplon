@@ -75,6 +75,7 @@ mod workflow_api_tests {
                     command: None,
                     http: None,
                     mcp_tool: None,
+                    llm: None,
                     uses_workflow: None,
                     on_complete: None,
                     definition_of_done: None,

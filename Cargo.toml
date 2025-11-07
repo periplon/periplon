@@ -1,6 +1,6 @@
 [package]
 name = "periplon"
-version = "0.2.0"
+version = "0.2.2"
 edition = "2021"
 authors = ["Periplon Contributors"]
 description = "Rust SDK for building multi-agent AI workflows and automation"

@@ -47,7 +47,10 @@ pub enum PromptType {
 impl SubprocessCLITransport {
     pub fn new(prompt: PromptType, options: AgentOptions) -> Self {
         let provider = options.provider.as_ref().unwrap_or(&Provider::Claude);
-        let cli_name = provider.cli_binary_name();
+        let cli_name = provider.cli_binary_name().expect(
+            "SubprocessCLITransport only supports CLI-based providers (Claude, Codex). \
+             For API-based providers (Ollama, OpenAI, Anthropic, Google), use LLM task execution instead."
+        );
 
         let cli_path = options.cli_path.clone().unwrap_or_else(|| {
             Self::find_cli(cli_name).unwrap_or_else(|e| {
@@ -64,6 +67,7 @@ impl SubprocessCLITransport {
                         eprintln!("  1. Ensure the Codex CLI is installed");
                         eprintln!("  2. Check if 'codex' is in your PATH or set as an alias");
                     }
+                    _ => {} // Other providers don't use CLI
                 }
                 eprintln!("  3. Specify cli_path explicitly in AgentOptions");
                 eprintln!("\nSearched locations:");
@@ -413,14 +417,17 @@ impl SubprocessCLITransport {
             let (min_version, min_parts) = match provider {
                 Provider::Claude => (MINIMUM_CLI_VERSION, vec![2, 0, 0]),
                 Provider::Codex => (MINIMUM_CODEX_VERSION, vec![1, 0, 0]),
+                _ => {
+                    // API-based providers don't have CLI versions to check
+                    return Ok(());
+                }
             };
 
             if parts < min_parts {
+                let cli_name = provider.cli_binary_name().unwrap_or("unknown");
                 eprintln!(
                     "Warning: {} CLI version {} is unsupported. Minimum required: {}",
-                    provider.cli_binary_name(),
-                    version,
-                    min_version
+                    cli_name, version, min_version
                 );
             }
         }
