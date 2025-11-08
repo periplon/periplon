@@ -158,26 +158,30 @@ impl DSLExecutor {
 
             // Pattern for {{task.name.output}}
             if let Ok(re) = Regex::new(r"\{\{task\.([a-zA-Z0-9_-]+)\.output\}\}") {
-                result = re.replace_all(&result, |caps: &regex::Captures| {
-                    let task_name = &caps[1];
-                    if let Some(task_output) = state.get_task_output(task_name) {
-                        task_output.content.clone()
-                    } else {
-                        caps[0].to_string() // Keep original if not found
-                    }
-                }).to_string();
+                result = re
+                    .replace_all(&result, |caps: &regex::Captures| {
+                        let task_name = &caps[1];
+                        if let Some(task_output) = state.get_task_output(task_name) {
+                            task_output.content.clone()
+                        } else {
+                            caps[0].to_string() // Keep original if not found
+                        }
+                    })
+                    .to_string();
             }
 
             // Pattern for ${task.name.output}
             if let Ok(re) = Regex::new(r"\$\{task\.([a-zA-Z0-9_-]+)\.output\}") {
-                result = re.replace_all(&result, |caps: &regex::Captures| {
-                    let task_name = &caps[1];
-                    if let Some(task_output) = state.get_task_output(task_name) {
-                        task_output.content.clone()
-                    } else {
-                        caps[0].to_string() // Keep original if not found
-                    }
-                }).to_string();
+                result = re
+                    .replace_all(&result, |caps: &regex::Captures| {
+                        let task_name = &caps[1];
+                        if let Some(task_output) = state.get_task_output(task_name) {
+                            task_output.content.clone()
+                        } else {
+                            caps[0].to_string() // Keep original if not found
+                        }
+                    })
+                    .to_string();
             }
         }
 
@@ -1184,8 +1188,8 @@ async fn execute_task_static(
                         workflow_state.record_task_result(&task_id, output);
 
                         // Store task output with metadata for reference by other tasks
-                        use crate::dsl::state::{TaskOutput, OutputType};
                         use crate::dsl::schema::TruncationStrategy;
+                        use crate::dsl::state::{OutputType, TaskOutput};
                         let task_output_obj = TaskOutput::new(
                             task_id.clone(),
                             OutputType::Combined,
@@ -1199,7 +1203,9 @@ async fn execute_task_static(
                 }
 
                 // Write output to file if output directive is present
-                if let (Some(ref output_content), Some(ref output_path)) = (&task_output, &spec.output) {
+                if let (Some(ref output_content), Some(ref output_path)) =
+                    (&task_output, &spec.output)
+                {
                     // Interpolate output path (supports workflow variables, task inputs, and task outputs)
                     let interpolated_path = {
                         let state_guard = state.lock().await;
@@ -1607,14 +1613,17 @@ fn write_task_output_to_file(path: &str, content: &str) -> Result<()> {
     // Create parent directories if they don't exist
     if let Some(parent) = Path::new(path).parent() {
         fs::create_dir_all(parent).map_err(|e| {
-            Error::InvalidInput(format!("Failed to create directory '{}': {}", parent.display(), e))
+            Error::InvalidInput(format!(
+                "Failed to create directory '{}': {}",
+                parent.display(),
+                e
+            ))
         })?;
     }
 
     // Write content to file
-    fs::write(path, content).map_err(|e| {
-        Error::InvalidInput(format!("Failed to write to file '{}': {}", path, e))
-    })?;
+    fs::write(path, content)
+        .map_err(|e| Error::InvalidInput(format!("Failed to write to file '{}': {}", path, e)))?;
 
     Ok(())
 }
@@ -1641,17 +1650,32 @@ async fn execute_llm_task(
 
     // Substitute variables in system prompt if present
     let system_prompt = llm_spec.system_prompt.as_ref().map(|sp| {
-        DSLExecutor::substitute_variables_with_state(sp, workflow_inputs, task_inputs, workflow_state)
+        DSLExecutor::substitute_variables_with_state(
+            sp,
+            workflow_inputs,
+            task_inputs,
+            workflow_state,
+        )
     });
 
     // Substitute variables in endpoint if present
     let endpoint = llm_spec.endpoint.as_ref().map(|ep| {
-        DSLExecutor::substitute_variables_with_state(ep, workflow_inputs, task_inputs, workflow_state)
+        DSLExecutor::substitute_variables_with_state(
+            ep,
+            workflow_inputs,
+            task_inputs,
+            workflow_state,
+        )
     });
 
     // Substitute variables in API key if present
     let api_key = llm_spec.api_key.as_ref().map(|key| {
-        DSLExecutor::substitute_variables_with_state(key, workflow_inputs, task_inputs, workflow_state)
+        DSLExecutor::substitute_variables_with_state(
+            key,
+            workflow_inputs,
+            task_inputs,
+            workflow_state,
+        )
     });
 
     if attempt > 0 {

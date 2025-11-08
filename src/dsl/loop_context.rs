@@ -473,18 +473,9 @@ mod tests {
         let context = LoopContext::new(7);
 
         // All iteration syntaxes should produce the same result
-        assert_eq!(
-            context.substitute_variables("{{iteration}}"),
-            "7"
-        );
-        assert_eq!(
-            context.substitute_variables("{{task.iteration}}"),
-            "7"
-        );
-        assert_eq!(
-            context.substitute_variables("${task.iteration}"),
-            "7"
-        );
+        assert_eq!(context.substitute_variables("{{iteration}}"), "7");
+        assert_eq!(context.substitute_variables("{{task.iteration}}"), "7");
+        assert_eq!(context.substitute_variables("${task.iteration}"), "7");
 
         // Mixed in a sentence
         let text = "Iteration {{iteration}} is same as {{task.iteration}} and ${task.iteration}";
@@ -494,30 +485,32 @@ mod tests {
 
     #[test]
     fn test_substitute_llm_spec() {
-        use crate::dsl::schema::LlmSpec;
         use crate::domain::Provider;
+        use crate::dsl::schema::LlmSpec;
 
         let mut context = LoopContext::new(2);
         context.set_variable("topic".to_string(), Value::String("AI".to_string()));
         context.set_variable("count".to_string(), Value::Number(5.into()));
 
-        let mut task = TaskSpec::default();
-        task.llm = Some(LlmSpec {
-            provider: Provider::Ollama,
-            model: "llama3.3".to_string(),
-            prompt: "Write about {{topic}} - iteration {{iteration}}".to_string(),
-            system_prompt: Some("You are assistant number {{count}}".to_string()),
-            endpoint: None,
-            api_key: None,
-            temperature: None,
-            max_tokens: None,
-            top_p: None,
-            top_k: None,
-            stop: vec![],
-            timeout_secs: None,
-            extra_params: Default::default(),
-            stream: false,
-        });
+        let task = TaskSpec {
+            llm: Some(LlmSpec {
+                provider: Provider::Ollama,
+                model: "llama3.3".to_string(),
+                prompt: "Write about {{topic}} - iteration {{iteration}}".to_string(),
+                system_prompt: Some("You are assistant number {{count}}".to_string()),
+                endpoint: None,
+                api_key: None,
+                temperature: None,
+                max_tokens: None,
+                top_p: None,
+                top_k: None,
+                stop: vec![],
+                timeout_secs: None,
+                extra_params: Default::default(),
+                stream: false,
+            }),
+            ..Default::default()
+        };
 
         let substituted = substitute_task_variables(&task, &context);
         let llm = substituted.llm.as_ref().unwrap();
@@ -537,20 +530,25 @@ mod tests {
         let mut context = LoopContext::new(1);
         context.set_variable("file".to_string(), Value::String("data.txt".to_string()));
 
-        let mut task = TaskSpec::default();
-        task.command = Some(CommandSpec {
-            executable: "process".to_string(),
-            args: vec!["{{file}}".to_string(), "iteration_{{iteration}}".to_string()],
-            working_dir: None,
-            env: {
-                let mut env = HashMap::new();
-                env.insert("FILE".to_string(), "{{file}}".to_string());
-                env
-            },
-            timeout_secs: None,
-            capture_stdout: true,
-            capture_stderr: true,
-        });
+        let task = TaskSpec {
+            command: Some(CommandSpec {
+                executable: "process".to_string(),
+                args: vec![
+                    "{{file}}".to_string(),
+                    "iteration_{{iteration}}".to_string(),
+                ],
+                working_dir: None,
+                env: {
+                    let mut env = HashMap::new();
+                    env.insert("FILE".to_string(), "{{file}}".to_string());
+                    env
+                },
+                timeout_secs: None,
+                capture_stdout: true,
+                capture_stderr: true,
+            }),
+            ..Default::default()
+        };
 
         let substituted = substitute_task_variables(&task, &context);
         let command = substituted.command.as_ref().unwrap();
@@ -567,24 +565,23 @@ mod tests {
         let mut context = LoopContext::new(0);
         context.set_variable("id".to_string(), Value::Number(123.into()));
 
-        let mut task = TaskSpec::default();
-        task.http = Some(HttpSpec {
-            method: HttpMethod::Post,
-            url: "https://api.example.com/items/{{id}}".to_string(),
-            headers: {
-                let mut headers = HashMap::new();
-                headers.insert(
-                    "X-Item-ID".to_string(),
-                    "{{id}}".to_string(),
-                );
-                headers
-            },
-            body: Some(r#"{"item_id": "{{id}}"}"#.to_string()),
-            auth: None,
-            timeout_secs: None,
-            follow_redirects: true,
-            verify_tls: true,
-        });
+        let task = TaskSpec {
+            http: Some(HttpSpec {
+                method: HttpMethod::Post,
+                url: "https://api.example.com/items/{{id}}".to_string(),
+                headers: {
+                    let mut headers = HashMap::new();
+                    headers.insert("X-Item-ID".to_string(), "{{id}}".to_string());
+                    headers
+                },
+                body: Some(r#"{"item_id": "{{id}}"}"#.to_string()),
+                auth: None,
+                timeout_secs: None,
+                follow_redirects: true,
+                verify_tls: true,
+            }),
+            ..Default::default()
+        };
 
         let substituted = substitute_task_variables(&task, &context);
         let http = substituted.http.as_ref().unwrap();
