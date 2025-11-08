@@ -98,6 +98,8 @@ impl DSLExecutor {
     /// Supports:
     /// - ${workflow.variable_name} - Replace with workflow input value
     /// - ${task.variable_name} - Replace with task input value
+    /// - {{workflow.variable_name}} - Replace with workflow input value (curly syntax)
+    /// - {{task.variable_name}} - Replace with task input value (curly syntax)
     fn substitute_variables(
         text: &str,
         workflow_inputs: &HashMap<String, serde_json::Value>,
@@ -107,26 +109,76 @@ impl DSLExecutor {
 
         // Replace ${workflow.variable} with workflow input values
         for (key, value) in workflow_inputs {
-            let placeholder = format!("${{workflow.{}}}", key);
+            let placeholder_dollar = format!("${{workflow.{}}}", key);
+            let placeholder_curly = format!("{{{{workflow.{}}}}}", key);
             let value_str = match value {
                 serde_json::Value::String(s) => s.clone(),
                 serde_json::Value::Number(n) => n.to_string(),
                 serde_json::Value::Bool(b) => b.to_string(),
                 _ => serde_json::to_string(value).unwrap_or_default(),
             };
-            result = result.replace(&placeholder, &value_str);
+            result = result.replace(&placeholder_dollar, &value_str);
+            result = result.replace(&placeholder_curly, &value_str);
         }
 
         // Replace ${task.variable} with task input values
         for (key, value) in task_inputs {
-            let placeholder = format!("${{task.{}}}", key);
+            let placeholder_dollar = format!("${{task.{}}}", key);
+            let placeholder_curly = format!("{{{{task.{}}}}}", key);
             let value_str = match value {
                 serde_json::Value::String(s) => s.clone(),
                 serde_json::Value::Number(n) => n.to_string(),
                 serde_json::Value::Bool(b) => b.to_string(),
                 _ => serde_json::to_string(value).unwrap_or_default(),
             };
-            result = result.replace(&placeholder, &value_str);
+            result = result.replace(&placeholder_dollar, &value_str);
+            result = result.replace(&placeholder_curly, &value_str);
+        }
+
+        result
+    }
+
+    /// Substitute variables including task outputs
+    ///
+    /// Supports all variable types including:
+    /// - {{task.task_name.output}} - Replace with task output
+    /// - ${task.task_name.output} - Replace with task output (dollar syntax)
+    fn substitute_variables_with_state(
+        text: &str,
+        workflow_inputs: &HashMap<String, serde_json::Value>,
+        task_inputs: &HashMap<String, serde_json::Value>,
+        workflow_state: Option<&crate::dsl::state::WorkflowState>,
+    ) -> String {
+        let mut result = Self::substitute_variables(text, workflow_inputs, task_inputs);
+
+        // Replace task output references if state is available
+        if let Some(state) = workflow_state {
+            // Use regex to find all {{task.task_name.output}} and ${task.task_name.output} patterns
+            use regex::Regex;
+
+            // Pattern for {{task.name.output}}
+            if let Ok(re) = Regex::new(r"\{\{task\.([a-zA-Z0-9_-]+)\.output\}\}") {
+                result = re.replace_all(&result, |caps: &regex::Captures| {
+                    let task_name = &caps[1];
+                    if let Some(task_output) = state.get_task_output(task_name) {
+                        task_output.content.clone()
+                    } else {
+                        caps[0].to_string() // Keep original if not found
+                    }
+                }).to_string();
+            }
+
+            // Pattern for ${task.name.output}
+            if let Ok(re) = Regex::new(r"\$\{task\.([a-zA-Z0-9_-]+)\.output\}") {
+                result = re.replace_all(&result, |caps: &regex::Captures| {
+                    let task_name = &caps[1];
+                    if let Some(task_output) = state.get_task_output(task_name) {
+                        task_output.content.clone()
+                    } else {
+                        caps[0].to_string() // Keep original if not found
+                    }
+                }).to_string();
+            }
         }
 
         result
@@ -1130,6 +1182,43 @@ async fn execute_task_static(
                     // Record task result for workflow context
                     if let Some(ref output) = task_output {
                         workflow_state.record_task_result(&task_id, output);
+
+                        // Store task output with metadata for reference by other tasks
+                        use crate::dsl::state::{TaskOutput, OutputType};
+                        use crate::dsl::schema::TruncationStrategy;
+                        let task_output_obj = TaskOutput::new(
+                            task_id.clone(),
+                            OutputType::Combined,
+                            output.clone(),
+                            output.len(),
+                            false, // not truncated
+                            TruncationStrategy::Tail,
+                        );
+                        workflow_state.store_task_output(task_output_obj);
+                    }
+                }
+
+                // Write output to file if output directive is present
+                if let (Some(ref output_content), Some(ref output_path)) = (&task_output, &spec.output) {
+                    // Interpolate output path (supports workflow variables, task inputs, and task outputs)
+                    let interpolated_path = {
+                        let state_guard = state.lock().await;
+                        let state_ref = state_guard.as_ref();
+                        DSLExecutor::substitute_variables_with_state(
+                            output_path,
+                            &workflow_inputs,
+                            &HashMap::new(),
+                            state_ref,
+                        )
+                    };
+
+                    if let Err(e) = write_task_output_to_file(&interpolated_path, output_content) {
+                        eprintln!(
+                            "Warning: Failed to write task output to '{}': {}",
+                            interpolated_path, e
+                        );
+                    } else if !json_output {
+                        println!("✓ Output written to: {}", interpolated_path);
                     }
                 }
 
@@ -1510,37 +1599,60 @@ async fn execute_command_task(
     })
 }
 
+/// Write task output to a file
+fn write_task_output_to_file(path: &str, content: &str) -> Result<()> {
+    use std::fs;
+    use std::path::Path;
+
+    // Create parent directories if they don't exist
+    if let Some(parent) = Path::new(path).parent() {
+        fs::create_dir_all(parent).map_err(|e| {
+            Error::InvalidInput(format!("Failed to create directory '{}': {}", parent.display(), e))
+        })?;
+    }
+
+    // Write content to file
+    fs::write(path, content).map_err(|e| {
+        Error::InvalidInput(format!("Failed to write to file '{}': {}", path, e))
+    })?;
+
+    Ok(())
+}
+
 /// Execute an LLM task (direct API call)
 async fn execute_llm_task(
     _task_id: &str,
     llm_spec: &crate::dsl::schema::LlmSpec,
     workflow_inputs: &HashMap<String, serde_json::Value>,
     task_inputs: &HashMap<String, serde_json::Value>,
+    workflow_state: Option<&crate::dsl::state::WorkflowState>,
     attempt: u32,
 ) -> Result<Option<String>> {
     use crate::adapters::secondary::HttpLlmClient;
     use crate::ports::secondary::{LlmClient, LlmRequest};
 
-    // Substitute variables in prompt
-    let prompt = DSLExecutor::substitute_variables(&llm_spec.prompt, workflow_inputs, task_inputs);
+    // Substitute variables in prompt (including task outputs)
+    let prompt = DSLExecutor::substitute_variables_with_state(
+        &llm_spec.prompt,
+        workflow_inputs,
+        task_inputs,
+        workflow_state,
+    );
 
     // Substitute variables in system prompt if present
-    let system_prompt = llm_spec
-        .system_prompt
-        .as_ref()
-        .map(|sp| DSLExecutor::substitute_variables(sp, workflow_inputs, task_inputs));
+    let system_prompt = llm_spec.system_prompt.as_ref().map(|sp| {
+        DSLExecutor::substitute_variables_with_state(sp, workflow_inputs, task_inputs, workflow_state)
+    });
 
     // Substitute variables in endpoint if present
-    let endpoint = llm_spec
-        .endpoint
-        .as_ref()
-        .map(|ep| DSLExecutor::substitute_variables(ep, workflow_inputs, task_inputs));
+    let endpoint = llm_spec.endpoint.as_ref().map(|ep| {
+        DSLExecutor::substitute_variables_with_state(ep, workflow_inputs, task_inputs, workflow_state)
+    });
 
     // Substitute variables in API key if present
-    let api_key = llm_spec
-        .api_key
-        .as_ref()
-        .map(|key| DSLExecutor::substitute_variables(key, workflow_inputs, task_inputs));
+    let api_key = llm_spec.api_key.as_ref().map(|key| {
+        DSLExecutor::substitute_variables_with_state(key, workflow_inputs, task_inputs, workflow_state)
+    });
 
     if attempt > 0 {
         println!(
@@ -1643,8 +1755,21 @@ async fn execute_task_attempt(
 
     // Check if this is an LLM task
     if let Some(llm_spec) = &_spec.llm {
-        // Execute LLM task
-        return execute_llm_task(_task_id, llm_spec, workflow_inputs, &_spec.inputs, attempt).await;
+        // Execute LLM task with state for task output references
+        let state_ref = {
+            let state_guard = workflow_state.lock().await;
+            state_guard.as_ref().map(|s| s as *const _)
+        };
+        let state_opt = unsafe { state_ref.map(|ptr| &*ptr) };
+        return execute_llm_task(
+            _task_id,
+            llm_spec,
+            workflow_inputs,
+            &_spec.inputs,
+            state_opt,
+            attempt,
+        )
+        .await;
     }
 
     // Default to agent-based execution
