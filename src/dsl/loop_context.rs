@@ -56,29 +56,36 @@ impl LoopContext {
     /// Supports:
     /// - {{variable_name}} - Replace with variable value
     /// - {{iteration}} - Replace with current iteration number
-    /// - ${task.variable_name} - Replace with variable value (same as {{variable_name}})
-    /// - ${task.iteration} - Replace with current iteration number
+    /// - {{task.variable_name}} - Explicit task scope with curly braces
+    /// - {{task.iteration}} - Explicit task scope for iteration
+    /// - ${task.variable_name} - Explicit task scope with dollar sign (backward compat)
+    /// - ${task.iteration} - Explicit task scope for iteration with dollar sign
     pub fn substitute_variables(&self, text: &str) -> String {
         let mut result = text.to_string();
 
-        // Replace {{iteration}} with current iteration
+        // Replace {{iteration}} and {{task.iteration}} with current iteration
         result = result.replace("{{iteration}}", &self.iteration.to_string());
+        result = result.replace("{{task.iteration}}", &self.iteration.to_string());
 
-        // Also support ${task.iteration} syntax
+        // Also support ${task.iteration} syntax (backward compatibility)
         result = result.replace("${task.iteration}", &self.iteration.to_string());
 
         // Replace {{variable}} with variable values
         for (key, value) in &self.variables {
-            let placeholder_curly = format!("{{{{{}}}}}", key);
-            let placeholder_dollar = format!("${{task.{}}}", key);
+            let placeholder_simple = format!("{{{{{}}}}}", key);
+            let placeholder_task_curly = format!("{{{{task.{}}}}}", key);
+            let placeholder_task_dollar = format!("${{task.{}}}", key);
+
             let value_str = match value {
                 Value::String(s) => s.clone(),
                 Value::Number(n) => n.to_string(),
                 Value::Bool(b) => b.to_string(),
                 _ => serde_json::to_string(value).unwrap_or_default(),
             };
-            result = result.replace(&placeholder_curly, &value_str);
-            result = result.replace(&placeholder_dollar, &value_str);
+
+            result = result.replace(&placeholder_simple, &value_str);
+            result = result.replace(&placeholder_task_curly, &value_str);
+            result = result.replace(&placeholder_task_dollar, &value_str);
         }
 
         // Check parent context for nested loops
@@ -132,6 +139,62 @@ pub fn substitute_task_variables(task: &TaskSpec, context: &LoopContext) -> Task
             .env
             .iter()
             .map(|(k, v)| (k.clone(), context.substitute_variables(v)))
+            .collect();
+    }
+
+    // Substitute in LLM spec
+    if let Some(llm) = &mut modified_task.llm {
+        llm.prompt = context.substitute_variables(&llm.prompt);
+        if let Some(system_prompt) = &llm.system_prompt {
+            llm.system_prompt = Some(context.substitute_variables(system_prompt));
+        }
+        if let Some(endpoint) = &llm.endpoint {
+            llm.endpoint = Some(context.substitute_variables(endpoint));
+        }
+        if let Some(api_key) = &llm.api_key {
+            llm.api_key = Some(context.substitute_variables(api_key));
+        }
+    }
+
+    // Substitute in command spec
+    if let Some(command) = &mut modified_task.command {
+        command.executable = context.substitute_variables(&command.executable);
+        command.args = command
+            .args
+            .iter()
+            .map(|arg| context.substitute_variables(arg))
+            .collect();
+        if let Some(working_dir) = &command.working_dir {
+            command.working_dir = Some(context.substitute_variables(working_dir));
+        }
+        command.env = command
+            .env
+            .iter()
+            .map(|(k, v)| (k.clone(), context.substitute_variables(v)))
+            .collect();
+    }
+
+    // Substitute in HTTP spec
+    if let Some(http) = &mut modified_task.http {
+        http.url = context.substitute_variables(&http.url);
+        if let Some(body) = &http.body {
+            http.body = Some(context.substitute_variables(body));
+        }
+        http.headers = http
+            .headers
+            .iter()
+            .map(|(k, v)| (k.clone(), context.substitute_variables(v)))
+            .collect();
+    }
+
+    // Substitute in MCP tool spec
+    if let Some(mcp_tool) = &mut modified_task.mcp_tool {
+        mcp_tool.server = context.substitute_variables(&mcp_tool.server);
+        mcp_tool.tool = context.substitute_variables(&mcp_tool.tool);
+        mcp_tool.parameters = mcp_tool
+            .parameters
+            .iter()
+            .map(|(k, v)| (k.clone(), substitute_json_value(v, context)))
             .collect();
     }
 
@@ -375,7 +438,7 @@ mod tests {
         let mut context = LoopContext::new(3);
         context.set_variable("name".to_string(), Value::String("test".to_string()));
 
-        // Both syntaxes should work
+        // All syntaxes should work
         let text1 = "Name: {{name}}";
         let result1 = context.substitute_variables(text1);
         assert_eq!(result1, "Name: test");
@@ -384,8 +447,150 @@ mod tests {
         let result2 = context.substitute_variables(text2);
         assert_eq!(result2, "Name: test");
 
-        let text3 = "Name: {{name}} or ${task.name}";
+        let text3 = "Name: {{task.name}}";
         let result3 = context.substitute_variables(text3);
-        assert_eq!(result3, "Name: test or test");
+        assert_eq!(result3, "Name: test");
+
+        let text4 = "Name: {{name}} or ${task.name} or {{task.name}}";
+        let result4 = context.substitute_variables(text4);
+        assert_eq!(result4, "Name: test or test or test");
+    }
+
+    #[test]
+    fn test_explicit_scope_curly_syntax() {
+        let mut context = LoopContext::new(5);
+        context.set_variable("count".to_string(), Value::Number(42.into()));
+        context.set_variable("name".to_string(), Value::String("example".to_string()));
+
+        // Test {{task.variable}} syntax
+        let text = "Count: {{task.count}}, Name: {{task.name}}, Iter: {{task.iteration}}";
+        let result = context.substitute_variables(text);
+        assert_eq!(result, "Count: 42, Name: example, Iter: 5");
+    }
+
+    #[test]
+    fn test_all_iteration_syntaxes() {
+        let context = LoopContext::new(7);
+
+        // All iteration syntaxes should produce the same result
+        assert_eq!(
+            context.substitute_variables("{{iteration}}"),
+            "7"
+        );
+        assert_eq!(
+            context.substitute_variables("{{task.iteration}}"),
+            "7"
+        );
+        assert_eq!(
+            context.substitute_variables("${task.iteration}"),
+            "7"
+        );
+
+        // Mixed in a sentence
+        let text = "Iteration {{iteration}} is same as {{task.iteration}} and ${task.iteration}";
+        let result = context.substitute_variables(text);
+        assert_eq!(result, "Iteration 7 is same as 7 and 7");
+    }
+
+    #[test]
+    fn test_substitute_llm_spec() {
+        use crate::dsl::schema::LlmSpec;
+        use crate::domain::Provider;
+
+        let mut context = LoopContext::new(2);
+        context.set_variable("topic".to_string(), Value::String("AI".to_string()));
+        context.set_variable("count".to_string(), Value::Number(5.into()));
+
+        let mut task = TaskSpec::default();
+        task.llm = Some(LlmSpec {
+            provider: Provider::Ollama,
+            model: "llama3.3".to_string(),
+            prompt: "Write about {{topic}} - iteration {{iteration}}".to_string(),
+            system_prompt: Some("You are assistant number {{count}}".to_string()),
+            endpoint: None,
+            api_key: None,
+            temperature: None,
+            max_tokens: None,
+            top_p: None,
+            top_k: None,
+            stop: vec![],
+            timeout_secs: None,
+            extra_params: Default::default(),
+            stream: false,
+        });
+
+        let substituted = substitute_task_variables(&task, &context);
+        let llm = substituted.llm.as_ref().unwrap();
+
+        assert_eq!(llm.prompt, "Write about AI - iteration 2");
+        assert_eq!(
+            llm.system_prompt,
+            Some("You are assistant number 5".to_string())
+        );
+    }
+
+    #[test]
+    fn test_substitute_command_spec() {
+        use crate::dsl::schema::CommandSpec;
+        use std::collections::HashMap;
+
+        let mut context = LoopContext::new(1);
+        context.set_variable("file".to_string(), Value::String("data.txt".to_string()));
+
+        let mut task = TaskSpec::default();
+        task.command = Some(CommandSpec {
+            executable: "process".to_string(),
+            args: vec!["{{file}}".to_string(), "iteration_{{iteration}}".to_string()],
+            working_dir: None,
+            env: {
+                let mut env = HashMap::new();
+                env.insert("FILE".to_string(), "{{file}}".to_string());
+                env
+            },
+            timeout_secs: None,
+            capture_stdout: true,
+            capture_stderr: true,
+        });
+
+        let substituted = substitute_task_variables(&task, &context);
+        let command = substituted.command.as_ref().unwrap();
+
+        assert_eq!(command.args, vec!["data.txt", "iteration_1"]);
+        assert_eq!(command.env.get("FILE"), Some(&"data.txt".to_string()));
+    }
+
+    #[test]
+    fn test_substitute_http_spec() {
+        use crate::dsl::schema::{HttpMethod, HttpSpec};
+        use std::collections::HashMap;
+
+        let mut context = LoopContext::new(0);
+        context.set_variable("id".to_string(), Value::Number(123.into()));
+
+        let mut task = TaskSpec::default();
+        task.http = Some(HttpSpec {
+            method: HttpMethod::Post,
+            url: "https://api.example.com/items/{{id}}".to_string(),
+            headers: {
+                let mut headers = HashMap::new();
+                headers.insert(
+                    "X-Item-ID".to_string(),
+                    "{{id}}".to_string(),
+                );
+                headers
+            },
+            body: Some(r#"{"item_id": "{{id}}"}"#.to_string()),
+            auth: None,
+            timeout_secs: None,
+            follow_redirects: true,
+            verify_tls: true,
+        });
+
+        let substituted = substitute_task_variables(&task, &context);
+        let http = substituted.http.as_ref().unwrap();
+
+        assert_eq!(http.url, "https://api.example.com/items/123");
+        assert_eq!(http.headers.get("X-Item-ID"), Some(&"123".to_string()));
+        assert_eq!(http.body, Some(r#"{"item_id": "123"}"#.to_string()));
     }
 }
