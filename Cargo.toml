@@ -44,6 +44,7 @@ semver = "1.0"  # Semantic versioning
 petgraph = "0.6"  # Dependency graphs
 log = "0.4"  # Logging facade
 env_logger = "0.11"  # Environment-based logger
+rustyline = "14.0"  # Line editing with history and completion
 
 # Server mode dependencies (optional via features)
 axum = { version = "0.7", features = ["ws", "multipart"], optional = true }
@@ -169,6 +170,23 @@ path = "examples/sdk/http_collection_demo.rs"
 [[example]]
 name = "lockfile_demo"
 path = "examples/sdk/lockfile_demo.rs"
+
+[[example]]
+name = "debug_workflow_example"
+path = "examples/sdk/debug_workflow_example.rs"
+
+[[example]]
+name = "repl_debug_example"
+path = "examples/sdk/repl_debug_example.rs"
+
+[[example]]
+name = "tui_debug_example"
+path = "examples/sdk/tui_debug_example.rs"
+required-features = ["tui"]
+
+[[example]]
+name = "ai_debug_example"
+path = "examples/sdk/ai_debug_example.rs"
 
 [[bin]]
 name = "periplon-executor"

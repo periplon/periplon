@@ -35,6 +35,10 @@
 //! ```
 
 pub mod context_injection;
+pub mod debug_ai;
+#[cfg(feature = "tui")]
+pub mod debug_tui;
+pub mod debugger;
 pub mod executor;
 pub mod fetcher;
 pub mod hooks;
@@ -45,6 +49,7 @@ pub mod nl_generator;
 pub mod notifications;
 pub mod parser;
 pub mod predefined_tasks;
+pub mod repl;
 pub mod schema;
 pub mod state;
 pub mod task_graph;
@@ -91,3 +96,27 @@ pub use variables::{extract_variable_references, Scope, VariableContext};
 // Stdio and Context Management
 pub use context_injection::{build_smart_context, calculate_relevance};
 pub use truncation::{create_task_output, truncate_output};
+
+// Debugger
+pub use debugger::{
+    BreakCondition, BreakpointInfo, BreakpointManager, BreakpointType, CompensationStrategy,
+    DebugMode, DebuggerState, DebuggerStatus, DirectoryTree, ExecutionFrame, ExecutionHistory,
+    ExecutionMode as DebugExecutionMode, ExecutionPointer, ExecutionSnapshot, Inspector,
+    SideEffect, SideEffectJournal, SideEffectType, StepMode, TaskInspection,
+    VariableScope as DebugVariableScope, VariableSnapshot, WatchCondition,
+};
+
+// REPL
+pub use repl::{
+    parse_command, BreakTarget, CommandCategory, InspectTarget, ReplCommand, ReplSession,
+};
+
+// Debug TUI
+#[cfg(feature = "tui")]
+pub use debug_tui::{DebugTUI, Event as TuiEvent, EventHandler as TuiEventHandler};
+
+// Debug AI
+pub use debug_ai::{
+    analyze_error, create_default_config, generate_task, generate_workflow_block, suggest_fix,
+    AiConfig, AiProvider, AiProviderType, AiResponse, DebugAiAssistant,
+};

@@ -11,7 +11,7 @@ use clap::{Parser, Subcommand};
 use colored::*;
 use periplon_sdk::dsl::{
     generate_and_save, generate_template, parse_workflow_file, validate_workflow, DSLExecutor,
-    StatePersistence, DSL_GRAMMAR_VERSION,
+    ReplSession, StatePersistence, DSL_GRAMMAR_VERSION,
 };
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -149,6 +149,10 @@ enum Commands {
         /// Output results in JSON format with syntax coloring
         #[arg(short, long)]
         json: bool,
+
+        /// Start interactive debug REPL instead of executing
+        #[arg(long)]
+        repl: bool,
 
         /// Input variables as key=value pairs (can be specified multiple times)
         /// Example: -i name=John -i age=30 -i config='{"key":"value"}'
@@ -401,6 +405,7 @@ async fn main() {
             verbose,
             dry_run,
             json,
+            repl,
             inputs,
         } => {
             run_workflow(
@@ -411,6 +416,7 @@ async fn main() {
                 verbose,
                 dry_run,
                 json,
+                repl,
                 inputs,
             )
             .await
@@ -504,6 +510,7 @@ async fn run_workflow(
     verbose: bool,
     dry_run: bool,
     json: bool,
+    repl: bool,
     cli_inputs: Vec<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let start_time = Instant::now();
@@ -657,6 +664,21 @@ async fn run_workflow(
     if !json {
         println!("{}", "✓".green().bold());
         println!();
+    }
+
+    // If REPL mode, start interactive debugging session
+    if repl {
+        if !json {
+            println!("{}", "Starting Debug REPL...".bold().cyan());
+            println!();
+            println!("{}", "Type 'help' for available commands".dimmed());
+            println!();
+        }
+
+        // Enable debugger and create REPL session
+        let executor_with_debug = executor.with_debugger();
+        let mut repl = ReplSession::new(executor_with_debug)?;
+        return repl.run().await.map_err(|e| e.into());
     }
 
     // Execute

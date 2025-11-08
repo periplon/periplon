@@ -1,0 +1,40 @@
+name: "Debug Example Workflow"
+version: "1.0.0"
+description: "Simple workflow to demonstrate debugging capabilities"
+
+agents:
+  researcher:
+    description: "Research and analyze information"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - WebSearch
+    permissions:
+      mode: "default"
+
+  writer:
+    description: "Write and format content"
+    model: "claude-sonnet-4-5"
+    tools:
+      - Read
+      - Write
+    permissions:
+      mode: "acceptEdits"
+
+tasks:
+  research:
+    description: "Research the topic of debugging in software development"
+    agent: "researcher"
+
+  analyze:
+    description: "Analyze the research findings and identify key points"
+    agent: "researcher"
+    depends_on:
+      - research
+
+  write:
+    description: "Write a summary of the findings"
+    agent: "writer"
+    depends_on:
+      - analyze
+    output: "./debug_example_output.md"

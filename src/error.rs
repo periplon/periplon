@@ -107,6 +107,9 @@ pub enum Error {
 
     #[error("Update error: {0}")]
     UpdateError(#[from] crate::dsl::predefined_tasks::update::UpdateError),
+
+    #[error("Readline error: {0}")]
+    ReadlineError(#[from] rustyline::error::ReadlineError),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
