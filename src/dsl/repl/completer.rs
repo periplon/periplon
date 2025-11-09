@@ -124,6 +124,9 @@ impl ReplHelper {
             "echo".to_string(),
             "clear".to_string(),
             "history".to_string(),
+            "workflow".to_string(),
+            "save".to_string(),
+            "saveconfig".to_string(),
         ]);
 
         aliases.extend_from_slice(&[
@@ -132,6 +135,9 @@ impl ReplHelper {
             "q".to_string(),    // quit
             "exit".to_string(), // quit
             "cls".to_string(),  // clear
+            "wf".to_string(),   // workflow
+            "tree".to_string(), // workflow
+            "w".to_string(),    // save (write)
         ]);
     }
 

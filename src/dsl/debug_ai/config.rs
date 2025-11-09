@@ -38,7 +38,7 @@ impl Default for AiConfig {
 pub fn create_default_config() -> AiConfig {
     AiConfig {
         provider: AiProviderType::Ollama, // Default to local Ollama
-        model: "llama3.3".to_string(),
+        model: "olmo2:13b".to_string(),
         endpoint: None, // Use provider default
         api_key: None,  // Use environment variable
         temperature: 0.7,
@@ -50,7 +50,7 @@ pub fn create_default_config() -> AiConfig {
 /// Create configuration for specific provider
 pub fn config_for_provider(provider: AiProviderType, model: Option<String>) -> AiConfig {
     let default_model = match provider {
-        AiProviderType::Ollama => "llama3.3",
+        AiProviderType::Ollama => "olmo2:13b",
         AiProviderType::OpenAi => "gpt-4o",
         AiProviderType::Anthropic => "claude-3-5-sonnet-20241022",
         AiProviderType::Google => "gemini-2.0-flash-exp",

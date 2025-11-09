@@ -127,7 +127,7 @@ impl Provider {
         match self {
             Provider::Claude => "claude-sonnet-4-5",
             Provider::Codex => "gpt-5-codex",
-            Provider::Ollama => "llama3.3",
+            Provider::Ollama => "olmo2:13b",
             Provider::OpenAI => "gpt-4o",
             Provider::Anthropic => "claude-3-5-sonnet-20241022",
             Provider::Google => "gemini-2.0-flash-exp",
@@ -257,7 +257,7 @@ mod tests {
     fn test_provider_default_model() {
         assert_eq!(Provider::Claude.default_model(), "claude-sonnet-4-5");
         assert_eq!(Provider::Codex.default_model(), "gpt-5-codex");
-        assert_eq!(Provider::Ollama.default_model(), "llama3.3");
+        assert_eq!(Provider::Ollama.default_model(), "olmo2:13b");
         assert_eq!(Provider::OpenAI.default_model(), "gpt-4o");
         assert_eq!(
             Provider::Anthropic.default_model(),

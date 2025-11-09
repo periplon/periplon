@@ -134,6 +134,15 @@ pub enum ReplCommand {
     /// Show command history
     History,
 
+    /// Print workflow structure
+    PrintWorkflow,
+
+    /// Save workflow to file
+    SaveWorkflow { path: String },
+
+    /// Save REPL configuration
+    SaveConfig { path: Option<String> },
+
     // ========================================================================
     // AI Commands
     // ========================================================================
@@ -233,12 +242,35 @@ impl ReplCommand {
             ReplCommand::Echo { .. } => "echo",
             ReplCommand::Clear => "clear",
             ReplCommand::History => "history",
+            ReplCommand::PrintWorkflow => "workflow",
+            ReplCommand::SaveWorkflow { .. } => "save",
+            ReplCommand::SaveConfig { .. } => "saveconfig",
             ReplCommand::AiGenerate { .. } => "ai-generate",
             ReplCommand::AiFix { .. } => "ai-fix",
             ReplCommand::AiAnalyze { .. } => "ai-analyze",
             ReplCommand::AiExplain { .. } => "ai-explain",
             ReplCommand::AiProvider { .. } => "ai-provider",
             ReplCommand::AiConfig => "ai-config",
+        }
+    }
+
+    /// Get keyboard shortcut for command (if any)
+    pub fn shortcut(&self) -> Option<&str> {
+        match self {
+            ReplCommand::Continue => Some("c"),
+            ReplCommand::Step => Some("s"),
+            ReplCommand::StepInto => Some("si"),
+            ReplCommand::StepOver => Some("n"),
+            ReplCommand::StepOut => Some("fin"),
+            ReplCommand::Break { .. } => Some("b"),
+            ReplCommand::Delete { .. } => Some("d"),
+            ReplCommand::Inspect { .. } => Some("i"),
+            ReplCommand::Print { .. } => Some("p"),
+            ReplCommand::Stack => Some("bt"),
+            ReplCommand::Help { .. } => Some("h, ?"),
+            ReplCommand::Quit => Some("q"),
+            ReplCommand::Clear => Some("cls"),
+            _ => None,
         }
     }
 
@@ -280,6 +312,9 @@ impl ReplCommand {
             ReplCommand::Echo { .. } => "Echo text",
             ReplCommand::Clear => "Clear screen",
             ReplCommand::History => "Show command history",
+            ReplCommand::PrintWorkflow => "Print hierarchical workflow structure",
+            ReplCommand::SaveWorkflow { .. } => "Save workflow to YAML file",
+            ReplCommand::SaveConfig { .. } => "Save REPL configuration",
             ReplCommand::AiGenerate { .. } => "Generate workflow block from description",
             ReplCommand::AiFix { .. } => "Get AI suggestion for fixing an error",
             ReplCommand::AiAnalyze { .. } => "Analyze workflow with AI",
@@ -329,6 +364,9 @@ impl ReplCommand {
             ReplCommand::Echo { .. } => "echo <text>",
             ReplCommand::Clear => "clear | cls",
             ReplCommand::History => "history",
+            ReplCommand::PrintWorkflow => "workflow | wf | tree",
+            ReplCommand::SaveWorkflow { .. } => "save <file.yaml> | w <file.yaml>",
+            ReplCommand::SaveConfig { .. } => "saveconfig [file.toml]",
             ReplCommand::AiGenerate { .. } => "ai-generate <description> | aigen <description>",
             ReplCommand::AiFix { .. } => "ai-fix <error_message> | aifix <error>",
             ReplCommand::AiAnalyze { .. } => "ai-analyze [workflow_file] | aianalyze",
@@ -400,7 +438,18 @@ impl CommandCategory {
             CommandCategory::Navigation => vec!["goto", "back", "forward"],
             CommandCategory::Modification => vec!["set"],
             CommandCategory::Utility => {
-                vec!["help", "quit", "pwd", "ls", "echo", "clear", "history"]
+                vec![
+                    "help",
+                    "quit",
+                    "pwd",
+                    "ls",
+                    "echo",
+                    "clear",
+                    "history",
+                    "workflow",
+                    "save",
+                    "saveconfig",
+                ]
             }
             CommandCategory::Ai => {
                 vec![

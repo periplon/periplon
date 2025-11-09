@@ -117,6 +117,11 @@ impl DSLExecutor {
         self.debugger.is_some()
     }
 
+    /// Get reference to the workflow
+    pub fn workflow(&self) -> &DSLWorkflow {
+        &self.workflow
+    }
+
     /// Resolve workflow inputs by extracting default values
     fn resolve_workflow_inputs(workflow: &DSLWorkflow) -> HashMap<String, serde_json::Value> {
         let mut resolved = HashMap::new();

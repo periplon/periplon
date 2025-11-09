@@ -174,6 +174,19 @@ pub fn parse_command(input: &str) -> Result<ReplCommand> {
         }),
         "clear" | "cls" => Ok(ReplCommand::Clear),
         "history" => Ok(ReplCommand::History),
+        "workflow" | "wf" | "tree" => Ok(ReplCommand::PrintWorkflow),
+        "save" | "w" => {
+            if args.is_empty() {
+                return Err(Error::InvalidInput("Usage: save <file.yaml>".to_string()));
+            }
+            Ok(ReplCommand::SaveWorkflow {
+                path: args[0].to_string(),
+            })
+        }
+        "saveconfig" => {
+            let path = args.first().map(|s| s.to_string());
+            Ok(ReplCommand::SaveConfig { path })
+        }
 
         // AI Commands
         "ai-generate" | "aigen" => {
