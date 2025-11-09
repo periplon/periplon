@@ -1010,7 +1010,7 @@ pub fn generate_template() -> String {
         "      provider: ollama  # ollama, openai, anthropic, google"
     )
     .unwrap();
-    writeln!(&mut template, "      model: \"llama3.3\"  # Model name").unwrap();
+    writeln!(&mut template, "      model: \"olmo2:13b\"  # Model name").unwrap();
     writeln!(
         &mut template,
         "      prompt: \"Analyze this code: ${{workflow.code_snippet}}\"  # Supports variable interpolation"
@@ -2921,7 +2921,7 @@ pub fn generate_nl_to_dsl_prompt() -> String {
         "#       provider: ollama  # ollama, openai, anthropic, google"
     )
     .unwrap();
-    writeln!(&mut prompt, "#       model: \"llama3.3\"  # Model name").unwrap();
+    writeln!(&mut prompt, "#       model: \"olmo2:13b\"  # Model name").unwrap();
     writeln!(&mut prompt, "#       prompt: \"Analyze this code: ${{workflow.code}}\"  # User prompt (supports variables)").unwrap();
     writeln!(
         &mut prompt,

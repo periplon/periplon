@@ -42,6 +42,10 @@ pub struct DSLExecutor {
     notification_manager: Arc<NotificationManager>,
     workflow_start_time: Option<Instant>,
     json_output: bool,
+
+    // Debugging infrastructure
+    debugger: Option<Arc<Mutex<crate::dsl::debugger::DebuggerState>>>,
+    inspector: Option<Arc<crate::dsl::debugger::Inspector>>,
 }
 
 impl DSLExecutor {
@@ -72,12 +76,50 @@ impl DSLExecutor {
             notification_manager,
             workflow_start_time: None,
             json_output: false,
+            debugger: None,
+            inspector: None,
         })
     }
 
     /// Get a reference to the task graph (for testing and inspection)
     pub fn task_graph(&self) -> &TaskGraph {
         &self.task_graph
+    }
+
+    /// Enable debugging mode
+    ///
+    /// Returns self with debugging infrastructure initialized
+    pub fn with_debugger(mut self) -> Self {
+        let debugger = Arc::new(Mutex::new(crate::dsl::debugger::DebuggerState::new()));
+        let state = Arc::new(Mutex::new(self.state.clone()));
+        let inspector = Arc::new(crate::dsl::debugger::Inspector::new(
+            debugger.clone(),
+            state,
+        ));
+
+        self.debugger = Some(debugger);
+        self.inspector = Some(inspector);
+        self
+    }
+
+    /// Get debugger reference (if debugging is enabled)
+    pub fn debugger(&self) -> Option<&Arc<Mutex<crate::dsl::debugger::DebuggerState>>> {
+        self.debugger.as_ref()
+    }
+
+    /// Get inspector reference (if debugging is enabled)
+    pub fn inspector(&self) -> Option<&Arc<crate::dsl::debugger::Inspector>> {
+        self.inspector.as_ref()
+    }
+
+    /// Check if debugging is enabled
+    pub fn is_debug_mode(&self) -> bool {
+        self.debugger.is_some()
+    }
+
+    /// Get reference to the workflow
+    pub fn workflow(&self) -> &DSLWorkflow {
+        &self.workflow
     }
 
     /// Resolve workflow inputs by extracting default values
@@ -559,6 +601,86 @@ impl DSLExecutor {
         Ok(())
     }
 
+    // ========================================================================
+    // Debug Helper Methods
+    // ========================================================================
+
+    /// Check if should pause at task (for debugging)
+    async fn check_debug_pause(&self, task_id: &str) -> bool {
+        if let Some(ref debugger) = self.debugger {
+            let dbg = debugger.lock().await;
+            dbg.should_pause(task_id)
+        } else {
+            false
+        }
+    }
+
+    /// Record task entry in debugger
+    async fn debug_enter_task(&self, task_id: &str, parent_task: Option<&str>) {
+        if let Some(ref debugger) = self.debugger {
+            let mut dbg = debugger.lock().await;
+            dbg.enter_task(task_id.to_string(), parent_task.map(|s| s.to_string()));
+        }
+    }
+
+    /// Record task exit in debugger
+    async fn debug_exit_task(&self) {
+        if let Some(ref debugger) = self.debugger {
+            let mut dbg = debugger.lock().await;
+            dbg.exit_task();
+        }
+    }
+
+    /// Create execution snapshot
+    #[allow(dead_code)]
+    async fn debug_create_snapshot(&self, description: String) {
+        if let Some(ref debugger) = self.debugger {
+            // Get current state
+            if let Some(ref state) = self.state {
+                let mut dbg = debugger.lock().await;
+                dbg.create_snapshot(state, description);
+            }
+        }
+    }
+
+    /// Record side effect (file operation, state change, etc.)
+    #[allow(dead_code)]
+    async fn debug_record_side_effect(
+        &self,
+        task_id: &str,
+        effect_type: crate::dsl::debugger::SideEffectType,
+        compensation: Arc<dyn crate::dsl::debugger::CompensationStrategy>,
+    ) {
+        if let Some(ref debugger) = self.debugger {
+            let mut dbg = debugger.lock().await;
+            dbg.side_effects
+                .record(task_id.to_string(), effect_type, compensation);
+        }
+    }
+
+    /// Wait for user input when paused (for interactive debugging)
+    async fn debug_wait_for_continue(&self) {
+        if let Some(ref debugger) = self.debugger {
+            loop {
+                let should_wait = {
+                    let dbg = debugger.lock().await;
+                    matches!(
+                        dbg.mode,
+                        crate::dsl::debugger::DebugMode::Paused
+                            | crate::dsl::debugger::DebugMode::Suspended
+                    )
+                };
+
+                if !should_wait {
+                    break;
+                }
+
+                // Sleep briefly to avoid busy-waiting
+                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+            }
+        }
+    }
+
     /// Execute the workflow
     ///
     /// Executes tasks in topological order, respecting dependencies
@@ -626,11 +748,29 @@ impl DSLExecutor {
         // Record workflow start time
         self.workflow_start_time = Some(Instant::now());
 
+        // Initialize debugger for workflow execution
+        if let Some(ref debugger) = self.debugger {
+            let mut dbg = debugger.lock().await;
+            dbg.start();
+            println!("🐛 Debug mode enabled");
+        }
+
         // Get execution order
         let order = self.task_graph.topological_sort()?;
 
         println!("Executing workflow: {}", self.workflow.name);
         println!("Task execution order: {:?}", order);
+
+        // Create initial snapshot if debugging
+        if self.is_debug_mode() {
+            if let Some(ref state) = self.state {
+                if let Some(ref debugger) = self.debugger {
+                    let mut dbg = debugger.lock().await;
+                    dbg.create_snapshot(state, "Workflow start".to_string());
+                    println!("📸 Created initial snapshot");
+                }
+            }
+        }
 
         // Send workflow start notification if configured
         if let Some(notif_config) = &self.workflow.notifications {
@@ -682,16 +822,75 @@ impl DSLExecutor {
             };
 
             if parallel_tasks.is_empty() {
+                // === DEBUG: Check breakpoints and pause if needed ===
+                if self.is_debug_mode() {
+                    // Check if should pause at this task
+                    if self.check_debug_pause(&task_id).await {
+                        println!("⏸️  Breakpoint hit at task: {}", task_id);
+
+                        // Display debugger status
+                        if let Some(ref debugger) = self.debugger {
+                            let dbg = debugger.lock().await;
+                            let status = dbg.status_summary();
+                            println!("{}", status);
+                        }
+
+                        // Wait for user to continue
+                        println!("⏸️  Execution paused. Waiting for continue...");
+                        self.debug_wait_for_continue().await;
+                        println!("▶️  Execution resumed");
+                    }
+
+                    // Create snapshot before task execution
+                    if let Some(ref workflow_state) = *state.lock().await {
+                        if let Some(ref debugger) = self.debugger {
+                            let mut dbg = debugger.lock().await;
+                            dbg.create_snapshot(
+                                workflow_state,
+                                format!("Before task: {}", task_id),
+                            );
+                            println!("📸 Snapshot created before task: {}", task_id);
+                        }
+                    }
+
+                    // Record task entry
+                    self.debug_enter_task(&task_id, None).await;
+                }
+
                 // Execute task sequentially
-                self.execute_task_parallel(
-                    &task_id,
-                    agents.clone(),
-                    task_graph.clone(),
-                    state.clone(),
-                    workflow_inputs.clone(),
-                    state_persistence.clone(),
-                )
-                .await?;
+                let task_result = self
+                    .execute_task_parallel(
+                        &task_id,
+                        agents.clone(),
+                        task_graph.clone(),
+                        state.clone(),
+                        workflow_inputs.clone(),
+                        state_persistence.clone(),
+                    )
+                    .await;
+
+                // === DEBUG: Post-execution hooks ===
+                if self.is_debug_mode() {
+                    // Record task exit
+                    self.debug_exit_task().await;
+
+                    // Create snapshot after task execution
+                    if let Some(ref workflow_state) = *state.lock().await {
+                        if let Some(ref debugger) = self.debugger {
+                            let mut dbg = debugger.lock().await;
+                            let description = if task_result.is_ok() {
+                                format!("After task: {} (success)", task_id)
+                            } else {
+                                format!("After task: {} (failed)", task_id)
+                            };
+                            dbg.create_snapshot(workflow_state, description);
+                            println!("📸 Snapshot created after task: {}", task_id);
+                        }
+                    }
+                }
+
+                // Propagate errors
+                task_result?;
                 processed.insert(task_id.clone());
             } else {
                 // Execute tasks in parallel using tokio::spawn
@@ -817,6 +1016,32 @@ impl DSLExecutor {
                         "Warning: Failed to send workflow completion notification: {}",
                         e
                     );
+                }
+            }
+        }
+
+        // === DEBUG: Finalize debugger ===
+        if self.is_debug_mode() {
+            // Create final snapshot
+            if let Some(ref state) = self.state {
+                if let Some(ref debugger) = self.debugger {
+                    let mut dbg = debugger.lock().await;
+                    dbg.create_snapshot(state, "Workflow completed".to_string());
+                    println!("📸 Created final snapshot");
+
+                    // Display final debug summary
+                    let status = dbg.status_summary();
+                    println!("\n🐛 Debug Session Summary:");
+                    println!("{}", status);
+
+                    // Display side effect summary
+                    let side_effect_summary = dbg.side_effects.summary();
+                    if !side_effect_summary.is_empty() {
+                        println!("\n📝 Side Effects Summary:");
+                        for (effect_type, count) in side_effect_summary {
+                            println!("  {} x {}", count, effect_type);
+                        }
+                    }
                 }
             }
         }
