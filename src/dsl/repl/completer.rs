@@ -8,12 +8,24 @@ use rustyline::hint::Hinter;
 use rustyline::validate::Validator;
 use rustyline::{Context, Helper};
 use std::borrow::Cow;
+use std::cell::RefCell;
+
+/// Dynamic completion context
+#[derive(Default, Clone)]
+pub struct CompletionContext {
+    pub task_names: Vec<String>,
+    pub agent_names: Vec<String>,
+    pub variable_names: Vec<String>,
+    pub breakpoint_ids: Vec<String>,
+    pub snapshot_ids: Vec<String>,
+}
 
 /// REPL command completer and helper
 #[derive(Default)]
 pub struct ReplHelper {
     commands: Vec<String>,
     aliases: Vec<String>,
+    context: RefCell<CompletionContext>,
 }
 
 impl ReplHelper {
@@ -35,7 +47,16 @@ impl ReplHelper {
         commands.sort();
         aliases.sort();
 
-        Self { commands, aliases }
+        Self {
+            commands,
+            aliases,
+            context: RefCell::new(CompletionContext::default()),
+        }
+    }
+
+    /// Update completion context with fresh data
+    pub fn update_context(&self, ctx: CompletionContext) {
+        *self.context.borrow_mut() = ctx;
     }
 
     fn add_execution_commands(commands: &mut Vec<String>, aliases: &mut Vec<String>) {
@@ -183,6 +204,87 @@ impl ReplHelper {
         completions.dedup();
         completions
     }
+
+    /// Complete command arguments based on context
+    fn complete_arguments(&self, command: &str, arg_index: usize, partial: &str) -> Vec<String> {
+        let ctx = self.context.borrow();
+
+        match (command, arg_index) {
+            // inspect <target> [name]
+            ("inspect" | "i", 1) => {
+                vec!["task".to_string(), "var".to_string(), "state".to_string()]
+                    .into_iter()
+                    .filter(|s| s.starts_with(partial))
+                    .collect()
+            }
+            ("inspect" | "i", 2) => {
+                // Complete based on the target type
+                ctx.task_names
+                    .iter()
+                    .chain(ctx.variable_names.iter())
+                    .filter(|s| s.starts_with(partial))
+                    .cloned()
+                    .collect()
+            }
+
+            // break <task_id>
+            ("break" | "b", 1) => ctx
+                .task_names
+                .iter()
+                .filter(|s| s.starts_with(partial))
+                .cloned()
+                .collect(),
+
+            // delete/enable/disable <breakpoint_id>
+            ("delete" | "d" | "enable" | "disable", 1) => ctx
+                .breakpoint_ids
+                .iter()
+                .filter(|s| s.starts_with(partial))
+                .cloned()
+                .collect(),
+
+            // goto <snapshot_id>
+            ("goto", 1) => ctx
+                .snapshot_ids
+                .iter()
+                .filter(|s| s.starts_with(partial))
+                .cloned()
+                .collect(),
+
+            // print <variable>
+            ("print" | "p", 1) => ctx
+                .variable_names
+                .iter()
+                .filter(|s| s.starts_with(partial))
+                .cloned()
+                .collect(),
+
+            // vars [scope]
+            ("vars", 1) => vec![
+                "workflow".to_string(),
+                "agent".to_string(),
+                "task".to_string(),
+                "loop".to_string(),
+            ]
+            .into_iter()
+            .filter(|s| s.starts_with(partial))
+            .collect(),
+
+            // ai-provider <provider> [model]
+            ("ai-provider" | "aiprovider", 1) => vec![
+                "ollama".to_string(),
+                "openai".to_string(),
+                "anthropic".to_string(),
+                "google".to_string(),
+            ]
+            .into_iter()
+            .filter(|s| s.starts_with(partial))
+            .collect(),
+
+            // Default: no completions
+            _ => Vec::new(),
+        }
+    }
 }
 
 impl Completer for ReplHelper {
@@ -232,9 +334,42 @@ impl Completer for ReplHelper {
             ));
         }
 
-        // For arguments, we could add context-specific completion here
-        // For now, return empty (no argument completion)
-        Ok((pos, Vec::new()))
+        // Handle argument completion based on command
+        let command = parts[0];
+        let arg_index = if line_up_to_cursor.ends_with(' ') {
+            parts.len()
+        } else {
+            parts.len() - 1
+        };
+
+        let arg_partial = if line_up_to_cursor.ends_with(' ') {
+            ""
+        } else {
+            parts.last().unwrap_or(&"")
+        };
+
+        let completions = self.complete_arguments(command, arg_index, arg_partial);
+
+        if completions.is_empty() {
+            return Ok((pos, Vec::new()));
+        }
+
+        let start_pos = if line_up_to_cursor.ends_with(' ') {
+            pos
+        } else {
+            line_up_to_cursor.len() - arg_partial.len()
+        };
+
+        Ok((
+            start_pos,
+            completions
+                .into_iter()
+                .map(|c| Pair {
+                    display: c.clone(),
+                    replacement: c,
+                })
+                .collect(),
+        ))
     }
 }
 

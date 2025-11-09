@@ -29,7 +29,7 @@ pub mod completer;
 pub mod parser;
 
 pub use commands::{BreakTarget, CommandCategory, InspectTarget, ReplCommand};
-pub use completer::ReplHelper;
+pub use completer::{CompletionContext, ReplHelper};
 pub use parser::parse_command;
 
 use crate::dsl::debug_ai::DebugAiAssistant;
@@ -123,6 +123,12 @@ impl ReplSession {
         self.show_status().await?;
 
         while self.running {
+            // Update completion context before readline
+            if let Some(helper) = rl.helper_mut() {
+                let ctx = self.build_completion_context().await;
+                helper.update_context(ctx);
+            }
+
             // Read command with readline
             let readline = rl.readline("debug> ");
 
@@ -1791,5 +1797,45 @@ impl ReplSession {
                 "(failed to serialize current workflow)".to_string()
             }
         }
+    }
+
+    /// Build completion context from current executor state
+    async fn build_completion_context(&self) -> CompletionContext {
+        let executor = self.executor.lock().await;
+        let debugger = self.debugger.lock().await;
+
+        let mut ctx = CompletionContext::default();
+
+        // Get task names from workflow
+        ctx.task_names = executor.workflow().tasks.keys().cloned().collect();
+        ctx.task_names.sort();
+
+        // Get agent names from workflow
+        ctx.agent_names = executor.workflow().agents.keys().cloned().collect();
+        ctx.agent_names.sort();
+
+        // Get variable names from inspector if available
+        if let Some(inspector) = executor.inspector() {
+            let vars = inspector.inspect_variables(None).await;
+
+            // Collect all variable names from all scopes
+            ctx.variable_names.extend(vars.workflow_vars.keys().cloned());
+            ctx.variable_names.extend(vars.agent_vars.keys().cloned());
+            ctx.variable_names.extend(vars.task_vars.keys().cloned());
+            ctx.variable_names.extend(vars.loop_vars.keys().cloned());
+            ctx.variable_names.sort();
+            ctx.variable_names.dedup();
+        }
+
+        // Get breakpoint IDs
+        ctx.breakpoint_ids = debugger
+            .breakpoints
+            .list_all()
+            .iter()
+            .map(|bp| bp.id.clone())
+            .collect();
+        ctx.breakpoint_ids.sort();
+
+        ctx
     }
 }
