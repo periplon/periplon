@@ -41,6 +41,7 @@ use rustyline::error::ReadlineError;
 use rustyline::{Config, Editor};
 use std::io::{self, Write};
 use std::sync::Arc;
+use strsim::jaro_winkler;
 use tokio::sync::Mutex;
 
 /// REPL session state
@@ -257,6 +258,18 @@ impl ReplSession {
                 self.cmd_ai_provider(&provider, model.as_deref()).await
             }
             ReplCommand::AiConfig => self.cmd_ai_config(),
+            ReplCommand::AiSetTemperature { temperature } => {
+                self.cmd_ai_set_temperature(temperature).await
+            }
+            ReplCommand::AiSetMaxTokens { max_tokens } => {
+                self.cmd_ai_set_max_tokens(max_tokens).await
+            }
+            ReplCommand::AiSetEndpoint { endpoint } => {
+                self.cmd_ai_set_endpoint(endpoint.as_deref()).await
+            }
+            ReplCommand::AiSetApiKey { api_key } => {
+                self.cmd_ai_set_api_key(api_key.as_deref()).await
+            }
         }
     }
 
@@ -883,6 +896,35 @@ impl ReplSession {
         Ok(())
     }
 
+    /// Suggest similar task names using fuzzy matching
+    fn suggest_similar_task(&self, task_name: &str, executor: &DSLExecutor) -> Option<String> {
+        let workflow = executor.workflow();
+        let task_ids: Vec<&String> = workflow.tasks.keys().collect();
+
+        if task_ids.is_empty() {
+            return None;
+        }
+
+        // Calculate similarity scores for all task IDs
+        let mut similarities: Vec<(&String, f64)> = task_ids
+            .iter()
+            .map(|id| (*id, jaro_winkler(task_name, id)))
+            .collect();
+
+        // Sort by similarity (highest first)
+        similarities.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+
+        // Return the most similar if above threshold
+        let threshold = 0.7;
+        if let Some((best_match, score)) = similarities.first() {
+            if *score >= threshold {
+                return Some(best_match.to_string());
+            }
+        }
+
+        None
+    }
+
     /// Inspect task, variable, or state
     async fn cmd_inspect(&self, target: InspectTarget) -> Result<()> {
         let executor = self.executor.lock().await;
@@ -919,7 +961,16 @@ impl ReplSession {
                             println!("  Error: {}", error);
                         }
                     } else {
-                        println!("❌ Task not found: {}", task_id);
+                        // Check if task exists in workflow definition but not in state
+                        if executor.workflow().tasks.contains_key(&task_id) {
+                            println!("❌ Task '{}' exists in workflow but hasn't been executed yet", task_id);
+                            println!("   Use 'workflow' command to see the workflow definition");
+                        } else {
+                            println!("❌ Task not found: {}", task_id);
+                            if let Some(suggestion) = self.suggest_similar_task(&task_id, &executor) {
+                                println!("   Did you mean '{}'?", suggestion.bright_yellow());
+                            }
+                        }
                     }
                 }
             }
@@ -1036,6 +1087,11 @@ impl ReplSession {
                             }
                         } else {
                             println!("❌ Task not found: {}", task_name);
+                            if let Some(suggestion) =
+                                self.suggest_similar_task(task_name, &executor)
+                            {
+                                println!("   Did you mean '{}'?", suggestion.bright_yellow());
+                            }
                         }
                     }
                     _ => {
@@ -1618,6 +1674,13 @@ impl ReplSession {
             println!("  Model: {}", config.model);
             if let Some(ref endpoint) = config.endpoint {
                 println!("  Endpoint: {}", endpoint);
+            } else {
+                println!("  Endpoint: <default>");
+            }
+            if config.api_key.is_some() {
+                println!("  API Key: <set>");
+            } else {
+                println!("  API Key: <from environment>");
             }
             println!("  Temperature: {}", config.temperature);
             println!("  Max Tokens: {}", config.max_tokens);
@@ -1626,6 +1689,70 @@ impl ReplSession {
                 println!("  Extra Parameters:");
                 for (key, value) in &config.extra_params {
                     println!("    {}: {}", key, value);
+                }
+            }
+        } else {
+            println!("❌ AI assistant not available");
+        }
+        Ok(())
+    }
+
+    /// Set AI temperature
+    async fn cmd_ai_set_temperature(&mut self, temperature: f32) -> Result<()> {
+        if let Some(ref mut ai) = self.ai_assistant {
+            ai.set_temperature(temperature);
+            println!("✓ AI temperature set to {}", temperature);
+        } else {
+            println!("❌ AI assistant not available");
+        }
+        Ok(())
+    }
+
+    /// Set AI max tokens
+    async fn cmd_ai_set_max_tokens(&mut self, max_tokens: u32) -> Result<()> {
+        if let Some(ref mut ai) = self.ai_assistant {
+            ai.set_max_tokens(max_tokens);
+            println!("✓ AI max tokens set to {}", max_tokens);
+        } else {
+            println!("❌ AI assistant not available");
+        }
+        Ok(())
+    }
+
+    /// Set AI endpoint
+    async fn cmd_ai_set_endpoint(&mut self, endpoint: Option<&str>) -> Result<()> {
+        if let Some(ref mut ai) = self.ai_assistant {
+            match ai.set_endpoint(endpoint.map(|s| s.to_string())) {
+                Ok(()) => {
+                    if let Some(ep) = endpoint {
+                        println!("✓ AI endpoint set to {}", ep);
+                    } else {
+                        println!("✓ AI endpoint cleared (using default)");
+                    }
+                }
+                Err(e) => {
+                    println!("❌ Failed to set endpoint: {}", e);
+                }
+            }
+        } else {
+            println!("❌ AI assistant not available");
+        }
+        Ok(())
+    }
+
+    /// Set AI API key
+    async fn cmd_ai_set_api_key(&mut self, api_key: Option<&str>) -> Result<()> {
+        if let Some(ref mut ai) = self.ai_assistant {
+            match ai.set_api_key(api_key.map(|s| s.to_string())) {
+                Ok(()) => {
+                    if api_key.is_some() {
+                        println!("✓ AI API key set");
+                    } else {
+                        println!("✓ AI API key cleared (using environment variable)");
+                    }
+                }
+                Err(e) => {
+                    println!("❌ Failed to set API key: {}", e);
                 }
             }
         } else {
@@ -1654,8 +1781,15 @@ impl ReplSession {
 
     /// Get workflow YAML representation
     async fn get_workflow_yaml(&self) -> String {
-        // TODO: Implement workflow serialization
-        // For now, return a placeholder
-        "(current workflow YAML not available - specify a file path)".to_string()
+        let executor = self.executor.lock().await;
+        let workflow = executor.workflow();
+
+        match serde_yaml::to_string(workflow) {
+            Ok(yaml) => yaml,
+            Err(e) => {
+                eprintln!("Warning: Failed to serialize workflow: {}", e);
+                "(failed to serialize current workflow)".to_string()
+            }
+        }
     }
 }

@@ -51,6 +51,30 @@ impl DebugAiAssistant {
         Ok(())
     }
 
+    /// Set temperature (0.0-2.0)
+    pub fn set_temperature(&mut self, temperature: f32) {
+        self.config.temperature = temperature;
+    }
+
+    /// Set max tokens
+    pub fn set_max_tokens(&mut self, max_tokens: u32) {
+        self.config.max_tokens = max_tokens;
+    }
+
+    /// Set endpoint (None to use provider default)
+    pub fn set_endpoint(&mut self, endpoint: Option<String>) -> Result<()> {
+        self.config.endpoint = endpoint;
+        self.provider = providers::create_provider(&self.config)?;
+        Ok(())
+    }
+
+    /// Set API key (None to use environment variable)
+    pub fn set_api_key(&mut self, api_key: Option<String>) -> Result<()> {
+        self.config.api_key = api_key;
+        self.provider = providers::create_provider(&self.config)?;
+        Ok(())
+    }
+
     /// Generate workflow block from description
     pub async fn generate_block(&self, description: &str) -> Result<String> {
         generator::generate_workflow_block(self.provider.as_ref(), description).await

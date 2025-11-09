@@ -228,6 +228,59 @@ pub fn parse_command(input: &str) -> Result<ReplCommand> {
             Ok(ReplCommand::AiProvider { provider, model })
         }
         "ai-config" | "aiconfig" => Ok(ReplCommand::AiConfig),
+        "ai-set-temperature" | "aitemp" => {
+            if args.is_empty() {
+                return Err(Error::InvalidInput(
+                    "Usage: ai-set-temperature <0.0-2.0>".to_string(),
+                ));
+            }
+            let temperature: f32 = args[0]
+                .parse()
+                .map_err(|_| Error::InvalidInput("Invalid temperature value".to_string()))?;
+            if !(0.0..=2.0).contains(&temperature) {
+                return Err(Error::InvalidInput(
+                    "Temperature must be between 0.0 and 2.0".to_string(),
+                ));
+            }
+            Ok(ReplCommand::AiSetTemperature { temperature })
+        }
+        "ai-set-max-tokens" | "aimax" => {
+            if args.is_empty() {
+                return Err(Error::InvalidInput(
+                    "Usage: ai-set-max-tokens <number>".to_string(),
+                ));
+            }
+            let max_tokens: u32 = args[0]
+                .parse()
+                .map_err(|_| Error::InvalidInput("Invalid max tokens value".to_string()))?;
+            Ok(ReplCommand::AiSetMaxTokens { max_tokens })
+        }
+        "ai-set-endpoint" | "aiendpoint" => {
+            if args.is_empty() {
+                return Err(Error::InvalidInput(
+                    "Usage: ai-set-endpoint <url> or ai-set-endpoint clear".to_string(),
+                ));
+            }
+            let endpoint = if args[0] == "clear" {
+                None
+            } else {
+                Some(args.join(" "))
+            };
+            Ok(ReplCommand::AiSetEndpoint { endpoint })
+        }
+        "ai-set-api-key" | "aikey" => {
+            if args.is_empty() {
+                return Err(Error::InvalidInput(
+                    "Usage: ai-set-api-key <key> or ai-set-api-key clear".to_string(),
+                ));
+            }
+            let api_key = if args[0] == "clear" {
+                None
+            } else {
+                Some(args.join(" "))
+            };
+            Ok(ReplCommand::AiSetApiKey { api_key })
+        }
 
         _ => Err(Error::InvalidInput(format!(
             "Unknown command: '{}'. Type 'help' for available commands.",

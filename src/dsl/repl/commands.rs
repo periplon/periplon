@@ -166,6 +166,18 @@ pub enum ReplCommand {
 
     /// Show current AI configuration
     AiConfig,
+
+    /// Set AI temperature (0.0-2.0)
+    AiSetTemperature { temperature: f32 },
+
+    /// Set AI max tokens
+    AiSetMaxTokens { max_tokens: u32 },
+
+    /// Set AI endpoint
+    AiSetEndpoint { endpoint: Option<String> },
+
+    /// Set AI API key
+    AiSetApiKey { api_key: Option<String> },
 }
 
 /// Breakpoint target
@@ -251,6 +263,10 @@ impl ReplCommand {
             ReplCommand::AiExplain { .. } => "ai-explain",
             ReplCommand::AiProvider { .. } => "ai-provider",
             ReplCommand::AiConfig => "ai-config",
+            ReplCommand::AiSetTemperature { .. } => "ai-set-temperature",
+            ReplCommand::AiSetMaxTokens { .. } => "ai-set-max-tokens",
+            ReplCommand::AiSetEndpoint { .. } => "ai-set-endpoint",
+            ReplCommand::AiSetApiKey { .. } => "ai-set-api-key",
         }
     }
 
@@ -321,6 +337,10 @@ impl ReplCommand {
             ReplCommand::AiExplain { .. } => "Explain workflow with AI",
             ReplCommand::AiProvider { .. } => "Change AI provider and model",
             ReplCommand::AiConfig => "Show current AI configuration",
+            ReplCommand::AiSetTemperature { .. } => "Set AI temperature (0.0-2.0, default: 0.7)",
+            ReplCommand::AiSetMaxTokens { .. } => "Set AI maximum tokens to generate",
+            ReplCommand::AiSetEndpoint { .. } => "Set custom AI API endpoint",
+            ReplCommand::AiSetApiKey { .. } => "Set AI API key",
         }
     }
 
@@ -373,6 +393,10 @@ impl ReplCommand {
             ReplCommand::AiExplain { .. } => "ai-explain [workflow_file] | aiexplain",
             ReplCommand::AiProvider { .. } => "ai-provider <provider> [model] | aiprovider",
             ReplCommand::AiConfig => "ai-config | aiconfig",
+            ReplCommand::AiSetTemperature { .. } => "ai-set-temperature <0.0-2.0> | aitemp <value>",
+            ReplCommand::AiSetMaxTokens { .. } => "ai-set-max-tokens <number> | aimax <number>",
+            ReplCommand::AiSetEndpoint { .. } => "ai-set-endpoint <url> | aiendpoint <url>\nai-set-endpoint clear  # Clear endpoint (use default)",
+            ReplCommand::AiSetApiKey { .. } => "ai-set-api-key <key> | aikey <key>\nai-set-api-key clear  # Clear API key (use env var)",
         }
     }
 }
@@ -459,6 +483,10 @@ impl CommandCategory {
                     "ai-explain",
                     "ai-provider",
                     "ai-config",
+                    "ai-set-temperature",
+                    "ai-set-max-tokens",
+                    "ai-set-endpoint",
+                    "ai-set-api-key",
                 ]
             }
         }

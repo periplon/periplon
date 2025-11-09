@@ -46,6 +46,7 @@ petgraph = "0.6"  # Dependency graphs
 log = "0.4"  # Logging facade
 env_logger = "0.11"  # Environment-based logger
 rustyline = "14.0"  # Line editing with history and completion
+strsim = "0.11"  # String similarity for fuzzy matching
 
 # Server mode dependencies (optional via features)
 axum = { version = "0.7", features = ["ws", "multipart"], optional = true }
